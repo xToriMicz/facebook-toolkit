@@ -251,13 +251,19 @@
         <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> Compose</button>
         <button class="tab" onclick="switchTab('history',this)"><span>📋</span> History</button>
         <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> Templates</button>
+        <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> Trends</button>
       </div>
 
       <!-- Compose -->
       <div id="tabCompose">
         <div class="card">
-          <textarea class="compose-area" id="message" placeholder="What's on your mind?"></textarea>
-          <div class="char-count"><span id="charCount">0</span> characters</div>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <textarea class="compose-area" id="message" placeholder="What's on your mind?" style="flex:1"></textarea>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
+            <div class="char-count"><span id="charCount">0</span> characters</div>
+            <button class="btn" style="padding:6px 14px;font-size:0.8rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="openAiModal()">✨ AI Write</button>
+          </div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 Click to upload image or drag & drop
           </div>
@@ -274,6 +280,17 @@
       <div id="tabHistory" class="hidden">
         <div class="card">
           <div id="historyList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- Trends -->
+      <div id="tabTrends" class="hidden">
+        <div class="card">
+          <div class="trend-header">
+            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🔥</span> Trending in Thailand</div>
+            <button class="trend-refresh" onclick="loadTrends()">↻ Refresh</button>
+          </div>
+          <div id="trendList" style="margin-top:12px"><div class="empty-state">Loading trends...</div></div>
         </div>
       </div>
 
@@ -368,7 +385,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -376,6 +393,7 @@
       if(tabEl) tabEl.classList.remove('hidden');
       if(tab==='history') loadHistory();
       if(tab==='templates') loadTemplates();
+      if(tab==='trends') loadTrends();
     }
 
     // Compose
@@ -452,6 +470,32 @@
       document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
       ['tabCompose','tabHistory','tabTemplates'].forEach(id=>document.getElementById(id).classList.add('hidden'));
       document.getElementById('tabCompose').classList.remove('hidden');
+    }
+
+    // Trends
+    async function loadTrends() {
+      const el = document.getElementById('trendList');
+      el.innerHTML = '<div class="empty-state">Loading trends...</div>';
+      try {
+        const r = await fetch('/api/trends', { credentials: 'same-origin' });
+        const d = await r.json();
+        const trends = d.trends || [];
+        if (!trends.length) { el.innerHTML = '<div class="empty-state">No trends available</div>'; return; }
+        el.innerHTML = trends.map((t, i) => {
+          const isHot = i < 3 ? ' hot' : '';
+          return `<div class="trend-item"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}</div><div class="trend-vol">${t.traffic||''}</div></div><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div>`;
+        }).join('');
+      } catch { el.innerHTML = '<div class="empty-state">Failed to load trends</div>'; }
+    }
+    function useTrend(el) {
+      const topic = el.dataset.topic;
+      document.getElementById('message').value = topic + '\n\n';
+      document.getElementById('charCount').textContent = (topic.length + 2);
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelector('.tab').classList.add('active');
+      ['tabCompose','tabHistory','tabTemplates','tabTrends'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
+      document.getElementById('tabCompose').classList.remove('hidden');
+      document.getElementById('message').focus();
     }
 
     // Settings
