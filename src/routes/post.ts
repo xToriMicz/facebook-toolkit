@@ -1,0 +1,213 @@
+import { Hono } from "hono";
+import { Env, getSessionFromReq, rateLimit, sanitize, kvCache } from "../helpers";
+
+const post = new Hono<{ Bindings: Env }>();
+
+// POST /api/post — create Facebook page post (single/multi-photo/text)
+post.post("/post", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  if (await rateLimit(c.env.KV, `post:${session.fb_id}`, 50)) {
+    return c.json({ error: "Rate limit: max 50 posts/hour" }, 429);
+  }
+
+  const body = await c.req.json() as any;
+  const message = body.message ? sanitize(body.message) : "";
+  const image_url = body.image_url;
+  const image_urls = body.image_urls;
+  const page_id = body.page_id;
+  const affiliate_link = body.affiliate_link ? sanitize(body.affiliate_link) : null;
+  if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
+  if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
+
+  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  if (!targetPageId) return c.json({ error: "No page selected" }, 400);
+
+  const page = await c.env.DB.prepare(
+    "SELECT page_token, page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, targetPageId).first<{ page_token: string; page_name: string }>();
+  if (!page?.page_token) return c.json({ error: "Page not found or token missing." }, 400);
+
+  try {
+    let result: any;
+    const urls = image_urls || (image_url ? [image_url] : []);
+
+    if (urls.length > 1) {
+      const photoResults = await Promise.all(urls.map(async (url: string, idx: number) => {
+        const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, published: false, access_token: page.page_token }),
+        });
+        return await res.json() as any;
+      }));
+
+      const validIds = photoResults.filter((d: any) => d.id).map((d: any) => d.id);
+      const errors = photoResults.filter((d: any) => d.error);
+
+      if (validIds.length < 2) {
+        return c.json({ error: `Multi-photo upload failed: ${errors[0]?.error?.message || "unknown"}`, photo_errors: errors.map((e: any) => e.error?.message) }, 400);
+      }
+
+      const parts = [`message=${encodeURIComponent(message || "")}`, `access_token=${encodeURIComponent(page.page_token)}`];
+      validIds.forEach((id: string, i: number) => {
+        parts.push(`attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`);
+      });
+
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: parts.join("&"),
+      });
+      result = await res.json();
+    } else if (urls.length === 1) {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urls[0], message: message || "", access_token: page.page_token }),
+      });
+      result = await res.json();
+    } else {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, access_token: page.page_token }),
+      });
+      result = await res.json();
+    }
+
+    if (result.error) return c.json({ error: result.error.message, fb_error: result.error }, 400);
+
+    const fbPostId = result.id || result.post_id || null;
+    await c.env.DB.prepare(
+      "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
+    ).bind(message || "", image_url || null, fbPostId, new Date().toISOString()).run();
+
+    let commentResult = null;
+    if (affiliate_link && fbPostId) {
+      try {
+        const commentRes = await fetch(`https://graph.facebook.com/v25.0/${fbPostId}/comments`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: affiliate_link, access_token: page.page_token }),
+        });
+        commentResult = await commentRes.json();
+      } catch {}
+    }
+
+    return c.json({ ok: true, result, page_name: page.page_name, auto_comment: commentResult });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// POST /api/upload — upload image to R2
+post.post("/upload", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const formData = await c.req.formData();
+  const file = formData.get("file") as File;
+  if (!file) return c.json({ error: "No file" }, 400);
+  if (!file.type.startsWith("image/")) return c.json({ error: "Only image files allowed" }, 400);
+  if (file.size > 10 * 1024 * 1024) return c.json({ error: "File too large (max 10MB)" }, 400);
+
+  const key = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
+  await c.env.ASSETS.put(key, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
+  return c.json({ ok: true, url: `https://fb.makeloops.xyz/img/${key}`, key });
+});
+
+// GET /api/posts — post history with optional engagement
+post.get("/posts", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const limit = Math.min(50, +(c.req.query("limit") || "20"));
+  const withEngagement = c.req.query("engagement") === "1";
+
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM posts ORDER BY created_at DESC LIMIT ?"
+  ).bind(limit).all();
+
+  if (withEngagement && results.length > 0) {
+    const token = await c.env.KV.get("fb_page_token");
+    if (token) {
+      const enriched = await Promise.all(results.map(async (post: any) => {
+        if (!post.fb_post_id) return { ...post, engagement: null };
+        const eng = await kvCache(c.env.KV, `eng:${post.fb_post_id}`, 300, async () => {
+          try {
+            const res = await fetch(
+              `https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${token}`
+            );
+            const data = await res.json() as any;
+            if (data.error) return null;
+            return { likes: data.reactions?.summary?.total_count || 0, comments: data.comments?.summary?.total_count || 0, shares: data.shares?.count || 0 };
+          } catch { return null; }
+        });
+        return { ...post, engagement: eng };
+      }));
+      return c.json({ posts: enriched, total: enriched.length });
+    }
+  }
+  return c.json({ posts: results, total: results.length });
+});
+
+// GET /api/posts/:postId/comments
+post.get("/posts/:postId/comments", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const postId = c.req.param("postId");
+  const token = await c.env.KV.get("fb_page_token");
+  if (!token) return c.json({ error: "No page token" }, 400);
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v25.0/${postId}/comments?fields=id,message,from,created_time&order=reverse_chronological&access_token=${token}`
+    );
+    const data = await res.json() as any;
+    if (data.error) return c.json({ error: data.error.message }, 400);
+    return c.json({ ok: true, comments: data.data || [], paging: data.paging });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
+});
+
+// POST /api/posts/:postId/reply
+post.post("/posts/:postId/reply", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const commentId = c.req.param("postId");
+  const { message: rawMsg } = await c.req.json() as { message: string };
+  const message = rawMsg ? sanitize(rawMsg) : "";
+  if (!message) return c.json({ error: "message required" }, 400);
+  const token = await c.env.KV.get("fb_page_token");
+  if (!token) return c.json({ error: "No page token" }, 400);
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${commentId}/comments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, access_token: token }),
+    });
+    const data = await res.json() as any;
+    if (data.error) return c.json({ error: data.error.message }, 400);
+    return c.json({ ok: true, id: data.id });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
+});
+
+// POST /api/posts/:postId/auto-comment
+post.post("/posts/:postId/auto-comment", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const postId = c.req.param("postId");
+  const { message: rawMsg2 } = await c.req.json() as { message: string };
+  const message = rawMsg2 ? sanitize(rawMsg2) : "";
+  if (!message) return c.json({ error: "message required" }, 400);
+  const token = await c.env.KV.get("fb_page_token");
+  if (!token) return c.json({ error: "No page token" }, 400);
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${postId}/comments`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, access_token: token }),
+    });
+    const data = await res.json() as any;
+    if (data.error) return c.json({ error: data.error.message }, 400);
+    await c.env.DB.prepare(
+      "INSERT INTO activity_logs (user_fb_id, action, detail, post_id) VALUES (?, 'auto_comment', ?, ?)"
+    ).bind(session.fb_id, message.substring(0, 200), postId).run();
+    return c.json({ ok: true, id: data.id });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
+});
+
+export default post;
