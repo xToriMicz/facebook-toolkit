@@ -277,6 +277,7 @@
         Login with Facebook
       </button>
       <p class="login-fine">We only request permission to post to your Pages. No personal data accessed.</p>
+      <p class="login-fine" style="margin-top:10px;color:#4caf50">🔒 เชื่อมต่อปลอดภัยด้วย HTTPS</p>
     </div>
 
     <div class="hidden" id="appScreen" style="max-width:100%">
@@ -545,7 +546,12 @@
       }).catch(() => showLogin());
     }
     function showLogin() { document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('appScreen').classList.add('hidden'); document.getElementById('navUser').classList.add('hidden'); }
-    function showApp(u) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); const n = document.getElementById('navUser'); n.classList.remove('hidden'); if(u.picture) document.getElementById('navAvatar').src=u.picture; document.getElementById('navName').textContent=u.name||''; }
+    function showApp(u) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); const n = document.getElementById('navUser'); n.classList.remove('hidden'); if(u.picture) document.getElementById('navAvatar').src=u.picture; document.getElementById('navName').textContent=u.name||'';
+      // Session info
+      if(u.login_at){document.getElementById('sessionLoginTime').textContent='เข้าสู่ระบบเมื่อ: '+new Date(u.login_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+      if(u.expires_at){document.getElementById('sessionExpiry').textContent='หมดอายุ: '+new Date(u.expires_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+      // New IP notification
+      if(u.new_ip){showNotify('⚠️ เข้าสู่ระบบจาก IP ใหม่: '+u.ip);} }
     function loginFacebook() { window.location.href='/auth/facebook'; }
     function logout() { fetch('/auth/logout',{method:'POST'}).then(()=>showLogin()).catch(()=>showLogin()); }
     checkAuth();
@@ -642,12 +648,24 @@
         const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({message:msg,image_url:uploadedImageUrl,page_id:selectedPage.id})});
         const d=await r.json();
         if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
-        else toast('err',d.error||'โพสไม่สำเร็จ');
+        else toast('err',d.error||handleApiError(r.status,'โพสไม่สำเร็จ'));
       } catch(e) { toast('err','Error: '+e.message); }
       btn.disabled=false; btn.innerHTML='📤 โพสลงเพจ';
     }
 
     function toast(type,msg) { const el=document.getElementById('status'); el.className='toast '+type; el.textContent=msg; setTimeout(()=>{el.className='toast';},5000); }
+
+    // Thai error messages for common HTTP errors
+    function handleApiError(status, fallback) {
+      const errors = {
+        429: 'คุณใช้งานบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่',
+        401: 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่',
+        403: 'คุณไม่มีสิทธิ์ดำเนินการนี้',
+        500: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ กรุณาลองใหม่',
+        503: 'ระบบกำลังปรับปรุง กรุณารอสักครู่',
+      };
+      return errors[status] || fallback || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+    }
 
     // Preview
     function showPreview() {
