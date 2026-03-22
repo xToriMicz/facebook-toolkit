@@ -25,10 +25,70 @@ analytics.get("/insights/:pageId", async (c) => {
 analytics.get("/activity", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
+  try {
+    const search = c.req.query("q");
+    const from = c.req.query("from");
+    const to = c.req.query("to");
+    const limit = Math.min(100, +(c.req.query("limit") || "50"));
+
+    let query = "SELECT * FROM activity_logs WHERE user_fb_id = ?";
+    const params: (string | number)[] = [session.fb_id];
+
+    if (search) { query += " AND (action LIKE ? OR detail LIKE ?)"; params.push(`%${search}%`, `%${search}%`); }
+    if (from) { query += " AND created_at >= ?"; params.push(from); }
+    if (to) { query += " AND created_at <= ?"; params.push(to); }
+
+    query += " ORDER BY created_at DESC LIMIT ?";
+    params.push(limit);
+
+    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    return c.json({ activities: results || [], total: (results || []).length });
+  } catch {
+    return c.json({ activities: [], total: 0 });
+  }
+});
+
+// GET /api/activity/stats — today's summary counts
+analytics.get("/activity/stats", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const today = new Date().toISOString().split("T")[0];
+
+  const [postsToday, aiToday, scheduledToday, draftsToday] = await Promise.all([
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM posts WHERE created_at >= ? AND (user_fb_id = ? OR user_fb_id IS NULL)").bind(today, session.fb_id).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM activity_logs WHERE action LIKE '%ai%' AND created_at >= ? AND user_fb_id = ?").bind(today, session.fb_id).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM scheduled_posts WHERE status = 'pending' AND user_fb_id = ?").bind(session.fb_id).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM drafts WHERE user_fb_id = ?").bind(session.fb_id).first<{count:number}>(),
+  ]);
+
+  return c.json({
+    today: today,
+    posts_today: postsToday?.count || 0,
+    ai_uses_today: aiToday?.count || 0,
+    scheduled_pending: scheduledToday?.count || 0,
+    drafts_count: draftsToday?.count || 0,
+  });
+});
+
+// GET /api/activity/timeline — grouped by date for UI
+analytics.get("/activity/timeline", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const days = Math.min(30, +(c.req.query("days") || "7"));
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+
   const { results } = await c.env.DB.prepare(
-    "SELECT * FROM activity_logs WHERE user_fb_id = ? ORDER BY created_at DESC LIMIT 20"
-  ).bind(session.fb_id).all();
-  return c.json({ activities: results, total: results.length });
+    "SELECT date(created_at) as day, action, COUNT(*) as count FROM activity_logs WHERE user_fb_id = ? AND created_at >= ? GROUP BY day, action ORDER BY day DESC"
+  ).bind(session.fb_id, since).all();
+
+  // Group by day
+  const timeline: Record<string, {day:string, actions:Record<string,number>}> = {};
+  for (const r of results as any[]) {
+    if (!timeline[r.day]) timeline[r.day] = { day: r.day, actions: {} };
+    timeline[r.day].actions[r.action] = r.count;
+  }
+
+  return c.json({ timeline: Object.values(timeline), days });
 });
 
 // GET /api/analytics/performance
