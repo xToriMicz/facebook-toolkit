@@ -249,6 +249,7 @@
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
           <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 แม่แบบ</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
+          <button class="sidebar-nav-item" onclick="switchTab('drafts',this)">📝 ฉบับร่าง</button>
           <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
         </div>
       </div>
@@ -393,6 +394,14 @@
           <div id="scheduleList"><div class="empty-state">Loading...</div></div>
         </div>
       </div>
+
+      <!-- Drafts -->
+      <div id="tabDrafts" class="hidden">
+        <div class="card">
+          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📝 ฉบับร่าง</h3>
+          <div id="draftList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
     </div><!-- end right column -->
     </div><!-- end dashboard-grid -->
     </div><!-- end appScreen -->
@@ -474,7 +483,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabAiSettings','tabSchedule'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabAiSettings','tabSchedule','tabDrafts'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -485,6 +494,7 @@
       if(tab==='trends') loadTrends();
       if(tab==='aiSettings') loadAiSettings();
       if(tab==='schedule') loadSchedule();
+      if(tab==='drafts') loadDrafts();
     }
 
     // Compose
@@ -795,6 +805,71 @@
       if (!confirm('ยกเลิก?')) return;
       await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'include'});
       loadSchedule();
+    }
+
+    // Drafts
+    async function loadDrafts() {
+      const list = document.getElementById('draftList');
+      try {
+        const res = await fetch('/api/drafts', {credentials:'include'});
+        const data = await res.json();
+        if (!data.drafts || data.drafts.length === 0) {
+          list.innerHTML = '<div class="empty-state">ยังไม่มีฉบับร่าง</div>';
+          return;
+        }
+        list.innerHTML = data.drafts.map(d => `
+          <div style="padding:12px;background:var(--bg-input);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)">
+            <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;max-height:60px;overflow:hidden">${d.message.slice(0,120)}${d.message.length>120?'...':''}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+              <span style="font-size:0.7rem;color:var(--text-muted)">${new Date(d.updated_at).toLocaleString('th-TH')}</span>
+              <div style="display:flex;gap:6px">
+                <button onclick="publishDraft(${d.id})" style="background:var(--accent);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:0.72rem;cursor:pointer">โพสเลย</button>
+                <button onclick="editDraft(${d.id})" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">แก้ไข</button>
+                <button onclick="deleteDraft(${d.id})" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">ลบ</button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
+    }
+
+    async function saveDraft() {
+      const msg = document.getElementById('message').value.trim();
+      if (!msg) { toast('err','เขียนข้อความก่อนบันทึก'); return; }
+      try {
+        const res = await fetch('/api/drafts', {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, image_url:window._uploadedUrl||null})});
+        const data = await res.json();
+        if (data.ok) { toast('ok','บันทึกฉบับร่างแล้ว'); } else { toast('err',data.error); }
+      } catch(e) { toast('err',e.message); }
+    }
+
+    async function publishDraft(id) {
+      if (!confirm('โพสฉบับร่างนี้เลย?')) return;
+      try {
+        const res = await fetch('/api/drafts/'+id+'/publish', {method:'POST', credentials:'include'});
+        const data = await res.json();
+        if (data.ok) { toast('ok','โพสสำเร็จ!'); loadDrafts(); } else { toast('err',data.error); }
+      } catch(e) { toast('err',e.message); }
+    }
+
+    async function editDraft(id) {
+      try {
+        const res = await fetch('/api/drafts', {credentials:'include'});
+        const data = await res.json();
+        const draft = data.drafts.find(d => d.id === id);
+        if (draft) {
+          document.getElementById('message').value = draft.message;
+          document.getElementById('charCount').textContent = draft.message.length;
+          switchTab('compose', document.querySelector('.sidebar-nav-item'));
+          toast('ok','โหลดฉบับร่างแล้ว แก้ไขได้เลย');
+        }
+      } catch(e) { toast('err',e.message); }
+    }
+
+    async function deleteDraft(id) {
+      if (!confirm('ลบฉบับร่างนี้?')) return;
+      await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'include'});
+      loadDrafts();
     }
   </script>
 </body>

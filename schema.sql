@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS scheduled_posts (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_scheduled_status ON scheduled_posts(status, scheduled_at);
+
+CREATE TABLE IF NOT EXISTS drafts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_fb_id TEXT NOT NULL,
+  page_id TEXT,
+  message TEXT NOT NULL,
+  image_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
