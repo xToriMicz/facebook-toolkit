@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facebook Toolkit — fb.makeloops.xyz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://graph.facebook.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://graph.facebook.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     :root {
       --bg: #0c0c14;
@@ -248,7 +252,6 @@
 </head>
 <body>
 
-  <!-- Navbar -->
   <nav class="navbar">
     <a href="/" class="nav-brand">
       <div class="nav-brand-icon">f</div>
@@ -256,7 +259,7 @@
     </a>
     <div class="nav-spacer"></div>
     <div class="nav-user hidden" id="navUser">
-      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <img loading="lazy" class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-name" id="navName"></span>
       <button class="nav-btn" onclick="switchTab('aiSettings',this)">Settings</button>
       <button class="nav-btn" onclick="logout()">Logout</button>
@@ -264,7 +267,7 @@
   </nav>
 
   <div class="main">
-    <!-- Login -->
+    
     <div class="login-wrap" id="loginScreen">
       <div class="login-icon">f</div>
       <h1 class="login-h1">Facebook Toolkit</h1>
@@ -276,11 +279,9 @@
       <p class="login-fine">We only request permission to post to your Pages. No personal data accessed.</p>
     </div>
 
-    <!-- Dashboard -->
     <div class="hidden" id="appScreen" style="max-width:100%">
     <div class="dashboard-grid">
 
-      <!-- Sidebar -->
       <div class="sidebar">
         <div class="sidebar-title">เพจของคุณ</div>
         <div class="page-selector-row">
@@ -289,7 +290,7 @@
           </select>
         </div>
         <div class="page-selected-info hidden" id="pageInfo">
-          <img id="pageInfoPic" src="" alt="">
+          <img loading="lazy" id="pageInfoPic" src="" alt="">
           <div>
             <div class="page-selected-name" id="pageInfoName"></div>
             <div class="page-selected-meta" id="pageInfoMeta"></div>
@@ -308,9 +309,8 @@
         </div>
       </div>
 
-      <!-- Main content -->
       <div class="main-content">
-      <!-- Tabs (hidden, controlled by sidebar) -->
+      
       <div class="tabs" style="display:none">
         <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> เขียนโพส</button>
         <button class="tab" onclick="switchTab('history',this)"><span>📋</span> ประวัติ</button>
@@ -318,10 +318,9 @@
         <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> เทรนด์</button>
       </div>
 
-      <!-- Compose -->
       <div id="tabCompose">
         <div class="card">
-          <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?"></textarea>
+          <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?" aria-label="เขียนโพส"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
             <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
             <div style="display:flex;gap:6px;align-items:center">
@@ -342,10 +341,8 @@
             <button class="btn btn-ghost" onclick="saveDraftFromCompose()" style="font-size:0.85rem;padding:12px 18px">📝 บันทึกร่าง</button>
           </div>
 
-          <!-- Drafts list inline -->
           <div id="composeDrafts" style="margin-top:12px"></div>
 
-          <!-- Schedule Picker (hidden by default) -->
           <div id="schedulePicker" style="display:none;margin-top:14px;padding:16px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm)">
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
               <div class="field" style="flex:1;min-width:140px;margin-bottom:0">
@@ -365,7 +362,6 @@
         </div>
       </div>
 
-      <!-- History -->
       <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
         <div class="card" style="margin-bottom:12px">
           <div class="card-title"><span class="card-title-icon">📊</span> Engagement สัปดาห์นี้</div>
@@ -377,13 +373,10 @@
           </div>
         </div>
         <div class="card">
-          <div id="historyList"><div class="empty-state">Loading...</div></div>
+          <div id="historyList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
 
-      <!-- Trends -->
-      <!-- Calendar -->
-      <!-- Activity Log -->
       <div id="tabActivityLog" class="hidden">
         <div class="card">
           <div class="card-title"><span class="card-title-icon">📋</span> Activity Log</div>
@@ -395,11 +388,9 @@
             <button class="log-filter-btn" onclick="filterLogs('ai_write',this)">AI</button>
             <button class="log-filter-btn" onclick="filterLogs('settings_changed',this)">ตั้งค่า</button>
           </div>
-          <div id="logList"><div class="empty-state">กำลังโหลด...</div></div>
+          <div id="logList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
-
-      <!-- Post Analytics (in history card) -->
 
       <div id="tabCalendar" class="hidden">
         <div class="card">
@@ -423,14 +414,12 @@
         </div>
       </div>
 
-      <!-- Templates -->
       <div id="tabTemplates" class="hidden">
         <div class="card">
-          <div class="tpl-list" id="templateList"><div class="empty-state">Loading...</div></div>
+          <div class="tpl-list" id="templateList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
 
-      <!-- AI Settings -->
       <div id="tabAiSettings" class="hidden">
         <div class="card">
           <div class="card-title"><span class="card-title-icon">⚙️</span> ตั้งค่า AI</div>
@@ -477,7 +466,6 @@
         </div>
       </div>
 
-      <!-- Schedule -->
       <div id="tabSchedule" class="hidden">
         <div class="card">
           <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📅 ตั้งเวลาโพส</h3>
@@ -489,18 +477,17 @@
           <button class="btn btn-accent" onclick="createSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาโพส</button>
           <div class="toast" id="scheduleStatus"></div>
           <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">รายการที่ตั้งเวลาไว้</h4>
-          <div id="scheduleList"><div class="empty-state">Loading...</div></div>
+          <div id="scheduleList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
 
-      <!-- Drafts -->
       <div id="tabDrafts" class="hidden">
         <div class="card">
           <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📝 ฉบับร่าง</h3>
-          <div id="draftList"><div class="empty-state">Loading...</div></div>
+          <div id="draftList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
-      <!-- Insights -->
+      
       <div id="tabInsights" class="hidden">
         <div class="card">
           <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📊 Page Insights (7 วัน)</h3>
@@ -508,16 +495,15 @@
           <button class="btn btn-accent" onclick="loadInsights()" style="margin-top:12px">📊 โหลด Insights</button>
         </div>
       </div>
-    </div><!-- end right column -->
-    </div><!-- end dashboard-grid -->
-    </div><!-- end appScreen -->
+    </div>
+    </div>
+    </div>
   </div>
 
-  <!-- Comments Modal -->
   <div class="modal-bg" id="commentsModal" onclick="if(event.target===this)document.getElementById('commentsModal').classList.remove('open')">
     <div class="modal-card" style="max-width:520px;padding:24px;max-height:80vh;overflow-y:auto">
       <h3 style="margin:0 0 12px">💬 Comments</h3>
-      <div id="commentsList"><div class="empty-state">Loading...</div></div>
+      <div id="commentsList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
       <div style="display:flex;gap:8px;margin-top:12px" id="replyBox">
         <input id="replyInput" placeholder="ตอบกลับ..." style="flex:1;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
         <button class="btn btn-accent" onclick="sendReply()">ส่ง</button>
@@ -525,7 +511,6 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <footer class="foot">
     <div class="foot-links">
       <a href="/privacy.html">Privacy Policy</a>
@@ -534,22 +519,20 @@
     <p class="foot-copy">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
   </footer>
 
-  <!-- Preview Modal -->
   <div class="modal-bg" id="previewModal" onclick="if(event.target===this)closePreview()">
     <div class="modal-card">
       <div class="modal-hdr">
-        <img id="prevPagePic" src="" alt="">
+        <img loading="lazy" id="prevPagePic" src="" alt="">
         <div><div class="modal-hdr-name" id="prevPageName"></div><div class="modal-hdr-time">Just now</div></div>
       </div>
       <div class="modal-body" id="prevMsg"></div>
-      <img class="modal-img hidden" id="prevImg" src="" alt="">
+      <img loading="lazy" class="modal-img hidden" id="prevImg" src="" alt="">
       <div class="modal-foot">
         <button class="btn btn-accent" onclick="confirmPost()">Confirm Post</button>
         <button class="btn btn-ghost" onclick="closePreview()">Edit</button>
       </div>
     </div>
   </div>
-
 
   <script>
     let uploadedImageUrl = null, uploadedImageData = null, currentUser = null, selectedPage = null, userPages = [];
@@ -641,7 +624,7 @@
     async function handleFile(file){if(file)await handleFiles([file]);}
     function renderImagePreviews(){
       const el=document.getElementById('imagePreview');
-      el.innerHTML=uploadedImages.map((img,i)=>'<div class="multi-thumb"><img src="'+img.data+'"><button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button></div>').join('');
+      el.innerHTML=uploadedImages.map((img,i)=>'<div class="multi-thumb"><img loading="lazy" src="'+img.data+'"><button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button></div>').join('');
       uploadedImageData=uploadedImages.length?uploadedImages[0].data:null;
     }
     function removeImage(idx){
@@ -688,7 +671,7 @@
         el.innerHTML=posts.map(p=>{
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
-          const thumb=p.image_url?`<img class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
+          const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
           const eng=p.engagement?`<div style="display:flex;gap:10px;margin-top:4px;font-size:0.72rem;color:var(--text-secondary)"><span>❤️ ${p.engagement.likes}</span><span>💬 ${p.engagement.comments}</span><span>🔄 ${p.engagement.shares}</span></div>`:'';
           const cmtBtn=p.fb_post_id?` <button onclick="showComments('${p.fb_post_id}')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">💬 comments</button>`:'';
           return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${dt} ${badge}${cmtBtn}</div></div></div>`;
