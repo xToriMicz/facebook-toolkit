@@ -127,16 +127,18 @@ app.post("/api/post", async (c) => {
         return data.id;
       }));
 
-      const attachedMedia: Record<string, string> = {};
-      photoIds.filter(Boolean).forEach((id: string, i: number) => {
-        attachedMedia[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id });
+      const validIds = photoIds.filter(Boolean);
+
+      // Build form body manually — URLSearchParams encodes brackets wrong
+      const parts = [`message=${encodeURIComponent(message || "")}`, `access_token=${encodeURIComponent(page.page_token)}`];
+      validIds.forEach((id: string, i: number) => {
+        parts.push(`attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`);
       });
 
-      const params = new URLSearchParams({ message: message || "", access_token: page.page_token, ...attachedMedia });
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
+        body: parts.join("&"),
       });
       result = await res.json();
     } else if (urls.length === 1) {

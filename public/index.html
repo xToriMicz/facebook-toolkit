@@ -727,7 +727,11 @@
       if(!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
       const btn=document.getElementById('postBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
       try {
-        const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({message:msg,image_url:uploadedImageUrl,page_id:selectedPage.id})});
+        const imageUrls = uploadedImages.filter(i=>i.url).map(i=>i.url);
+        const body = imageUrls.length > 1
+          ? {message:msg, image_urls:imageUrls, page_id:selectedPage.id}
+          : {message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id};
+        const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
         const d=await r.json();
         if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
         else toast('err',d.error||handleApiError(r.status,'โพสไม่สำเร็จ'));
