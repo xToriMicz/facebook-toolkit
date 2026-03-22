@@ -266,27 +266,13 @@
       <div id="tabCompose">
         <div class="card">
           <textarea class="compose-area" id="message" placeholder="What's on your mind?"></textarea>
-          <div class="char-count"><span id="charCount">0</span> characters</div>
-
-          <!-- AI Writer (inline) -->
-          <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;background:rgba(99,102,241,0.03)">
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-              <span style="font-size:0.8rem;color:#818cf8;font-weight:600">✨ AI Writer</span>
-            </div>
-            <input id="aiTopic" placeholder="Topic: e.g. โปรโมชั่นบ้านใหม่ ลด 30%" style="width:100%;padding:8px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;margin-bottom:8px;box-sizing:border-box">
-            <div style="display:flex;gap:6px;margin-bottom:8px">
-              <select id="aiTone" style="flex:1;padding:7px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
-                <option value="สนุก">Fun 🎉</option><option value="จริงจัง">Formal 📋</option><option value="ขายของ" selected>Sales 💰</option><option value="ให้ความรู้">Edu 📚</option>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
+            <div class="char-count"><span id="charCount">0</span> characters</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="aiTone" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
+                <option value="สนุก">Fun</option><option value="จริงจัง">Formal</option><option value="ขายของ" selected>Sales</option><option value="ให้ความรู้">Edu</option>
               </select>
-              <select id="aiFormat" style="flex:1;padding:7px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
-                <option value="สั้น">Short</option><option value="ปานกลาง" selected>Medium</option><option value="ยาว">Long</option>
-              </select>
-              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:7px 14px;font-size:0.8rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;cursor:pointer;white-space:nowrap">✨ Generate</button>
-            </div>
-            <div id="aiResult" style="display:none">
-              <div id="aiText" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.85rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:150px;overflow-y:auto"></div>
-              <div id="aiHashtags" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px"></div>
-              <button class="btn" id="aiUseBtn" onclick="useAiText()" style="margin-top:8px;padding:6px 14px;font-size:0.8rem;background:var(--success);color:#fff;border:none;border-radius:8px;cursor:pointer">✅ Use This</button>
+              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI Write</button>
             </div>
           </div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
@@ -538,38 +524,25 @@
     function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
     async function saveSettings(){const body={page_id:document.getElementById('pageId').value,page_name:document.getElementById('pageName').value,page_token:document.getElementById('pageToken').value||undefined};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();const el=document.getElementById('settingsStatus');el.className='toast '+(d.ok?'ok':'err');el.textContent=d.ok?'Saved!':'Failed';setTimeout(()=>{el.className='toast';},3000);}
 
-    // AI Writer (inline)
-    let aiGeneratedText = '';
+    // AI Writer (direct to textarea)
     async function generateAI() {
-      const topic = document.getElementById('aiTopic').value.trim();
-      if (!topic) { toast('err', 'Please enter a topic'); return; }
+      const ta = document.getElementById('message');
+      const topic = ta.value.trim() || 'general social media content';
       const btn = document.getElementById('aiGenBtn');
-      btn.disabled = true; btn.textContent = '⏳ Generating...';
+      btn.disabled = true; btn.textContent = 'Writing...';
       try {
         const r = await fetch('/api/ai-write', {
           method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin',
-          body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: document.getElementById('aiFormat').value })
+          body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: 'ปานกลาง' })
         });
         const d = await r.json();
-        if (d.error) { toast('err', d.error); return; }
-        aiGeneratedText = d.text || '';
-        document.getElementById('aiText').textContent = aiGeneratedText;
-        const tags = d.hashtags || [];
-        document.getElementById('aiHashtags').innerHTML = tags.map(t => `<span style="background:rgba(99,102,241,0.15);color:#818cf8;padding:3px 10px;border-radius:12px;font-size:0.75rem;cursor:pointer" onclick="addHashtag('${t}')">${t}</span>`).join('');
-        document.getElementById('aiResult').style.display = 'block';
-        document.getElementById('aiUseBtn').style.display = 'block';
+        if (d.error) { toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI Write'; return; }
+        const text = d.text || '';
+        const tags = (d.hashtags || []).join(' ');
+        ta.value = text + (tags ? '\n\n' + tags : '');
+        document.getElementById('charCount').textContent = ta.value.length;
       } catch(e) { toast('err', 'AI error: ' + e.message); }
-      btn.disabled = false; btn.textContent = '✨ Generate';
-    }
-    function useAiText() {
-      const ta = document.getElementById('message');
-      const hashtags = document.getElementById('aiHashtags').textContent;
-      ta.value = aiGeneratedText + (hashtags ? '\n\n' + hashtags : '');
-      document.getElementById('charCount').textContent = ta.value.length;
-    }
-    function addHashtag(tag) {
-      const ta = document.getElementById('message');
-      if (!ta.value.includes(tag)) { ta.value += (ta.value ? ' ' : '') + tag; document.getElementById('charCount').textContent = ta.value.length; }
+      btn.disabled = false; btn.textContent = '✨ AI Write';
     }
   </script>
 </body>
