@@ -96,33 +96,59 @@ app.post("/api/post", async (c) => {
     return c.json({ error: "Rate limit: max 50 posts/hour" }, 429);
   }
 
-  const { message, image_url, page_id, affiliate_link } = await c.req.json();
-  if (!message && !image_url) return c.json({ error: "message or image_url required" }, 400);
+  const { message, image_url, image_urls, page_id, affiliate_link } = await c.req.json();
+  if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
-  // Use selected page or provided page_id
   const targetPageId = page_id || await c.env.KV.get("fb_page_id");
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
-  // Get page token from user_pages table
   const page = await c.env.DB.prepare(
     "SELECT page_token, page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
   ).bind(session.fb_id, targetPageId).first<{ page_token: string; page_name: string }>();
 
   if (!page?.page_token) {
-    return c.json({ error: "Page not found or token missing. Connect page first." }, 400);
+    return c.json({ error: "Page not found or token missing." }, 400);
   }
 
   try {
     let result: any;
-    if (image_url) {
+    const urls = image_urls || (image_url ? [image_url] : []);
+
+    if (urls.length > 1) {
+      // Multi-photo: upload each unpublished, then create feed post
+      const photoIds = await Promise.all(urls.map(async (url: string) => {
+        const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, published: false, access_token: page.page_token }),
+        });
+        const data = await res.json() as any;
+        return data.id;
+      }));
+
+      const attachedMedia: Record<string, string> = {};
+      photoIds.filter(Boolean).forEach((id: string, i: number) => {
+        attachedMedia[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id });
+      });
+
+      const params = new URLSearchParams({ message: message || "", access_token: page.page_token, ...attachedMedia });
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+      result = await res.json();
+    } else if (urls.length === 1) {
+      // Single photo post (direct to Facebook, skip R2 for speed)
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: image_url, message: message || "", access_token: page.page_token }),
+        body: JSON.stringify({ url: urls[0], message: message || "", access_token: page.page_token }),
       });
       result = await res.json();
     } else {
+      // Text-only
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
