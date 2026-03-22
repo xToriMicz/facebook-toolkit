@@ -175,6 +175,33 @@
     .foot-links a:hover { color: var(--accent); }
     .foot-copy { color: #333; font-size: 0.7rem; }
 
+    /* === Activity Log === */
+    .log-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .log-filter-btn { padding:5px 10px; border:1px solid var(--border); border-radius:6px; background:none; color:var(--text-muted); font-size:0.72rem; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+    .log-filter-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .log-filter-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
+    .log-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:0.8rem; align-items:flex-start; }
+    .log-item:last-child { border-bottom:none; }
+    .log-icon { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0; }
+    .log-icon.login { background:rgba(34,197,94,0.1); }
+    .log-icon.post { background:rgba(79,110,247,0.1); }
+    .log-icon.schedule { background:rgba(245,158,11,0.1); }
+    .log-icon.ai { background:rgba(139,92,246,0.1); }
+    .log-icon.settings { background:rgba(255,255,255,0.04); }
+    .log-body { flex:1; min-width:0; }
+    .log-action { color:var(--text); font-weight:500; }
+    .log-detail { color:var(--text-muted); font-size:0.72rem; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .log-time { color:var(--text-muted); font-size:0.68rem; white-space:nowrap; flex-shrink:0; }
+
+    /* === Analytics Bar Chart === */
+    .chart-bar-wrap { display:flex; align-items:flex-end; gap:4px; height:100px; padding:8px 0; }
+    .chart-bar { flex:1; min-width:0; border-radius:4px 4px 0 0; transition:height 0.3s; position:relative; }
+    .chart-bar:hover { opacity:0.8; }
+    .chart-bar-label { position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); font-size:0.55rem; color:var(--text-muted); white-space:nowrap; }
+    .chart-bar-val { position:absolute; top:-16px; left:50%; transform:translateX(-50%); font-size:0.6rem; color:var(--text-secondary); }
+    .chart-legend { display:flex; gap:12px; margin-top:20px; font-size:0.7rem; }
+    .chart-legend-dot { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:4px; }
+
     /* === Calendar === */
     .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .cal-header button { background:none; border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--text-secondary); cursor:pointer; font-family:inherit; font-size:0.8rem; transition:all 0.2s; }
@@ -275,6 +302,7 @@
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
           <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 แม่แบบ</button>
           <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
+          <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('drafts',this)">📝 ฉบับร่าง</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
@@ -336,7 +364,16 @@
       </div>
 
       <!-- History -->
-      <div id="tabHistory" class="hidden">
+      <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-title"><span class="card-title-icon">📊</span> Engagement สัปดาห์นี้</div>
+          <div class="chart-bar-wrap" id="engagementChart"></div>
+          <div class="chart-legend">
+            <span><span class="chart-legend-dot" style="background:var(--accent)"></span>Likes</span>
+            <span><span class="chart-legend-dot" style="background:var(--success)"></span>Comments</span>
+            <span><span class="chart-legend-dot" style="background:var(--warning)"></span>Shares</span>
+          </div>
+        </div>
         <div class="card">
           <div id="historyList"><div class="empty-state">Loading...</div></div>
         </div>
@@ -344,6 +381,24 @@
 
       <!-- Trends -->
       <!-- Calendar -->
+      <!-- Activity Log -->
+      <div id="tabActivityLog" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📋</span> Activity Log</div>
+          <div class="log-filter" id="logFilter">
+            <button class="log-filter-btn active" onclick="filterLogs('all',this)">ทั้งหมด</button>
+            <button class="log-filter-btn" onclick="filterLogs('login',this)">เข้าสู่ระบบ</button>
+            <button class="log-filter-btn" onclick="filterLogs('post_created',this)">โพส</button>
+            <button class="log-filter-btn" onclick="filterLogs('post_scheduled',this)">ตั้งเวลา</button>
+            <button class="log-filter-btn" onclick="filterLogs('ai_write',this)">AI</button>
+            <button class="log-filter-btn" onclick="filterLogs('settings_changed',this)">ตั้งค่า</button>
+          </div>
+          <div id="logList"><div class="empty-state">กำลังโหลด...</div></div>
+        </div>
+      </div>
+
+      <!-- Post Analytics (in history card) -->
+
       <div id="tabCalendar" class="hidden">
         <div class="card">
           <div class="cal-header">
@@ -544,7 +599,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabAiSettings','tabSchedule','tabDrafts','tabInsights'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -554,6 +609,7 @@
       if(tab==='templates') loadTemplates();
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
+      if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
       if(tab==='schedule') loadSchedule();
       if(tab==='drafts') loadDrafts();
@@ -624,7 +680,7 @@
     async function loadHistory() {
       const el=document.getElementById('historyList');
       try {
-        const r=await fetch('/api/posts',{credentials:'same-origin'}); const d=await r.json(); const posts=d.posts||[];
+        const r=await fetch('/api/posts',{credentials:'same-origin'}); const d=await r.json(); const posts=d.posts||[];renderEngagementChart(posts);
         if(!posts.length){el.innerHTML='<div class="empty-state">ยังไม่มีประวัติการโพส</div>';return;}
         el.innerHTML=posts.map(p=>{
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -672,7 +728,7 @@
       document.getElementById('charCount').textContent = (topic.length + 2);
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelector('.tab').classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabAiSettings'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
       document.getElementById('tabCompose').classList.remove('hidden');
       document.getElementById('message').focus();
     }
@@ -722,6 +778,65 @@
       } catch { el.innerHTML = ''; }
     }
 
+    // Activity Logs
+    let allLogs = [];
+    const LOG_ICONS = { login:'🟢', logout:'🔴', post_created:'📤', post_scheduled:'📅', draft_saved:'💾', ai_write:'✨', page_switched:'📄', settings_changed:'⚙️' };
+    const LOG_LABELS = { login:'เข้าสู่ระบบ', logout:'ออกจากระบบ', post_created:'โพสลงเพจ', post_scheduled:'ตั้งเวลาโพส', draft_saved:'บันทึกแบบร่าง', ai_write:'AI เขียน', page_switched:'เปลี่ยนเพจ', settings_changed:'เปลี่ยนการตั้งค่า' };
+    const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_scheduled:'schedule', draft_saved:'settings', ai_write:'ai', page_switched:'settings', settings_changed:'settings' };
+
+    async function loadLogs() {
+      const el = document.getElementById('logList');
+      try {
+        const r = await fetch('/api/logs', { credentials:'same-origin' });
+        const d = await r.json();
+        allLogs = d.logs || [];
+        renderLogs('all');
+      } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+    }
+
+    function filterLogs(type, btn) {
+      document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      renderLogs(type);
+    }
+
+    function renderLogs(type) {
+      const el = document.getElementById('logList');
+      const logs = type === 'all' ? allLogs : allLogs.filter(l => l.action === type);
+      if (!logs.length) { el.innerHTML = '<div class="empty-state">ไม่มีกิจกรรม</div>'; return; }
+      el.innerHTML = logs.slice(0, 50).map(l => {
+        const icon = LOG_ICONS[l.action] || '📌';
+        const label = LOG_LABELS[l.action] || l.action;
+        const css = LOG_CSS[l.action] || 'settings';
+        const time = new Date(l.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        return '<div class="log-item"><div class="log-icon '+css+'">'+icon+'</div><div class="log-body"><div class="log-action">'+label+'</div>'+(l.details?'<div class="log-detail">'+l.details+'</div>':'')+'</div><div class="log-time">'+time+'</div></div>';
+      }).join('');
+    }
+
+    // Engagement Chart (CSS bar chart)
+    function renderEngagementChart(posts) {
+      const el = document.getElementById('engagementChart');
+      if (!posts || !posts.length) { el.innerHTML = '<div style="text-align:center;width:100%;color:var(--text-muted);font-size:0.8rem;padding:20px">ยังไม่มีข้อมูล</div>'; return; }
+      const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+      const today = new Date();
+      const weekData = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayPosts = posts.filter(p => (p.created_at||p.ts||'').startsWith(dateStr));
+        const likes = dayPosts.reduce((s,p) => s + (p.likes||0), 0);
+        const comments = dayPosts.reduce((s,p) => s + (p.comments||0), 0);
+        const shares = dayPosts.reduce((s,p) => s + (p.shares||0), 0);
+        weekData.push({ day: days[d.getDay()], likes, comments, shares, total: likes+comments+shares });
+      }
+      const maxVal = Math.max(1, ...weekData.map(d => d.total));
+      el.innerHTML = weekData.map(d => {
+        const h = Math.max(4, (d.total / maxVal) * 80);
+        const color = d.total > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.04)';
+        return '<div class="chart-bar" style="height:'+h+'px;background:'+color+'"><div class="chart-bar-val">'+(d.total||'')+'</div><div class="chart-bar-label">'+d.day+'</div></div>';
+      }).join('');
+    }
+
     // Calendar
     let calYear, calMonth, calPosts=[], calScheduled=[];
     function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
@@ -730,7 +845,7 @@
       const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
       document.getElementById('calMonth').textContent=months[calMonth]+' '+calYear;
       // Fetch data
-      try{const[p,s]=await Promise.all([fetch('/api/posts',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];calScheduled=s.posts||[];}catch{}
+      try{const[p,s]=await Promise.all([fetch('/api/posts',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];}catch{}
       const grid=document.getElementById('calGrid');
       const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
       let html=days.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
