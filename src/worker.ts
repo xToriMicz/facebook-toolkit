@@ -1,15 +1,21 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "hono/cloudflare-workers";
+import auth from "./auth";
 
 interface Env {
   DB: D1Database;
   ASSETS: R2Bucket;
   KV: KVNamespace;
+  FB_APP_SECRET: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 app.use("/api/*", cors());
+
+// Auth routes: /auth/facebook, /auth/callback, /auth/logout, /api/me
+app.route("/auth", auth);
+app.route("/", auth); // for /api/me
 
 // Health check
 app.get("/api/health", (c) => c.json({ ok: true, service: "facebook-toolkit" }));
@@ -104,6 +110,98 @@ app.post("/api/settings", async (c) => {
   if (page_token) await c.env.KV.put("fb_page_token", page_token);
   if (page_name) await c.env.KV.put("fb_page_name", page_name);
   return c.json({ ok: true });
+});
+
+// --- Data Deletion Callback (Facebook requirement) ---
+
+async function parseSignedRequest(signedRequest: string, appSecret: string): Promise<{ user_id: string; algorithm: string; issued_at: number } | null> {
+  const [encodedSig, encodedPayload] = signedRequest.split(".");
+  if (!encodedSig || !encodedPayload) return null;
+
+  const base64Decode = (s: string) => {
+    const pad = s.length % 4 === 0 ? "" : "=".repeat(4 - (s.length % 4));
+    return atob(s.replace(/-/g, "+").replace(/_/g, "/") + pad);
+  };
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(appSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const expectedSig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encodedPayload));
+  const expectedSigB64 = btoa(String.fromCharCode(...new Uint8Array(expectedSig)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+  if (encodedSig !== expectedSigB64) return null;
+
+  try {
+    return JSON.parse(base64Decode(encodedPayload));
+  } catch {
+    return null;
+  }
+}
+
+app.post("/auth/deauthorize", async (c) => {
+  const formData = await c.req.formData();
+  const signedRequest = formData.get("signed_request") as string;
+  if (!signedRequest) return c.json({ error: "Missing signed_request" }, 400);
+
+  const appSecret = await c.env.KV.get("fb_app_secret");
+  if (!appSecret) return c.json({ error: "App secret not configured" }, 500);
+
+  const payload = await parseSignedRequest(signedRequest, appSecret);
+  if (!payload) return c.json({ error: "Invalid signed_request" }, 403);
+
+  const userId = payload.user_id;
+  const confirmationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+
+  await c.env.DB.prepare("DELETE FROM posts WHERE fb_user_id = ?").bind(userId).run();
+  await c.env.DB.prepare("DELETE FROM users WHERE fb_id = ?").bind(userId).run();
+
+  const storedUserId = await c.env.KV.get("fb_user_id");
+  if (storedUserId === userId) {
+    await c.env.KV.delete("fb_page_token");
+    await c.env.KV.delete("fb_page_id");
+    await c.env.KV.delete("fb_page_name");
+    await c.env.KV.delete("fb_user_id");
+  }
+
+  await c.env.DB.prepare(
+    "INSERT INTO deletion_requests (fb_user_id, confirmation_code, status, created_at) VALUES (?, ?, 'completed', ?)"
+  ).bind(userId, confirmationCode, new Date().toISOString()).run();
+
+  return c.json({
+    url: `https://fb.makeloops.xyz/auth/deletion-status?code=${confirmationCode}`,
+    confirmation_code: confirmationCode,
+  });
+});
+
+app.get("/auth/deletion-status", async (c) => {
+  const code = c.req.query("code");
+  if (!code) return c.html("<h1>Missing confirmation code</h1>", 400);
+
+  const result = await c.env.DB.prepare(
+    "SELECT * FROM deletion_requests WHERE confirmation_code = ?"
+  ).bind(code).first();
+
+  if (!result) return c.html("<h1>Invalid confirmation code</h1>", 404);
+
+  return c.html(`<!DOCTYPE html>
+<html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data Deletion Status</title>
+<style>body{font-family:system-ui;max-width:600px;margin:40px auto;padding:0 20px;color:#333}
+.status{background:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:20px;margin:20px 0}
+h1{color:#2e7d32}</style></head><body>
+<h1>Data Deletion Status</h1>
+<div class="status">
+<p><strong>Confirmation Code:</strong> ${result.confirmation_code}</p>
+<p><strong>Status:</strong> ${result.status === "completed" ? "Completed — All data has been deleted" : "Processing"}</p>
+<p><strong>Requested:</strong> ${result.created_at}</p>
+</div>
+<p>Your data associated with this application has been permanently deleted from our systems.</p>
+</body></html>`);
 });
 
 // Serve frontend
