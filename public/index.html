@@ -435,7 +435,7 @@
         </div>
       </div>
 
-      <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px;flex-wrap:wrap;gap:8px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><select id="historyPageFilter" onchange="loadHistory()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
+      <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px;flex-wrap:wrap;gap:8px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><select id="historyPageFilter" onchange="loadHistory()" class="page-select" style="width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:0.78rem"><option value="">ทุกเพจ</option></select><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
         <div class="card" style="margin-bottom:12px">
           <div class="card-title"><span class="card-title-icon">📊</span> Engagement สัปดาห์นี้</div>
           <div class="chart-bar-wrap" id="engagementChart"></div>
@@ -879,7 +879,8 @@
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
           const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
-          const pageName=`<span style="font-size:0.7rem;color:${p.page_name?'var(--accent)':'var(--text-muted)'};margin-right:4px">📄 ${p.page_name||'ไม่ระบุเพจ'}</span>`;
+          const pageImg = p.page_picture ? '<img loading="lazy" src="'+p.page_picture+'" style="width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-right:3px">' : '';
+          const pageName=`<span style="font-size:0.7rem;color:${p.page_name?'var(--accent)':'var(--text-muted)'};margin-right:4px;display:inline-flex;align-items:center;gap:3px">${pageImg}${p.page_name||'ไม่ระบุเพจ'}</span>`;
           const eng=p.engagement?`<div style="display:flex;gap:10px;margin-top:4px;font-size:0.72rem;color:var(--text-secondary)"><span>❤️ ${p.engagement.likes}</span><span>💬 ${p.engagement.comments}</span><span>🔄 ${p.engagement.shares}</span></div>`:'';
           const cmtBtn=p.fb_post_id?` <button onclick="showComments('${p.fb_post_id}')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">💬 comments</button>`:'';
           return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
