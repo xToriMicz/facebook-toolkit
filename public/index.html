@@ -45,7 +45,7 @@
 
     /* === Layout === */
     .main { flex: 1; }
-    .container { max-width: 680px; margin: 0 auto; padding: 24px 20px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
     @media (max-width: 480px) { .container { padding: 16px 12px; } }
 
     /* === Login === */
@@ -66,19 +66,31 @@
     .card-title-icon { font-size: 1rem; }
     @media (max-width: 480px) { .card { padding: 18px 14px; border-radius: 12px; } }
 
-    /* === Page Cards === */
-    .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
-    @media (max-width: 480px) { .page-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
-    @media (max-width: 360px) { .page-grid { grid-template-columns: 1fr; } }
-    .pg-card { background: var(--bg-input); border: 2px solid transparent; border-radius: 12px; padding: 18px 14px; cursor: pointer; transition: all 0.25s; text-align: center; position: relative; }
+    /* === Admin Dashboard layout === */
+    .dashboard-grid { display: grid; grid-template-columns: 220px 1fr; gap: 0; min-height: calc(100vh - 56px); }
+    @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; min-height: auto; } }
+    .sidebar { background: var(--bg-card); border-right: 1px solid var(--border); padding: 16px 12px; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+    @media (max-width: 768px) { .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 12px; } }
+    .sidebar-title { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; padding: 0 8px; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; }
+    .sidebar-nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; color: var(--text-secondary); font-size: 0.82rem; cursor: pointer; transition: all 0.15s; border: none; background: none; font-family: inherit; text-align: left; width: 100%; }
+    .sidebar-nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-nav-item.active { background: var(--accent); color: white; }
+    .main-content { padding: 20px; overflow-y: auto; }
+
+    /* === Page Cards (sidebar, compact) === */
+    .page-grid { display: flex; flex-direction: column; gap: 8px; }
+    @media (max-width: 768px) { .page-grid { flex-direction: row; overflow-x: auto; } }
+    .pg-card { background: var(--bg-input); border: 2px solid transparent; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; gap: 10px; position: relative; }
     .pg-card:hover { background: var(--bg-card-hover); border-color: rgba(79,110,247,0.2); }
-    .pg-card.active { border-color: var(--accent); background: rgba(79,110,247,0.05); box-shadow: 0 0 20px var(--accent-glow); }
-    .pg-card img { width: 52px; height: 52px; border-radius: 12px; margin-bottom: 10px; border: 2px solid var(--border); transition: border-color 0.2s; }
+    .pg-card.active { border-color: var(--accent); background: rgba(79,110,247,0.05); }
+    .pg-card img { width: 36px; height: 36px; border-radius: 8px; border: 2px solid var(--border); transition: border-color 0.2s; flex-shrink: 0; }
     .pg-card.active img { border-color: var(--accent); }
-    .pg-card-name { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pg-card-meta { font-size: 0.72rem; color: var(--text-muted); }
-    .pg-card-badge { display: none; position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; background: var(--accent); border-radius: 50%; font-size: 0.65rem; color: white; align-items: center; justify-content: center; }
+    .pg-card-name { font-size: 0.8rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pg-card-meta { font-size: 0.68rem; color: var(--text-muted); }
+    .pg-card-badge { display: none; position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; font-size: 0.55rem; color: white; align-items: center; justify-content: center; }
     .pg-card.active .pg-card-badge { display: flex; }
+    @media (max-width: 768px) { .pg-card { min-width: 160px; flex-shrink: 0; } }
 
     /* === Tabs === */
     .tabs { display: flex; gap: 4px; padding: 4px; background: var(--bg-card); border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border); }
@@ -166,6 +178,21 @@
     .foot-links a:hover { color: var(--accent); }
     .foot-copy { color: #333; font-size: 0.7rem; }
 
+    /* === Trends === */
+    .trend-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; cursor: default; }
+    .trend-item:last-child { border-bottom: none; }
+    .trend-item:hover { background: rgba(255,255,255,0.02); }
+    .trend-rank { width: 28px; height: 28px; border-radius: 8px; background: var(--bg-input); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+    .trend-rank.hot { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .trend-body { flex: 1; min-width: 0; }
+    .trend-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .trend-vol { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .trend-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--accent); font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+    .trend-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .trend-refresh { padding: 6px 10px; border: none; background: rgba(255,255,255,0.04); border-radius: 6px; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .trend-refresh:hover { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+
     .hidden { display: none !important; }
   </style>
 </head>
@@ -200,16 +227,27 @@
     </div>
 
     <!-- Dashboard -->
-    <div class="container hidden" id="appScreen">
+    <div class="hidden" id="appScreen" style="max-width:100%">
+    <div class="dashboard-grid">
 
-      <!-- Page Cards -->
-      <div class="card">
-        <div class="card-title"><span class="card-title-icon">📄</span> Your Pages</div>
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-title">เพจของคุณ</div>
         <div class="page-grid" id="pageGrid"></div>
+
+        <div class="sidebar-nav">
+          <div class="sidebar-title" style="margin-top:8px">เมนู</div>
+          <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
+          <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
+          <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 Templates</button>
+          <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">📅 ตั้งเวลา</button>
+        </div>
       </div>
 
-      <!-- Tabs -->
-      <div class="tabs">
+      <!-- Main content -->
+      <div class="main-content">
+      <!-- Tabs (hidden, controlled by sidebar) -->
+      <div class="tabs" style="display:none">
         <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> Compose</button>
         <button class="tab" onclick="switchTab('history',this)"><span>📋</span> History</button>
         <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> Templates</button>
@@ -245,7 +283,9 @@
           <div class="tpl-list" id="templateList"><div class="empty-state">Loading...</div></div>
         </div>
       </div>
-    </div>
+    </div><!-- end right column -->
+    </div><!-- end dashboard-grid -->
+    </div><!-- end appScreen -->
   </div>
 
   <!-- Footer -->
@@ -326,9 +366,14 @@
     // Tabs
     function switchTab(tab, el) {
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates'].forEach(id => document.getElementById(id).classList.add('hidden'));
-      document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.remove('hidden');
+      ['tabCompose','tabHistory','tabTemplates'].forEach(id => {
+        const e = document.getElementById(id);
+        if(e) e.classList.add('hidden');
+      });
+      const tabEl = document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1));
+      if(tabEl) tabEl.classList.remove('hidden');
       if(tab==='history') loadHistory();
       if(tab==='templates') loadTemplates();
     }
