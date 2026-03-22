@@ -365,11 +365,16 @@ app.post("/api/ai-write", async (c) => {
       responseText = data.content?.[0]?.text || "";
     }
 
+    // Strip markdown codeblock if present (```json...```)
+    let cleaned = responseText.trim();
+    if (cleaned.startsWith("```")) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+    }
     try {
-      const parsed = JSON.parse(responseText);
-      return c.json({ ok: true, text: parsed.text, hashtags: parsed.hashtags || [], provider });
+      const parsed = JSON.parse(cleaned);
+      return c.json({ ok: true, text: parsed.text || "", hashtags: parsed.hashtags || [], provider });
     } catch {
-      return c.json({ ok: true, text: responseText, hashtags: [], provider });
+      return c.json({ ok: true, text: cleaned, hashtags: [], provider });
     }
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
