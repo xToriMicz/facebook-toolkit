@@ -530,6 +530,15 @@
         <div class="card">
           <div class="trend-header">
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🔥</span> Trending in Thailand <span id="trendCount" style="font-size:0.75rem;color:var(--text-muted);font-weight:400"></span></div>
+          </div>
+          <div style="display:flex;gap:4px;margin:8px 0;flex-wrap:wrap" id="trendFilters">
+            <button onclick="filterTrends('all')" class="trend-filter active" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer">ทั้งหมด</button>
+            <button onclick="filterTrends('sports')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">กีฬา</button>
+            <button onclick="filterTrends('entertainment')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">บันเทิง</button>
+            <button onclick="filterTrends('news')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">ข่าว</button>
+            <button onclick="filterTrends('general')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">ทั่วไป</button>
+          </div>
+          <div style="display:none">
             <div style="display:flex;align-items:center;gap:8px">
               <span id="trendUpdated" style="font-size:0.68rem;color:var(--text-muted)"></span>
               <button class="trend-refresh" onclick="loadTrends()">↻ Refresh</button>
@@ -986,7 +995,7 @@
         el.innerHTML = trends.map((t, i) => {
           const isHot = i < 3 ? ' hot' : '';
           const hashtag = '#' + (t.title||'').replace(/\s+/g, '').replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,'');
-          return `<div class="trend-item"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}</div><div class="trend-vol">${t.traffic||''}</div></div><div style="display:flex;gap:4px"><button class="trend-btn" onclick="useTrendHashtag('${hashtag.replace(/'/g,'')}')" title="เพิ่ม hashtag" style="font-size:0.7rem;padding:4px 8px">#</button><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div></div>`;
+          const src=t.source||'google';const srcBadge=src==='x'?'<span style="font-size:0.6rem;padding:1px 6px;border-radius:3px;background:rgba(29,155,240,0.12);color:#1d9bf0;margin-left:4px">X</span>':'<span style="font-size:0.6rem;padding:1px 6px;border-radius:3px;background:rgba(66,133,244,0.12);color:#4285f4;margin-left:4px">Google</span>';const cat=t.category||'general';return `<div class="trend-item" data-cat="${cat}"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}${srcBadge}</div><div class="trend-vol">${t.traffic||''}</div></div><div style="display:flex;gap:4px"><button class="trend-btn" onclick="useTrendHashtag('${hashtag.replace(/'/g,'')}')" title="เพิ่ม hashtag" style="font-size:0.7rem;padding:4px 8px">#</button><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div></div>`;
         }).join('');
       } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
     }
@@ -1655,6 +1664,17 @@
           '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">' + new Date(t.created_at).toLocaleString('th-TH') + '</div>' +
           '</div>').join('');
       } catch(e) { el.innerHTML = '<div class="empty-state">Error loading tickets</div>'; }
+    }
+
+
+    // Trend category filter
+    function filterTrends(cat) {
+      document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)';b.style.color='var(--text-secondary)';});
+      event.target.style.background='var(--accent)';event.target.style.color='#fff';
+      document.querySelectorAll('.trend-item').forEach(el=>{
+        if(cat==='all'||el.dataset.cat===cat) el.style.display='';
+        else el.style.display='none';
+      });
     }
 
   </script>
