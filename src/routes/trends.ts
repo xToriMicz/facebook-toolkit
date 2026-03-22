@@ -7,10 +7,11 @@ type TrendItem = { title: string; source: string; category: string; traffic?: st
 
 function guessCategory(title: string): string {
   const t = title.toLowerCase();
-  if (/บอล|ฟุตบอล|กีฬา|แข่ง|โอลิมปิก|มวย|tennis|football|sport|league|nba|fifa/i.test(t)) return "sports";
-  if (/ดารา|หนัง|เพลง|ซีรี|ละคร|concert|anime|netflix|movie|kpop|idol/i.test(t)) return "entertainment";
-  if (/การเมือง|เลือกตั้ง|นายก|รัฐบาล|สภา|กฎหมาย|ศาล|politics/i.test(t)) return "news";
-  if (/หุ้น|ทอง|bitcoin|crypto|เศรษฐกิจ|ดอลลาร์|stock|economy/i.test(t)) return "finance";
+  if (/บอล|ฟุตบอล|กีฬา|แข่ง|โอลิมปิก|มวย|มวยไทย|แบดมินตัน|วอลเลย์|ตะกร้อ|ว่ายน้ำ|วิ่ง|กอล์ฟ|tennis|football|sport|league|nba|fifa|f1|boxing|volleyball|badminton|premier league|world cup|ซีเกมส์|เอเชียนเกมส์|ลาลีกา|บุนเดส|แชมเปียนส์/i.test(t)) return "sports";
+  if (/ดารา|หนัง|เพลง|ซีรี|ละคร|concert|anime|netflix|movie|kpop|idol|นักแสดง|ศิลปิน|เพลงฮิต|ภาพยนตร์|รางวัล|ออสการ์|grammy|บันเทิง|กระแส|ไวรัล|tiktok|youtube|mv|เรื่องย่อ|ช่อง|วาไรตี้/i.test(t)) return "entertainment";
+  if (/การเมือง|เลือกตั้ง|นายก|รัฐบาล|สภา|กฎหมาย|ศาล|politics|พรรค|ส\.ส\.|ส\.ว\.|ครม\.|มติ|ประท้วง|ชุมนุม|รัฐธรรมนูญ|อภิปราย|งบประมาณ|ทหาร|กระทรวง|ข่าว|อุบัติเหตุ|น้ำท่วม|แผ่นดินไหว|ภัยพิบัติ|สึนามิ/i.test(t)) return "news";
+  if (/หุ้น|ทอง|bitcoin|crypto|เศรษฐกิจ|ดอลลาร์|stock|economy|set|ตลาดหลักทรัพย์|เงินเฟ้อ|ดอกเบี้ย|ธนาคาร|กองทุน|ลงทุน|อสังหา|ค่าเงิน|บาท|eth|solana|defi|nft/i.test(t)) return "finance";
+  if (/ai|เทคโนโลยี|tech|iphone|android|samsung|apple|google|microsoft|software|app|แอป|อัปเดต|gadget|robot|หุ่นยนต์|5g|6g|spacex|tesla|ev|รถยนต์ไฟฟ้า|chatgpt|gemini|claude|startup|coding|developer/i.test(t)) return "tech";
   return "general";
 }
 
@@ -72,7 +73,7 @@ async function fetchXTwitterTrends(): Promise<TrendItem[]> {
   try {
     const res = await fetch("https://trends24.in/thailand/");
     const html = await res.text();
-    const tagRegex = /<a[^>]*href="https?:\/\/twitter\.com\/search\?q=[^"]*"[^>]*>([^<]+)<\/a>/gi;
+    const tagRegex = /<a[^>]*href="https?:\/\/(?:twitter|x)\.com\/search[^"]*"[^>]*>([^<]+)<\/a>/gi;
     const seen = new Set<string>();
     let m;
     while ((m = tagRegex.exec(html)) !== null && items.length < 10) {
