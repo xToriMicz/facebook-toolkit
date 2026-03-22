@@ -32,3 +32,16 @@ CREATE TABLE IF NOT EXISTS content_templates (
   category TEXT NOT NULL DEFAULT 'ทั่วไป',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS scheduled_posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_fb_id TEXT NOT NULL,
+  page_id TEXT NOT NULL,
+  message TEXT NOT NULL,
+  image_url TEXT,
+  scheduled_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  fb_post_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_scheduled_status ON scheduled_posts(status, scheduled_at);

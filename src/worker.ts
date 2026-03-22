@@ -23,40 +23,42 @@ app.route("/", auth); // for /api/me
 // Health check
 app.get("/api/health", (c) => c.json({ ok: true, service: "facebook-toolkit" }));
 
-// --- Facebook Page Post ---
+// --- Facebook Page Post (reads token from user_pages table) ---
 app.post("/api/post", async (c) => {
-  const { message, image_url } = await c.req.json();
-  const token = await c.env.KV.get("fb_page_token");
-  const pageId = await c.env.KV.get("fb_page_id");
+  const { message, image_url, page_id, user_fb_id } = await c.req.json();
+  if (!message) return c.json({ error: "message required" }, 400);
+  if (!page_id || !user_fb_id) return c.json({ error: "page_id and user_fb_id required" }, 400);
 
-  if (!token || !pageId) {
-    return c.json({ error: "Facebook token not configured. Set via /api/settings" }, 400);
+  // Get page token from user_pages table
+  const page = await c.env.DB.prepare(
+    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(user_fb_id, page_id).first<{ page_token: string }>();
+
+  if (!page?.page_token) {
+    return c.json({ error: "Page not found or token missing. Connect page first." }, 400);
   }
 
   try {
     let result;
     if (image_url) {
-      // Post photo with message
-      const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/photos`, {
+      const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/photos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: image_url, message, access_token: token }),
+        body: JSON.stringify({ url: image_url, message, access_token: page.page_token }),
       });
       result = await res.json();
     } else {
-      // Text-only post
-      const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/feed`, {
+      const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/feed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, access_token: token }),
+        body: JSON.stringify({ message, access_token: page.page_token }),
       });
       result = await res.json();
     }
 
-    // Save to history
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, image_url, fb_post_id, created_at) VALUES (?, ?, ?, ?)"
-    ).bind(message, image_url || null, (result as any).id || (result as any).post_id || null, new Date().toISOString()).run();
+      "INSERT INTO posts (user_fb_id, page_id, message, image_url, fb_post_id, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).bind(user_fb_id, page_id, message, image_url || null, (result as any).id || (result as any).post_id || null, new Date().toISOString()).run();
 
     return c.json({ ok: true, result });
   } catch (e: any) {
@@ -90,13 +92,24 @@ app.get("/img/*", async (c) => {
   return new Response(obj.body, { headers });
 });
 
-// --- Post history ---
+// --- Post history (filter by user + page) ---
 app.get("/api/posts", async (c) => {
   const limit = Math.min(50, +(c.req.query("limit") || "20"));
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM posts ORDER BY created_at DESC LIMIT ?"
-  ).bind(limit).all();
-  return c.json({ posts: results });
+  const userId = c.req.query("user_fb_id");
+  const pageId = c.req.query("page_id");
+
+  let query = "SELECT * FROM posts";
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+
+  if (userId) { conditions.push("user_fb_id = ?"); params.push(userId); }
+  if (pageId) { conditions.push("page_id = ?"); params.push(pageId); }
+  if (conditions.length) query += " WHERE " + conditions.join(" AND ");
+  query += " ORDER BY created_at DESC LIMIT ?";
+  params.push(limit);
+
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  return c.json({ posts: results, total: results.length });
 });
 
 // --- Settings (token management) ---
@@ -142,6 +155,50 @@ app.post("/api/templates", async (c) => {
 app.delete("/api/templates/:id", async (c) => {
   const id = c.req.param("id");
   await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(id).run();
+  return c.json({ ok: true });
+});
+
+// --- Scheduled Posts ---
+app.post("/api/schedule", async (c) => {
+  const { user_fb_id, page_id, message, image_url, scheduled_at } = await c.req.json();
+  if (!user_fb_id || !page_id || !message || !scheduled_at) {
+    return c.json({ error: "user_fb_id, page_id, message, scheduled_at required" }, 400);
+  }
+
+  // Verify page belongs to user
+  const page = await c.env.DB.prepare(
+    "SELECT page_id FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(user_fb_id, page_id).first();
+  if (!page) return c.json({ error: "Page not found for this user" }, 400);
+
+  const { meta } = await c.env.DB.prepare(
+    "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(user_fb_id, page_id, message, image_url || null, scheduled_at).run();
+
+  return c.json({ ok: true, id: meta.last_row_id }, 201);
+});
+
+app.get("/api/schedule", async (c) => {
+  const userId = c.req.query("user_fb_id");
+  const pageId = c.req.query("page_id");
+  const status = c.req.query("status") || "pending";
+
+  let query = "SELECT * FROM scheduled_posts WHERE status = ?";
+  const params: string[] = [status];
+
+  if (userId) { query += " AND user_fb_id = ?"; params.push(userId); }
+  if (pageId) { query += " AND page_id = ?"; params.push(pageId); }
+  query += " ORDER BY scheduled_at ASC";
+
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  return c.json({ scheduled: results, total: results.length });
+});
+
+app.delete("/api/schedule/:id", async (c) => {
+  const id = c.req.param("id");
+  await c.env.DB.prepare(
+    "DELETE FROM scheduled_posts WHERE id = ? AND status = 'pending'"
+  ).bind(id).run();
   return c.json({ ok: true });
 });
 
