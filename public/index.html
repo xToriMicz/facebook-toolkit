@@ -283,16 +283,19 @@
     .ticket-link:hover { text-decoration:underline; }
 
     /* === Trends === */
-    .trend-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; cursor: default; }
-    .trend-item:last-child { border-bottom: none; }
-    .trend-item:hover { background: rgba(255,255,255,0.02); }
-    .trend-rank { width: 28px; height: 28px; border-radius: 8px; background: var(--bg-input); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
-    .trend-rank.hot { background: rgba(239,68,68,0.1); color: var(--danger); }
+    .trend-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--border); border-radius:12px; margin-bottom:8px; transition:all 0.2s; background:var(--card); }
+    .trend-item:hover { border-color:rgba(239,68,68,0.2); background:rgba(239,68,68,0.02); }
+    .trend-rank { width:32px; height:32px; border-radius:10px; background:var(--input); display:flex; align-items:center; justify-content:center; font-size:0.82rem; font-weight:800; color:var(--muted); flex-shrink:0; }
+    .trend-rank.hot { background:linear-gradient(135deg,#ef4444,#f97316); color:white; box-shadow:0 2px 8px rgba(239,68,68,0.25); }
+    .trend-rank.warm { background:rgba(245,158,11,0.15); color:var(--warning); }
+    .trend-hashtags { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+    .trend-chip { padding:2px 8px; background:rgba(79,110,247,0.08); border:1px solid rgba(79,110,247,0.15); border-radius:12px; font-size:0.68rem; color:var(--accent); cursor:pointer; transition:all 0.15s; font-family:inherit; }
+    .trend-chip:hover { background:var(--accent); color:white; border-color:var(--accent); }
     .trend-body { flex: 1; min-width: 0; }
     .trend-title { font-size: 0.9rem; font-weight: 600; color: var(--text); }
     .trend-vol { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
-    .trend-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--accent); font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
-    .trend-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .trend-btn { padding:8px 14px; border:none; border-radius:8px; background:var(--accent); color:white; font-size:0.78rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.2s; white-space:nowrap; flex-shrink:0; box-shadow:0 2px 8px var(--glow); }
+    .trend-btn:hover { background:#6380ff; transform:translateY(-1px); box-shadow:0 4px 12px var(--glow); }
     .trend-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
     .trend-refresh { padding: 6px 10px; border: none; background: rgba(255,255,255,0.04); border-radius: 6px; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
     .trend-refresh:hover { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
@@ -526,8 +529,11 @@
       <div id="tabTrends" class="hidden">
         <div class="card">
           <div class="trend-header">
-            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🔥</span> Trending in Thailand</div>
-            <button class="trend-refresh" onclick="loadTrends()">↻ Refresh</button>
+            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🔥</span> Trending in Thailand <span id="trendCount" style="font-size:0.75rem;color:var(--text-muted);font-weight:400"></span></div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="trendUpdated" style="font-size:0.68rem;color:var(--text-muted)"></span>
+              <button class="trend-refresh" onclick="loadTrends()">↻ Refresh</button>
+            </div>
           </div>
           <div id="trendList" style="margin-top:12px"><div class="empty-state">กำลังโหลดเทรนด์...</div></div>
         </div>
@@ -972,22 +978,29 @@
         const r = await fetch('/api/trends', { credentials: 'same-origin' });
         const d = await r.json();
         const trends = d.trends || [];
+        const countEl = document.getElementById('trendCount');
+        const updEl = document.getElementById('trendUpdated');
+        if (countEl) countEl.textContent = '(' + trends.length + ' รายการ)';
+        if (updEl) updEl.textContent = 'อัพเดต: ' + new Date().toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
         if (!trends.length) { el.innerHTML = '<div class="empty-state">ไม่มีเทรนด์</div>'; return; }
         el.innerHTML = trends.map((t, i) => {
           const isHot = i < 3 ? ' hot' : '';
-          return `<div class="trend-item"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}</div><div class="trend-vol">${t.traffic||''}</div></div><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div>`;
+          const hashtag = '#' + (t.title||'').replace(/\s+/g, '').replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,'');
+          return `<div class="trend-item"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}</div><div class="trend-vol">${t.traffic||''}</div></div><div style="display:flex;gap:4px"><button class="trend-btn" onclick="useTrendHashtag('${hashtag.replace(/'/g,'')}')" title="เพิ่ม hashtag" style="font-size:0.7rem;padding:4px 8px">#</button><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div></div>`;
         }).join('');
-      } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ trends</div>'; }
+      } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+    }
+    function useTrendHashtag(tag) {
+      const ta = document.getElementById('message');
+      ta.value = ta.value.trim() + (ta.value.trim() ? '\n' : '') + tag + ' ';
+      document.getElementById('charCount').textContent = ta.value.length;
     }
     function useTrend(el) {
       const topic = el.dataset.topic;
-      document.getElementById('message').value = topic + '\n\n';
-      document.getElementById('charCount').textContent = (topic.length + 2);
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      document.querySelector('.tab').classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
-      document.getElementById('tabCompose').classList.remove('hidden');
-      document.getElementById('message').focus();
+      const hashtag = '#' + topic.replace(/\s+/g, '').replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,'');
+      document.getElementById('message').value = topic + '\n\n' + hashtag + '\n';
+      document.getElementById('charCount').textContent = document.getElementById('message').value.length;
+      switchTab('compose', document.querySelector('.sidebar-nav-item'));
     }
 
     // Schedule
