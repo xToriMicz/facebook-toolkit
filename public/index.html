@@ -653,25 +653,69 @@
     dz.addEventListener('drop', e=>{e.preventDefault();dz.style.borderColor='';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
 
     let uploadedImages = [];
+    const MAX_IMG_PX = 2048;
+    const COMPRESS_Q = 0.8;
+
+    // Compress image via canvas
+    function compressImage(file) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const objUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          let w = img.width, h = img.height;
+          if (w > MAX_IMG_PX || h > MAX_IMG_PX) {
+            const ratio = Math.min(MAX_IMG_PX / w, MAX_IMG_PX / h);
+            w = Math.round(w * ratio); h = Math.round(h * ratio);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(objUrl);
+            resolve({ blob, thumbUrl: URL.createObjectURL(blob), origSize: file.size, compSize: blob.size });
+          }, 'image/jpeg', COMPRESS_Q);
+        };
+        img.src = objUrl;
+      });
+    }
+
+    function formatBytes(b) { return b < 1024 ? b+'B' : b < 1048576 ? (b/1024).toFixed(0)+'KB' : (b/1048576).toFixed(1)+'MB'; }
 
     async function handleFiles(files) {
       if(!files||!files.length) return;
+      const total = files.length;
+      let done = 0;
+      dz.classList.add('has-file');
       for(const file of files) {
-        const reader=new FileReader();
-        reader.onload=e=>{uploadedImages.push({data:e.target.result,name:file.name,url:null});renderImagePreviews();};
-        reader.readAsDataURL(file);
-        const form=new FormData();form.append('file',file);
-        try{const r=await fetch('/api/upload',{method:'POST',body:form});const d=await r.json();if(d.ok){const img=uploadedImages.find(i=>i.name===file.name);if(img){img.url=d.url;uploadedImageUrl=d.url;}}}catch{toast('err','อัพโหลดรูปไม่สำเร็จ');}
+        done++;
+        dz.textContent = '⏳ กำลังอัพโหลด '+done+'/'+total+'...';
+        // Compress
+        const { blob, thumbUrl, origSize, compSize } = await compressImage(file);
+        const sizeInfo = formatBytes(origSize)+'→'+formatBytes(compSize);
+        // Preview with objectURL (fast)
+        uploadedImages.push({ data: thumbUrl, name: file.name, url: null, sizeInfo });
+        renderImagePreviews();
+        // Upload compressed blob
+        const form = new FormData();
+        form.append('file', new File([blob], file.name, { type: 'image/jpeg' }));
+        try {
+          const r = await fetch('/api/upload', { method:'POST', body:form });
+          const d = await r.json();
+          if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;uploadedImageUrl=d.url;} }
+        } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
       }
-      dz.classList.add('has-file');dz.textContent='✅ '+uploadedImages.length+' รูป';
+      dz.textContent = '✅ '+uploadedImages.length+' รูป';
     }
     async function handleFile(file){if(file)await handleFiles([file]);}
     function renderImagePreviews(){
       const el=document.getElementById('imagePreview');
-      el.innerHTML=uploadedImages.map((img,i)=>'<div class="multi-thumb"><img loading="lazy" src="'+img.data+'"><button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button></div>').join('');
+      el.innerHTML=uploadedImages.map((img,i)=>
+        '<div class="multi-thumb"><img loading="lazy" src="'+img.data+'" style="width:80px;height:80px;object-fit:cover"><button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button>'+(img.sizeInfo?'<div style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:2px">'+img.sizeInfo+'</div>':'')+'</div>'
+      ).join('');
       uploadedImageData=uploadedImages.length?uploadedImages[0].data:null;
     }
     function removeImage(idx){
+      if(uploadedImages[idx]&&uploadedImages[idx].data.startsWith('blob:'))URL.revokeObjectURL(uploadedImages[idx].data);
       uploadedImages.splice(idx,1);renderImagePreviews();
       if(!uploadedImages.length){dz.classList.remove('has-file');dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง (เลือกหลายรูปได้)';uploadedImageUrl=null;uploadedImageData=null;}
       else{dz.textContent='✅ '+uploadedImages.length+' รูป';uploadedImageUrl=uploadedImages[0].url;}
