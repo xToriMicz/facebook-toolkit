@@ -6,66 +6,158 @@
   <title>Facebook Toolkit — fb.makeloops.xyz</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a12; color: #e0e0e0; min-height: 100vh; }
-    .container { max-width: 640px; margin: 0 auto; padding: 20px; }
-    h1 { font-size: 1.5rem; color: #64b5f6; margin-bottom: 8px; }
-    .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 24px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans Thai', 'Segoe UI', sans-serif; background: #0a0a12; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* --- Navbar --- */
+    .navbar { background: #12121a; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .navbar-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .navbar-logo span { font-size: 1.1rem; font-weight: 700; color: #64b5f6; letter-spacing: 1px; }
+    .navbar-spacer { flex: 1; }
+    .navbar-user { display: flex; align-items: center; gap: 8px; }
+    .navbar-user img { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); }
+    .navbar-user span { font-size: 0.85rem; color: #aaa; }
+    .navbar-btn { padding: 6px 14px; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.06); color: #888; }
+    .navbar-btn:hover { background: rgba(255,255,255,0.1); color: #ccc; }
+    @media (max-width: 480px) {
+      .navbar-user span { display: none; }
+    }
+
+    /* --- Main content --- */
+    .main { flex: 1; }
+    .container { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+    @media (max-width: 480px) { .container { padding: 16px 12px; } }
+
+    /* --- Login screen --- */
+    .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 56px - 60px); padding: 24px 16px; text-align: center; }
+    .login-logo { font-size: 3rem; margin-bottom: 16px; }
+    .login-title { font-size: 1.5rem; font-weight: 700; color: #e0e0e0; margin-bottom: 8px; }
+    .login-subtitle { color: #666; font-size: 0.9rem; margin-bottom: 32px; max-width: 320px; line-height: 1.6; }
+    .btn-facebook { display: inline-flex; align-items: center; gap: 10px; padding: 14px 32px; background: #1877f2; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(24,119,242,0.3); }
+    .btn-facebook:hover { background: #166fe5; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(24,119,242,0.4); }
+    .btn-facebook:active { transform: translateY(0); }
+    .btn-facebook svg { width: 22px; height: 22px; fill: white; }
+    .login-note { margin-top: 24px; font-size: 0.75rem; color: #444; max-width: 300px; line-height: 1.5; }
+
+    /* --- Cards --- */
     .card { background: #12121a; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    @media (max-width: 480px) { .card { padding: 16px; border-radius: 12px; } }
     .card h2 { font-size: 1rem; color: #ffa726; margin-bottom: 12px; }
-    textarea { width: 100%; min-height: 120px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; font-size: 0.95rem; resize: vertical; font-family: inherit; }
-    textarea:focus { outline: none; border-color: #64b5f6; }
-    .upload-area { border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; text-align: center; color: #555; cursor: pointer; margin: 12px 0; transition: border-color 0.2s; }
-    .upload-area:hover { border-color: #64b5f6; color: #64b5f6; }
-    .upload-area.has-image { border-color: #4caf50; }
-    .preview-img { max-width: 100%; border-radius: 8px; margin-top: 12px; }
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-primary { background: #1877f2; color: white; }
-    .btn-primary:hover { background: #166fe5; transform: translateY(-1px); }
-    .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
-    .btn-row { display: flex; gap: 8px; margin-top: 16px; }
-    .status { padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 0.85rem; display: none; }
-    .status.success { display: block; background: rgba(76,175,80,0.1); color: #4caf50; border: 1px solid rgba(76,175,80,0.2); }
-    .status.error { display: block; background: rgba(244,67,54,0.1); color: #f44336; border: 1px solid rgba(244,67,54,0.2); }
-    .settings-link { color: #555; font-size: 0.8rem; text-decoration: none; }
-    .settings-link:hover { color: #64b5f6; }
+
+    /* --- Form elements --- */
+    textarea { width: 100%; min-height: 120px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; font-size: 1rem; resize: vertical; font-family: inherit; line-height: 1.6; }
+    textarea:focus { outline: none; border-color: #64b5f6; box-shadow: 0 0 0 3px rgba(100,181,246,0.1); }
+    @media (max-width: 480px) { textarea { min-height: 100px; font-size: 16px; /* prevent iOS zoom */ } }
+    .upload-area { border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 28px 16px; text-align: center; color: #555; cursor: pointer; margin: 12px 0; transition: all 0.2s; font-size: 0.95rem; }
+    .upload-area:hover { border-color: #64b5f6; color: #64b5f6; background: rgba(100,181,246,0.03); }
+    .upload-area.has-image { border-color: #4caf50; background: rgba(76,175,80,0.03); color: #4caf50; }
+    .preview-img { max-width: 100%; border-radius: 12px; margin-top: 12px; }
     .char-count { text-align: right; font-size: 0.75rem; color: #444; margin-top: 4px; }
     input[type="file"] { display: none; }
 
-    /* Settings modal */
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    /* --- Buttons --- */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; width: auto; }
+    .btn-primary { background: #1877f2; color: white; }
+    .btn-primary:hover { background: #166fe5; transform: translateY(-1px); }
+    .btn-primary:disabled { background: #222; color: #555; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #aaa; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    @media (max-width: 480px) {
+      .btn { padding: 14px 20px; width: 100%; justify-content: center; }
+      .btn-row { flex-direction: column; }
+    }
+
+    /* --- Status messages --- */
+    .status { padding: 12px 16px; border-radius: 10px; margin-top: 12px; font-size: 0.85rem; display: none; }
+    .status.success { display: block; background: rgba(76,175,80,0.08); color: #4caf50; border: 1px solid rgba(76,175,80,0.15); }
+    .status.error { display: block; background: rgba(244,67,54,0.08); color: #f44336; border: 1px solid rgba(244,67,54,0.15); }
+
+    /* --- Settings modal --- */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
     .modal.open { display: flex; }
-    .modal-body { background: #12121a; border-radius: 16px; padding: 24px; max-width: 480px; width: 90%; }
-    .modal-body h2 { margin-bottom: 16px; }
-    .input { width: 100%; padding: 10px 12px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; }
-    .input:focus { outline: none; border-color: #64b5f6; }
-    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; }
+    .modal-body { background: #12121a; border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 28px; max-width: 480px; width: 100%; }
+    .modal-body h2 { margin-bottom: 20px; color: #e0e0e0; }
+    .input { width: 100%; padding: 12px 14px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; font-size: 0.95rem; margin-bottom: 14px; font-family: inherit; }
+    .input:focus { outline: none; border-color: #64b5f6; box-shadow: 0 0 0 3px rgba(100,181,246,0.1); }
+    @media (max-width: 480px) { .input { font-size: 16px; } }
+    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 6px; font-weight: 500; }
+    .settings-link { color: #555; font-size: 0.8rem; text-decoration: none; }
+    .settings-link:hover { color: #64b5f6; }
+
+    /* --- Footer --- */
+    .footer { background: #0a0a0f; border-top: 1px solid rgba(255,255,255,0.04); padding: 16px; text-align: center; }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 8px; }
+    .footer-links a { color: #444; font-size: 0.8rem; text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: #64b5f6; }
+    .footer-copy { color: #333; font-size: 0.7rem; }
+
+    /* --- Utility --- */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📘 Facebook Toolkit</h1>
-    <p class="subtitle">โพสรูปและข้อความลงเพจ — <a href="#" class="settings-link" onclick="openSettings()">⚙️ ตั้งค่า</a></p>
 
-    <div class="card">
-      <h2>✏️ เขียนโพส</h2>
-      <textarea id="message" placeholder="เขียนข้อความที่จะโพส..."></textarea>
-      <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
-
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-        📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง
-      </div>
-      <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
-      <div id="imagePreview"></div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" id="postBtn" onclick="submitPost()">
-          📤 โพสลงเพจ
-        </button>
-      </div>
-
-      <div class="status" id="status"></div>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/" class="navbar-logo">
+      <span>📘 FB Toolkit</span>
+    </a>
+    <div class="navbar-spacer"></div>
+    <div class="navbar-user" id="navUser" style="display:none">
+      <img id="navAvatar" src="" alt="profile">
+      <span id="navName"></span>
+      <button class="navbar-btn" onclick="openSettings()">⚙️</button>
+      <button class="navbar-btn" id="logoutBtn" style="display:none" onclick="logout()">ออก</button>
     </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- Login Screen (shown when not authenticated) -->
+    <div class="login-screen" id="loginScreen">
+      <div class="login-logo">📘</div>
+      <h1 class="login-title">Facebook Toolkit</h1>
+      <p class="login-subtitle">โพสรูปและข้อความลงเพจ Facebook ได้ง่ายๆ จากที่เดียว</p>
+      <button class="btn-facebook" id="loginBtn" onclick="loginFacebook()">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        เข้าสู่ระบบด้วย Facebook
+      </button>
+      <p class="login-note">เราจะขอสิทธิ์โพสลงเพจของคุณเท่านั้น ไม่เข้าถึงข้อมูลส่วนตัว</p>
+    </div>
+
+    <!-- App Screen (shown when authenticated) -->
+    <div class="container hidden" id="appScreen">
+      <div class="card">
+        <h2>✏️ เขียนโพส</h2>
+        <textarea id="message" placeholder="เขียนข้อความที่จะโพส..."></textarea>
+        <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง
+        </div>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+        <div id="imagePreview"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="postBtn" onclick="submitPost()">
+            📤 โพสลงเพจ
+          </button>
+        </div>
+
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
   </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/privacy.html">นโยบายความเป็นส่วนตัว</a>
+      <a href="/terms.html">เงื่อนไขการใช้งาน</a>
+    </div>
+    <p class="footer-copy">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </footer>
 
   <!-- Settings Modal -->
   <div class="modal" id="settingsModal">
@@ -79,7 +171,7 @@
       <input class="input" id="pageToken" type="password" placeholder="paste token ที่นี่">
       <div class="btn-row">
         <button class="btn btn-primary" onclick="saveSettings()">💾 บันทึก</button>
-        <button class="btn" style="background:#333;color:#aaa" onclick="closeSettings()">ปิด</button>
+        <button class="btn btn-secondary" onclick="closeSettings()">ปิด</button>
       </div>
       <div class="status" id="settingsStatus"></div>
     </div>
@@ -88,33 +180,72 @@
   <script>
     let uploadedImageUrl = null;
 
-    // Character count
+    // --- Auth state ---
+    function checkAuth() {
+      fetch('/api/me').then(r => r.json()).then(data => {
+        if (data.name) {
+          showApp(data);
+        } else {
+          showLogin();
+        }
+      }).catch(() => showLogin());
+    }
+
+    function showLogin() {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('appScreen').classList.add('hidden');
+      document.getElementById('navUser').style.display = 'none';
+    }
+
+    function showApp(user) {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      // Update navbar
+      const navUser = document.getElementById('navUser');
+      navUser.style.display = 'flex';
+      if (user.picture) document.getElementById('navAvatar').src = user.picture;
+      document.getElementById('navName').textContent = user.name || '';
+      document.getElementById('logoutBtn').style.display = 'inline-flex';
+    }
+
+    function loginFacebook() {
+      window.location.href = '/auth/facebook';
+    }
+
+    function logout() {
+      fetch('/auth/logout', { method: 'POST' }).then(() => {
+        showLogin();
+      }).catch(() => showLogin());
+    }
+
+    // Check auth on load
+    checkAuth();
+
+    // --- Character count ---
     document.getElementById('message').addEventListener('input', (e) => {
       document.getElementById('charCount').textContent = e.target.value.length;
     });
 
-    // Drag & drop
+    // --- Drag & drop ---
     const uploadArea = document.getElementById('uploadArea');
     uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#64b5f6'; });
-    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'rgba(255,255,255,0.1)'; });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = ''; });
     uploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
-      uploadArea.style.borderColor = 'rgba(255,255,255,0.1)';
+      uploadArea.style.borderColor = '';
       if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
     });
 
     async function handleFile(file) {
       if (!file) return;
-      // Preview
       const reader = new FileReader();
       reader.onload = (e) => {
         document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" class="preview-img">`;
         uploadArea.classList.add('has-image');
-        uploadArea.textContent = `✅ ${file.name}`;
+        uploadArea.textContent = '✅ ' + file.name;
       };
       reader.readAsDataURL(file);
 
-      // Upload to R2
       const form = new FormData();
       form.append('file', file);
       try {
@@ -132,7 +263,7 @@
 
       const btn = document.getElementById('postBtn');
       btn.disabled = true;
-      btn.textContent = '⏳ กำลังโพส...';
+      btn.innerHTML = '⏳ กำลังโพส...';
 
       try {
         const res = await fetch('/api/post', {
@@ -156,7 +287,7 @@
         showStatus('error', 'เกิดข้อผิดพลาด: ' + e.message);
       }
       btn.disabled = false;
-      btn.textContent = '📤 โพสลงเพจ';
+      btn.innerHTML = '📤 โพสลงเพจ';
     }
 
     function showStatus(type, msg) {
@@ -171,10 +302,15 @@
       fetch('/api/settings').then(r => r.json()).then(data => {
         if (data.page_id) document.getElementById('pageId').value = data.page_id;
         if (data.page_name) document.getElementById('pageName').value = data.page_name;
-      });
+      }).catch(() => {});
     }
 
     function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+    // Close modal on backdrop click
+    document.getElementById('settingsModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeSettings();
+    });
 
     async function saveSettings() {
       const body = {
