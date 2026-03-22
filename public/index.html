@@ -792,7 +792,7 @@
       try {
         const r = await fetch('/api/posts/scheduled', { credentials:'same-origin' });
         const d = await r.json();
-        const items = d.posts || [];
+        const items = d.scheduled || d.posts || [];
         if (!items.length) { el.innerHTML = ''; return; }
         el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">📅 โพสที่ตั้งเวลาไว้</div>' +
           items.map(p => {
@@ -807,7 +807,7 @@
       const msg = document.getElementById('message').value.trim();
       if (!msg) { toast('err','กรุณาเขียนข้อความก่อนบันทึก'); return; }
       try {
-        const r = await fetch('/api/drafts', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:msg, image_url:uploadedImageUrl||null }) });
+        const r = await fetch('/api/drafts', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:msg, image_url:uploadedImageUrl||null }) });
         const d = await r.json();
         if (d.ok) { toast('ok','บันทึกร่างแล้ว'); showNotify('บันทึกฉบับร่างสำเร็จ!'); loadComposeDrafts(); }
         else toast('err', d.error||'บันทึกไม่สำเร็จ');
@@ -817,7 +817,7 @@
     async function loadComposeDrafts() {
       const el = document.getElementById('composeDrafts');
       try {
-        const r = await fetch('/api/drafts', { credentials:'include' });
+        const r = await fetch('/api/drafts', { credentials:'same-origin' });
         const d = await r.json();
         const drafts = d.drafts || [];
         if (!drafts.length) { el.innerHTML = ''; return; }
@@ -835,7 +835,7 @@
 
     async function loadDraftToCompose(id) {
       try {
-        const r = await fetch('/api/drafts', { credentials:'include' });
+        const r = await fetch('/api/drafts', { credentials:'same-origin' });
         const d = await r.json();
         const draft = (d.drafts||[]).find(x => x.id === id);
         if (draft) {
@@ -848,7 +848,7 @@
 
     async function deleteDraftInline(id) {
       if (!confirm('ลบฉบับร่างนี้?')) return;
-      await fetch('/api/drafts/'+id, { method:'DELETE', credentials:'include' });
+      await fetch('/api/drafts/'+id, { method:'DELETE', credentials:'same-origin' });
       loadComposeDrafts();
     }
 
@@ -1073,7 +1073,7 @@
     async function loadSchedule() {
       const list = document.getElementById('scheduleList');
       try {
-        const res = await fetch('/api/schedule', {credentials:'include'});
+        const res = await fetch('/api/schedule', {credentials:'same-origin'});
         const data = await res.json();
         if (!data.scheduled || data.scheduled.length === 0) {
           list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
@@ -1100,7 +1100,7 @@
       if (!date || !time) { st.textContent='กรุณาเลือกวันและเวลา'; st.className='toast err'; return; }
       const scheduledAt = new Date(date+'T'+time+':00').toISOString();
       try {
-        const res = await fetch('/api/schedule', {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg,scheduled_at:scheduledAt})});
+        const res = await fetch('/api/schedule', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg,scheduled_at:scheduledAt})});
         const data = await res.json();
         if (data.ok) { st.textContent='ตั้งเวลาสำเร็จ!'; st.className='toast ok'; document.getElementById('scheduleMsg').value=''; loadSchedule(); }
         else { st.textContent=data.error||'Error'; st.className='toast err'; }
@@ -1109,7 +1109,7 @@
 
     async function cancelSchedule(id) {
       if (!confirm('ยกเลิก?')) return;
-      await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'include'});
+      await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'same-origin'});
       loadSchedule();
     }
 
@@ -1117,7 +1117,7 @@
     async function loadDrafts() {
       const list = document.getElementById('draftList');
       try {
-        const res = await fetch('/api/drafts', {credentials:'include'});
+        const res = await fetch('/api/drafts', {credentials:'same-origin'});
         const data = await res.json();
         if (!data.drafts || data.drafts.length === 0) {
           list.innerHTML = '<div class="empty-state">ยังไม่มีฉบับร่าง</div>';
@@ -1143,7 +1143,7 @@
       const msg = document.getElementById('message').value.trim();
       if (!msg) { toast('err','เขียนข้อความก่อนบันทึก'); return; }
       try {
-        const res = await fetch('/api/drafts', {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, image_url:window._uploadedUrl||null})});
+        const res = await fetch('/api/drafts', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, image_url:window._uploadedUrl||null})});
         const data = await res.json();
         if (data.ok) { toast('ok','บันทึกฉบับร่างแล้ว'); } else { toast('err',data.error); }
       } catch(e) { toast('err',e.message); }
@@ -1152,7 +1152,7 @@
     async function publishDraft(id) {
       if (!confirm('โพสฉบับร่างนี้เลย?')) return;
       try {
-        const res = await fetch('/api/drafts/'+id+'/publish', {method:'POST', credentials:'include'});
+        const res = await fetch('/api/drafts/'+id+'/publish', {method:'POST', credentials:'same-origin'});
         const data = await res.json();
         if (data.ok) { toast('ok','โพสสำเร็จ!'); loadDrafts(); } else { toast('err',data.error); }
       } catch(e) { toast('err',e.message); }
@@ -1160,7 +1160,7 @@
 
     async function editDraft(id) {
       try {
-        const res = await fetch('/api/drafts', {credentials:'include'});
+        const res = await fetch('/api/drafts', {credentials:'same-origin'});
         const data = await res.json();
         const draft = data.drafts.find(d => d.id === id);
         if (draft) {
@@ -1174,7 +1174,7 @@
 
     async function deleteDraft(id) {
       if (!confirm('ลบฉบับร่างนี้?')) return;
-      await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'include'});
+      await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'same-origin'});
       loadDrafts();
     }
   </script>
