@@ -34,7 +34,7 @@ app.use("*", async (c, next) => {
 
 // CSRF: verify Origin for mutation requests
 app.use("/api/*", async (c, next) => {
-  if (c.req.method === "POST" || c.req.method === "DELETE") {
+  if (c.req.method === "POST" || c.req.method === "PUT" || c.req.method === "DELETE") {
     const origin = c.req.header("origin") || c.req.header("referer") || "";
     if (origin && !origin.startsWith("https://fb.makeloops.xyz")) {
       return c.json({ error: "Invalid origin" }, 403);

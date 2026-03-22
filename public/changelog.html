@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Changelog — Facebook Toolkit</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <style>
-    :root { --bg: #0a0a0f; --bg-card: #12121a; --text: #e8e8ed; --text-muted: #888; --accent: #3b82f6; --border: rgba(255,255,255,0.08); --green: #4caf50; --warn: #f59e0b; --red: #ef4444; }
+    :root { --bg: #0c0c14; --bg-card: #141420; --text: #e8eaed; --text-muted: #8b8fa3; --accent: #4f6ef7; --border: rgba(255,255,255,0.06); --green: #22c55e; --warn: #f59e0b; --red: #ef4444; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter','Noto Sans Thai',-apple-system,sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; }
-    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+    .container { max-width: 700px; margin: 0 auto; padding: 40px 20px; }
     h1 { font-size: 1.6rem; color: var(--accent); margin-bottom: 8px; }
     .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 32px; }
     .version { margin-bottom: 32px; }
@@ -30,6 +32,9 @@
     .tag-fix { background: rgba(245,158,11,0.15); color: var(--warn); }
     .tag-break { background: rgba(239,68,68,0.15); color: var(--red); }
     .back { display: inline-block; margin-bottom: 16px; color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+    .foot { background:rgba(10,10,16,0.8); border-top:1px solid var(--border); padding:20px; text-align:center; margin-top:48px; }
+    .foot a { color:var(--accent); text-decoration:none; font-size:0.85rem; }
+    .foot p { color:#333; font-size:0.7rem; margin-top:8px; }
     .nav { background:rgba(20,20,32,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:0 20px; height:56px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
     .nav a { text-decoration:none; display:flex; align-items:center; gap:8px; }
     .nav img { width:28px; height:28px; border-radius:6px; }
@@ -41,9 +46,6 @@
     .badge-improve { background:rgba(59,130,246,0.12); color:var(--accent); }
     .badge-perf { background:rgba(245,158,11,0.12); color:var(--warn); }
     .badge-security { background:rgba(139,92,246,0.12); color:#a78bfa; }
-    .foot { background:rgba(10,10,16,0.8); border-top:1px solid var(--border); padding:20px; text-align:center; margin-top:48px; }
-    .foot a { color:var(--accent); text-decoration:none; font-size:0.85rem; }
-    .foot p { color:#333; font-size:0.7rem; margin-top:8px; }
     .back:hover { text-decoration: underline; }
   </style>
 </head>
@@ -146,10 +148,7 @@
     </ul>
   </div>
 
-  <div style="margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
-    <p style="font-size:0.78rem;color:var(--text-muted)">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
-  </div>
 </div>
-<footer class="foot"><a href="/">หน้าหลัก</a> · <a href="/guide.html">คู่มือ</a> · <a href="/howto.html">Affiliate</a> · <a href="/privacy.html">Privacy</a><p>Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p></footer>
+<footer class="foot"><a href="/">หน้าหลัก</a> · <a href="/guide.html">คู่มือ</a> · <a href="/docs.html">Docs</a> · <a href="/howto-affiliate.html">Affiliate</a> · <a href="/privacy.html">Privacy</a><p>Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p></footer>
 </body>
 </html>

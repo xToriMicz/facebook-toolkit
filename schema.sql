@@ -3,9 +3,11 @@ CREATE TABLE IF NOT EXISTS posts (
   message TEXT,
   image_url TEXT,
   fb_post_id TEXT,
+  post_type TEXT NOT NULL DEFAULT 'post',
   status TEXT DEFAULT 'posted',
   created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_posts_type ON posts(post_type);
 
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,3 +57,7 @@ CREATE TABLE IF NOT EXISTS drafts (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Migration: add post_type to posts (run once on existing DB)
+-- ALTER TABLE posts ADD COLUMN post_type TEXT NOT NULL DEFAULT 'post';
+-- CREATE INDEX IF NOT EXISTS idx_posts_type ON posts(post_type);
