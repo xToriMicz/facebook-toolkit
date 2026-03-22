@@ -1165,6 +1165,44 @@
       el.innerHTML=html;
     }
 
+    // Ticket UI (Kumo polish)
+    async function uploadTicketImage(file) {
+      if(!file) return;
+      const form = new FormData(); form.append('file', file);
+      try {
+        const r = await fetch('/api/upload', { method:'POST', body:form });
+        const d = await r.json();
+        if(d.ok) { document.getElementById('ticketImage').value = d.url; showNotify('แนบรูปสำเร็จ!'); }
+      } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+    }
+
+    async function loadTickets() {
+      const el = document.getElementById('ticketList');
+      try {
+        const r = await fetch('/api/tickets', { credentials:'same-origin' });
+        const d = await r.json();
+        const tickets = d.tickets || [];
+        if (!tickets.length) { el.innerHTML = '<div class="empty-state">ยังไม่มี ticket</div>'; return; }
+        const TYPE_ICONS = { bug:'🐛', feature:'✨', question:'❓' };
+        el.innerHTML = tickets.map(t => {
+          const icon = TYPE_ICONS[t.type] || '📌';
+          const status = t.status || 'open';
+          const time = new Date(t.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+          return '<div class="ticket-item">' +
+            '<div class="ticket-type '+t.type+'">'+icon+'</div>' +
+            '<div class="ticket-body">' +
+              '<div class="ticket-title">'+((t.title||'').replace(/</g,'&lt;'))+'</div>' +
+              '<div class="ticket-desc">'+((t.description||'').substring(0,80).replace(/</g,'&lt;'))+'</div>' +
+              '<div class="ticket-meta">' +
+                '<span class="ticket-status '+status+'">'+({open:'เปิด','in-progress':'กำลังแก้',closed:'ปิดแล้ว'}[status]||status)+'</span>' +
+                '<span class="ticket-time">'+time+'</span>' +
+                (t.issue_url ? '<a href="'+t.issue_url+'" target="_blank" class="ticket-link">GitHub →</a>' : '') +
+              '</div>' +
+            '</div></div>';
+        }).join('');
+      } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+    }
+
     // AI Settings
     const AI_MODELS = {
       anthropic: { models: ['claude-haiku-4-5','claude-sonnet-4-6','claude-opus-4-6'], endpoint: 'https://api.anthropic.com/v1' },
