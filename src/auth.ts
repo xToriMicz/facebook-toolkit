@@ -192,15 +192,17 @@ auth.get("/callback", async (c) => {
   });
 });
 
-// GET /auth/logout — clear session
-auth.get("/logout", async (c) => {
+// GET + POST /auth/logout — clear session
+const logoutHandler = async (c: any) => {
   const sessionId = getCookie(c, "session");
   if (sessionId) {
     await c.env.KV.delete(`session:${sessionId}`);
   }
   deleteCookie(c, "session", { path: "/" });
   return c.redirect("/");
-});
+};
+auth.get("/logout", logoutHandler);
+auth.post("/logout", logoutHandler);
 
 // GET /api/me — return current user info
 auth.get("/api/me", async (c) => {
