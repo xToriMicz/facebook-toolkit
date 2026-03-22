@@ -1034,9 +1034,11 @@ app.get("/*", serveStatic({ root: "./" }));
 // --- Cron: Process Scheduled Posts ---
 async function processScheduledPosts(env: Env) {
   const now = new Date().toISOString();
+  console.log(`[cron] checking scheduled posts at ${now}`);
   const { results: pending } = await env.DB.prepare(
     "SELECT sp.*, up.page_token FROM scheduled_posts sp JOIN user_pages up ON sp.user_fb_id = up.user_fb_id AND sp.page_id = up.page_id WHERE sp.status = 'pending' AND sp.scheduled_at <= ? LIMIT 10"
   ).bind(now).all();
+  console.log(`[cron] found ${pending.length} pending posts`);
 
   for (const post of pending as any[]) {
     if (!post.page_token) {
