@@ -409,23 +409,33 @@
     function logout() { fetch('/auth/logout',{method:'POST'}).then(()=>showLogin()).catch(()=>showLogin()); }
     checkAuth();
 
-    // Page Cards
+    // Page Selector (dropdown)
     function populatePages(pages) {
-      const g = document.getElementById('pageGrid');
-      if (!pages.length) { g.innerHTML = '<div class="empty-state">No pages found</div>'; return; }
-      g.innerHTML = pages.map(p => `
-        <div class="pg-card" data-id="${p.id}" onclick="selectPage('${p.id}')">
-          <div class="pg-card-badge">✓</div>
-          <img src="${p.picture||''}" alt="" onerror="this.style.background='var(--bg-card)';this.alt='📄'">
-          <div class="pg-card-name">${p.name}</div>
-          <div class="pg-card-meta">${p.category||'Page'}${p.followers ? ' · '+p.followers+' followers' : ''}</div>
-        </div>`).join('');
+      const sel = document.getElementById('pageSelect');
+      sel.innerHTML = '<option value="">-- เลือกเพจ --</option>';
+      pages.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name + (p.category ? ' (' + p.category + ')' : '');
+        sel.appendChild(opt);
+      });
       const saved = localStorage.getItem('fb-selected-page');
-      if (saved && pages.find(p=>p.id===saved)) selectPage(saved);
+      if (saved && pages.find(p => p.id === saved)) { sel.value = saved; selectPage(saved); }
     }
     function selectPage(id) {
-      selectedPage = userPages.find(p=>p.id===id);
-      if (selectedPage) { localStorage.setItem('fb-selected-page',id); document.querySelectorAll('.pg-card').forEach(c=>c.classList.toggle('active',c.dataset.id===id)); }
+      const page = userPages.find(p => p.id === id);
+      const info = document.getElementById('pageInfo');
+      if (page) {
+        selectedPage = page;
+        localStorage.setItem('fb-selected-page', id);
+        document.getElementById('pageInfoPic').src = page.picture || '';
+        document.getElementById('pageInfoName').textContent = page.name;
+        document.getElementById('pageInfoMeta').textContent = (page.category || 'Page') + (page.followers ? ' · ' + page.followers + ' followers' : '');
+        info.classList.remove('hidden');
+      } else {
+        selectedPage = null;
+        info.classList.add('hidden');
+      }
     }
 
     // Tabs
