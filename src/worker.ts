@@ -15,15 +15,29 @@ interface Env {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Security headers
+// Security + cache headers
 app.use("*", async (c, next) => {
   await next();
   c.header("X-Content-Type-Options", "nosniff");
   c.header("X-Frame-Options", "DENY");
   c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
-  c.header("X-XSS-Protection", "1; mode=block");
+  const path = c.req.path;
+  if (path.startsWith("/api/")) {
+    c.header("Cache-Control", "private, max-age=0");
+  } else if (path.startsWith("/img/")) {
+    c.header("Cache-Control", "public, max-age=31536000, immutable");
+  }
 });
+
+// KV cache helper (read-through cache)
+async function kvCache<T>(kv: KVNamespace, key: string, ttl: number, fetcher: () => Promise<T>): Promise<T> {
+  const cached = await kv.get(key);
+  if (cached) return JSON.parse(cached) as T;
+  const data = await fetcher();
+  await kv.put(key, JSON.stringify(data), { expirationTtl: ttl });
+  return data;
+}
 
 app.use("/api/*", cors({
   origin: "https://fb.makeloops.xyz",
@@ -133,27 +147,23 @@ app.get("/api/posts", async (c) => {
     "SELECT * FROM posts ORDER BY created_at DESC LIMIT ?"
   ).bind(limit).all();
 
-  // Optionally fetch engagement from Graph API
   if (withEngagement && results.length > 0) {
     const token = await c.env.KV.get("fb_page_token");
     if (token) {
       const enriched = await Promise.all(results.map(async (post: any) => {
         if (!post.fb_post_id) return { ...post, engagement: null };
-        try {
-          const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${token}`
-          );
-          const data = await res.json() as any;
-          if (data.error) return { ...post, engagement: null };
-          return {
-            ...post,
-            engagement: {
-              likes: data.reactions?.summary?.total_count || 0,
-              comments: data.comments?.summary?.total_count || 0,
-              shares: data.shares?.count || 0,
-            },
-          };
-        } catch { return { ...post, engagement: null }; }
+        // Cache engagement in KV for 5 minutes
+        const eng = await kvCache(c.env.KV, `eng:${post.fb_post_id}`, 300, async () => {
+          try {
+            const res = await fetch(
+              `https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${token}`
+            );
+            const data = await res.json() as any;
+            if (data.error) return null;
+            return { likes: data.reactions?.summary?.total_count || 0, comments: data.comments?.summary?.total_count || 0, shares: data.shares?.count || 0 };
+          } catch { return null; }
+        });
+        return { ...post, engagement: eng };
       }));
       return c.json({ posts: enriched, total: enriched.length });
     }
@@ -401,16 +411,17 @@ app.post("/api/ai-write", async (c) => {
 
 // --- Content Templates ---
 app.get("/api/templates", async (c) => {
-  const category = c.req.query("category");
-  let query = "SELECT * FROM content_templates";
-  const params: string[] = [];
-  if (category && category !== "all") {
-    query += " WHERE category = ?";
-    params.push(category);
-  }
-  query += " ORDER BY created_at DESC";
-  const { results } = await c.env.DB.prepare(query).bind(...params).all();
-  return c.json({ templates: results, total: results.length });
+  const category = c.req.query("category") || "all";
+  const cacheKey = `tpl:${category}`;
+  const data = await kvCache(c.env.KV, cacheKey, 600, async () => {
+    let query = "SELECT * FROM content_templates";
+    const params: string[] = [];
+    if (category !== "all") { query += " WHERE category = ?"; params.push(category); }
+    query += " ORDER BY created_at DESC";
+    const { results } = await c.env.DB.prepare(query).bind(...params).all();
+    return { templates: results, total: results.length };
+  });
+  return c.json(data);
 });
 
 app.post("/api/templates", async (c) => {
@@ -420,12 +431,14 @@ app.post("/api/templates", async (c) => {
   const { meta } = await c.env.DB.prepare(
     "INSERT INTO content_templates (title, template_text, category) VALUES (?, ?, ?)"
   ).bind(title, template_text, cat).run();
+  await c.env.KV.delete("tpl:all"); await c.env.KV.delete(`tpl:${cat}`);
   return c.json({ ok: true, id: meta.last_row_id }, 201);
 });
 
 app.delete("/api/templates/:id", async (c) => {
   const id = c.req.param("id");
   await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(id).run();
+  await c.env.KV.delete("tpl:all");
   return c.json({ ok: true });
 });
 
