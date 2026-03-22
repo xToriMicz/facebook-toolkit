@@ -256,6 +256,34 @@
     .cal-detail-item { font-size:0.78rem; color:var(--text-secondary); padding:6px 0; border-top:1px solid rgba(255,255,255,0.03); }
     .cal-detail-item:first-child { border-top:none; }
 
+    /* === Calendar View Toggle === */
+    .cal-view-toggle { display:flex; gap:2px; background:var(--bg-input); border-radius:8px; padding:2px; border:1px solid var(--border); }
+    .cal-view-btn { padding:5px 12px; border:none; border-radius:6px; font-size:0.75rem; font-family:inherit; cursor:pointer; color:var(--text-muted); background:transparent; transition:all 0.2s; }
+    .cal-view-btn.active { background:var(--accent); color:#fff; }
+    .cal-view-btn:hover:not(.active) { color:var(--text-secondary); }
+
+    /* === Week View === */
+    .cal-week { display:none; }
+    .cal-week.active { display:block; }
+    .cal-week-header { display:grid; grid-template-columns:50px repeat(7,1fr); gap:1px; margin-bottom:1px; }
+    .cal-week-hdr-cell { text-align:center; font-size:0.7rem; color:var(--text-muted); padding:8px 4px; font-weight:500; }
+    .cal-week-hdr-cell.today { color:var(--accent); font-weight:700; }
+    .cal-week-body { display:grid; grid-template-columns:50px repeat(7,1fr); gap:1px; max-height:420px; overflow-y:auto; }
+    .cal-week-time { font-size:0.65rem; color:var(--text-muted); padding:4px 6px; text-align:right; height:42px; display:flex; align-items:flex-start; justify-content:flex-end; }
+    .cal-week-cell { min-height:42px; border:1px solid rgba(255,255,255,0.03); border-radius:4px; padding:2px; cursor:pointer; transition:background 0.15s; position:relative; }
+    .cal-week-cell:hover { background:rgba(255,255,255,0.03); }
+    .cal-week-cell.today { background:rgba(79,110,247,0.04); }
+    .cal-week-event { font-size:0.65rem; padding:2px 5px; border-radius:4px; margin-bottom:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:grab; }
+    .cal-week-event:active { cursor:grabbing; }
+    .cal-week-event.posted { background:rgba(34,197,94,0.15); color:var(--success); border-left:2px solid var(--success); }
+    .cal-week-event.pending { background:rgba(245,158,11,0.15); color:var(--warning); border-left:2px solid var(--warning); }
+    .cal-week-event.failed { background:rgba(239,68,68,0.15); color:var(--danger); border-left:2px solid var(--danger); }
+
+    /* === Drag & Drop === */
+    .cal-day.drag-over, .cal-week-cell.drag-over { background:rgba(79,110,247,0.12); outline:2px dashed var(--accent); outline-offset:-2px; }
+    .cal-day[draggable="true"] .cal-dot, .cal-week-event[draggable="true"] { cursor:grab; }
+    .dragging { opacity:0.4; }
+
     /* === Multi-image === */
     .multi-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .multi-thumb { position:relative; }
@@ -506,14 +534,24 @@
       <div id="tabCalendar" class="hidden">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-            <select id="calPageFilter" onchange="renderCalendar()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select>
+            <select id="calPageFilter" onchange="renderCalView()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select>
+            <div class="cal-view-toggle">
+              <button class="cal-view-btn active" onclick="setCalView('month')" id="calViewMonth">เดือน</button>
+              <button class="cal-view-btn" onclick="setCalView('week')" id="calViewWeek">สัปดาห์</button>
+            </div>
           </div>
           <div class="cal-header">
             <button onclick="calNav(-1)">◀</button>
             <span class="cal-month" id="calMonth"></span>
             <button onclick="calNav(1)">▶</button>
           </div>
-          <div class="cal-grid" id="calGrid"></div>
+          <div id="calMonthView">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+          <div id="calWeekView" class="cal-week">
+            <div class="cal-week-header" id="calWeekHeader"></div>
+            <div class="cal-week-body" id="calWeekBody"></div>
+          </div>
           <div id="calDetail"></div>
         </div>
       </div>
@@ -793,7 +831,7 @@
       if(tab==='templates') loadTemplates();
       if(tab==='compose') loadComposeTemplates();
       if(tab==='trends') loadTrends();
-      if(tab==='calendar') renderCalendar();
+      if(tab==='calendar') renderCalView();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
       if(tab==='tickets') loadTickets();
@@ -1212,46 +1250,144 @@
     }
 
     // Calendar
-    let calYear, calMonth, calPosts=[], calScheduled=[];
-    function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-    async function renderCalendar() {
-      if(!calYear){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
-      const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-      document.getElementById('calMonth').textContent=months[calMonth]+' '+calYear;
-      // Fetch data
-      try{const cpf=document.getElementById('calPageFilter');const pfv=cpf?cpf.value:'';const[p,s]=await Promise.all([fetch('/api/posts'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[],pages:[]})),fetch('/api/posts/scheduled',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];if(cpf&&p.pages&&cpf.options.length<=1){(p.pages||[]).forEach(pg=>{const o=document.createElement('option');o.value=pg.page_id;o.textContent=pg.page_name||pg.page_id;cpf.appendChild(o);});}}catch{}
-      const grid=document.getElementById('calGrid');
-      const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
-      let html=days.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
-      const first=new Date(calYear,calMonth,1).getDay();
-      const total=new Date(calYear,calMonth+1,0).getDate();
-      const today=new Date();
-      for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
-      for(let d=1;d<=total;d++){
-        const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-        const dayP=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
-        const dayS=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
-        const hasFail=dayP.some(p=>p.status==='failed')||dayS.some(p=>p.status==='failed');
-        const hasOk=dayP.some(p=>p.status==='posted');
-        const hasPend=dayS.some(p=>p.status==='pending');
-        const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
-        let dots='';if(hasFail)dots+='<span class="cal-dot" style="background:#ef4444"></span>';if(hasOk)dots+='<span class="cal-dot has-post"></span>';if(hasPend)dots+='<span class="cal-dot has-sched"></span>';
-        html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="showCalDay(\''+dateStr+'\')">'+d+dots+'</div>';
+    let calYear, calMonth, calPosts=[], calScheduled=[], calView='month', calWeekStart=null;
+    const calMonths=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const calDayNames=['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+    function setCalView(v){
+      calView=v;
+      document.getElementById('calViewMonth').classList.toggle('active',v==='month');
+      document.getElementById('calViewWeek').classList.toggle('active',v==='week');
+      document.getElementById('calMonthView').style.display=v==='month'?'':'none';
+      var wv=document.getElementById('calWeekView');
+      wv.style.display=v==='week'?'block':'none';
+      wv.classList.toggle('active',v==='week');
+      if(v==='week'&&!calWeekStart){var d=new Date();d.setDate(d.getDate()-d.getDay());calWeekStart=new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+      renderCalView();
+    }
+
+    function calNav(dir){
+      if(calView==='month'){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}
+      }else{calWeekStart=new Date(calWeekStart.getTime()+dir*7*864e5);}
+      renderCalView();
+    }
+
+    async function renderCalView(){
+      if(!calYear){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
+      try{var cpf=document.getElementById('calPageFilter');var pfv=cpf?cpf.value:'';var res=await Promise.all([fetch('/api/posts'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[],pages:[]})),fetch('/api/posts/scheduled',{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({scheduled:[]}))]);var p=res[0],s=res[1];calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.scheduled||s.posts||[];if(cpf&&p.pages&&cpf.options.length<=1){(p.pages||[]).forEach(pg=>{var o=document.createElement('option');o.value=pg.page_id;o.textContent=pg.page_name||pg.page_id;cpf.appendChild(o);});}}catch(e){}
+      if(calView==='month') renderCalMonth();
+      else renderCalWeek();
+    }
+    function renderCalendar(){renderCalView();}
+
+    function renderCalMonth(){
+      document.getElementById('calMonth').textContent=calMonths[calMonth]+' '+calYear;
+      var grid=document.getElementById('calGrid');
+      var html=calDayNames.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
+      var first=new Date(calYear,calMonth,1).getDay();
+      var total=new Date(calYear,calMonth+1,0).getDate();
+      var today=new Date();
+      for(var i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
+      for(var d=1;d<=total;d++){
+        var dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+        var dayP=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+        var dayS=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+        var hasFail=dayP.some(p=>p.status==='failed')||dayS.some(p=>p.status==='failed');
+        var hasOk=dayP.some(p=>p.status==='posted');
+        var hasPend=dayS.some(p=>p.status==='pending');
+        var isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+        var dots='';if(hasFail)dots+='<span class="cal-dot" style="background:#ef4444"></span>';if(hasOk)dots+='<span class="cal-dot has-post"></span>';if(hasPend)dots+='<span class="cal-dot has-sched"></span>';
+        html+='<div class="cal-day'+(isToday?' today':'')+'" ondragover="calDragOver(event)" ondrop="calDropMonth(event,\''+dateStr+'\')" ondragleave="calDragLeave(event)" onclick="showCalDay(\''+dateStr+'\')">'+d+'<div class="cal-dots">'+dots+'</div>';
+        dayS.filter(p=>p.status==='pending').forEach(p=>{
+          html+='<div draggable="true" ondragstart="calDragStart(event,'+p.id+',\''+p.scheduled_at+'\')" style="font-size:0.6rem;color:var(--warning);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:grab" title="'+(p.message||'').substring(0,60).replace(/"/g,'&quot;')+'">'+(p.message||'').substring(0,12)+'</div>';
+        });
+        html+='</div>';
       }
       grid.innerHTML=html;
       document.getElementById('calDetail').innerHTML='';
     }
-    function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
+
+    function renderCalWeek(){
+      if(!calWeekStart){var d=new Date();d.setDate(d.getDate()-d.getDay());calWeekStart=new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+      var today=new Date();
+      var weekDates=[];
+      for(var i=0;i<7;i++){var wd=new Date(calWeekStart.getTime()+i*864e5);weekDates.push(wd);}
+      var ws=weekDates[0],we=weekDates[6];
+      document.getElementById('calMonth').textContent=ws.getDate()+' '+calMonths[ws.getMonth()]+' - '+we.getDate()+' '+calMonths[we.getMonth()]+' '+we.getFullYear();
+      var hdrHtml='<div class="cal-week-hdr-cell"></div>';
+      weekDates.forEach(d=>{
+        var isToday=d.toDateString()===today.toDateString();
+        hdrHtml+='<div class="cal-week-hdr-cell'+(isToday?' today':'')+'">'+calDayNames[d.getDay()]+'<br>'+d.getDate()+'</div>';
+      });
+      document.getElementById('calWeekHeader').innerHTML=hdrHtml;
+      var bodyHtml='';
+      for(var h=6;h<=23;h++){
+        bodyHtml+='<div class="cal-week-time">'+String(h).padStart(2,'0')+':00</div>';
+        weekDates.forEach(wd=>{
+          var dateStr=wd.getFullYear()+'-'+String(wd.getMonth()+1).padStart(2,'0')+'-'+String(wd.getDate()).padStart(2,'0');
+          var isToday=wd.toDateString()===today.toDateString();
+          var cellScheds=(calScheduled||[]).filter(p=>{
+            if(!(p.scheduled_at||'').startsWith(dateStr)) return false;
+            return new Date(p.scheduled_at).getHours()===h;
+          });
+          var cellPosts=calPosts.filter(p=>{
+            if(!(p.created_at||p.ts||'').startsWith(dateStr)) return false;
+            return new Date(p.created_at||p.ts).getHours()===h;
+          });
+          bodyHtml+='<div class="cal-week-cell'+(isToday?' today':'')+'" ondragover="calDragOver(event)" ondrop="calDropWeek(event,\''+dateStr+'\','+h+')" ondragleave="calDragLeave(event)" onclick="calCreatePost(\''+dateStr+'T'+String(h).padStart(2,'0')+':00\')">';
+          cellPosts.forEach(p=>{
+            bodyHtml+='<div class="cal-week-event '+(p.status||'posted')+'" title="'+(p.message||'').substring(0,80).replace(/"/g,'&quot;')+'">'+(p.message||'').substring(0,20)+'</div>';
+          });
+          cellScheds.forEach(p=>{
+            var t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+            var draggable=p.status==='pending'?' draggable="true" ondragstart="calDragStart(event,'+p.id+',\''+p.scheduled_at+'\')"':'';
+            bodyHtml+='<div class="cal-week-event '+(p.status||'pending')+'"'+draggable+' title="'+(p.message||'').substring(0,80).replace(/"/g,'&quot;')+'">'+t+' '+(p.message||'').substring(0,15)+'</div>';
+          });
+          bodyHtml+='</div>';
+        });
+      }
+      document.getElementById('calWeekBody').innerHTML=bodyHtml;
+      document.getElementById('calDetail').innerHTML='';
+    }
+
+    var calDragId=null, calDragOrigTime=null;
+    function calDragStart(e,id,origTime){calDragId=id;calDragOrigTime=origTime;e.target.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(id));}
+    function calDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+    function calDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+    async function calReschedule(id,newTime){
+      try{
+        var r=await fetch('/api/schedule/'+id+'/reschedule',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({scheduled_at:newTime})});
+        var d=await r.json();
+        if(d.ok){showNotify('ย้ายโพสสำเร็จ!');renderCalView();}
+        else{toast('err',d.error||'ย้ายไม่สำเร็จ');}
+      }catch(e){toast('err','เกิดข้อผิดพลาด');}
+    }
+    function calDropMonth(e,dateStr){
+      e.preventDefault();e.stopPropagation();e.currentTarget.classList.remove('drag-over');
+      if(!calDragId) return;
+      var origDate=new Date(calDragOrigTime);
+      var newTime=dateStr+'T'+String(origDate.getHours()).padStart(2,'0')+':'+String(origDate.getMinutes()).padStart(2,'0')+':00.000Z';
+      calReschedule(calDragId,newTime);calDragId=null;calDragOrigTime=null;
+    }
+    function calDropWeek(e,dateStr,hour){
+      e.preventDefault();e.stopPropagation();e.currentTarget.classList.remove('drag-over');
+      if(!calDragId) return;
+      var origDate=new Date(calDragOrigTime);
+      var newTime=dateStr+'T'+String(hour).padStart(2,'0')+':'+String(origDate.getMinutes()).padStart(2,'0')+':00.000Z';
+      calReschedule(calDragId,newTime);calDragId=null;calDragOrigTime=null;
+    }
+
+    function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{var di=document.getElementById('schedDate');if(di)di.value=dateStr.substring(0,10);},100);}
     function showCalDay(dateStr) {
-      const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
-      const scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
-      const el=document.getElementById('calDetail');
-      const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:8px;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
+      var posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+      var scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+      var el=document.getElementById('calDetail');
+      var addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:8px;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
       if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
-      const si={posted:'✅',pending:'⏳',failed:'❌'};
-      let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-      posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
-      scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
+      var si={posted:'✅',pending:'⏳',failed:'❌'};
+      var html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
+      posts.forEach(p=>{var icon=si[p.status]||'📤';var pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
+      scheds.forEach(p=>{var t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});var icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
       html+=addBtn+'</div>';
       el.innerHTML=html;
     }
