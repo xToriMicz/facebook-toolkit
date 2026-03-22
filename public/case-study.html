@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Study — Facebook Toolkit</title>
+  <meta name="description" content="ตัวอย่างจริง: วิธีใช้ Facebook Toolkit โพสขายของ affiliate engagement techniques">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <style>
+    :root { --bg:#0c0c14; --card:#141420; --input:#0e0e18; --border:rgba(255,255,255,0.06); --text:#e8eaed; --sec:#8b8fa3; --muted:#555; --accent:#4f6ef7; --glow:rgba(79,110,247,0.15); --success:#22c55e; --warning:#f59e0b; --fb:#1877f2; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter','Noto Sans Thai',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+    .nav { background:rgba(20,20,32,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:0 20px; height:56px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
+    .nav a { text-decoration:none; display:flex; align-items:center; gap:8px; }
+    .nav img { width:28px; height:28px; border-radius:6px; }
+    .nav span { font-size:0.9rem; font-weight:700; color:var(--text); }
+    .nav-back { font-size:0.8rem; color:var(--accent); margin-left:auto; text-decoration:none; }
+    .hero { text-align:center; padding:48px 20px 32px; max-width:640px; margin:0 auto; }
+    .hero-icon { width:64px; height:64px; background:linear-gradient(135deg,var(--warning),#ef4444); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:16px; box-shadow:0 8px 32px rgba(245,158,11,0.2); }
+    .hero h1 { font-size:1.6rem; font-weight:800; margin-bottom:8px; }
+    .hero p { color:var(--sec); font-size:0.95rem; line-height:1.6; }
+    .container { max-width:700px; margin:0 auto; padding:0 20px 48px; }
+    @media(max-width:480px){ .hero{padding:32px 16px 24px} .hero h1{font-size:1.3rem} .container{padding:0 14px 40px} }
+    .toc { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 24px; margin-bottom:32px; }
+    .toc-title { font-size:0.8rem; font-weight:600; color:var(--sec); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+    .toc a { display:flex; align-items:center; gap:10px; padding:8px 0; color:var(--accent); text-decoration:none; font-size:0.9rem; font-weight:500; }
+    .toc a:hover { color:#6380ff; }
+    .toc-num { width:24px; height:24px; border-radius:6px; background:var(--glow); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0; }
+    .section { margin-bottom:40px; scroll-margin-top:72px; }
+    .section-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .section-num { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--warning),#ef4444); color:white; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:800; flex-shrink:0; }
+    .section-title { font-size:1.15rem; font-weight:700; }
+    .content { font-size:0.92rem; line-height:1.8; color:#ccc; }
+    .content p { margin-bottom:14px; }
+    .content strong { color:var(--text); }
+    .post-example { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin:16px 0; }
+    .post-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .post-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--fb),var(--accent)); display:flex; align-items:center; justify-content:center; color:white; font-size:0.8rem; font-weight:700; }
+    .post-name { font-size:0.85rem; font-weight:600; }
+    .post-time { font-size:0.72rem; color:var(--sec); }
+    .post-body { font-size:0.88rem; line-height:1.7; white-space:pre-line; margin-bottom:12px; }
+    .post-engagement { display:flex; gap:16px; font-size:0.78rem; color:var(--sec); padding-top:10px; border-top:1px solid var(--border); }
+    .stat { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+    .stat-num { font-size:1.4rem; font-weight:800; color:var(--accent); }
+    .stat-label { font-size:0.75rem; color:var(--sec); margin-top:4px; }
+    .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; }
+    .tip { display:flex; gap:10px; padding:14px 16px; border-radius:10px; margin:14px 0; font-size:0.85rem; line-height:1.5; }
+    .tip.info { background:rgba(79,110,247,0.06); border:1px solid rgba(79,110,247,0.12); color:#a0b4ff; }
+    .tip.success { background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.12); color:#6ee7a0; }
+    .tip.warn { background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.12); color:#fbbf24; }
+    .schedule-table { width:100%; border-collapse:collapse; margin:16px 0; font-size:0.82rem; }
+    .schedule-table th { background:var(--card); color:var(--accent); padding:10px 12px; text-align:left; font-weight:600; border-bottom:1px solid var(--border); }
+    .schedule-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--sec); }
+    .schedule-table tr:hover td { background:rgba(79,110,247,0.03); }
+    .divider { height:1px; background:var(--border); margin:32px 0; }
+    .foot { background:rgba(10,10,16,0.8); border-top:1px solid var(--border); padding:20px; text-align:center; margin-top:48px; }
+    .foot a { color:var(--accent); text-decoration:none; font-size:0.85rem; }
+    .foot p { color:#333; font-size:0.7rem; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/"><img src="/favicon.svg" alt=""><span>FB Toolkit</span></a>
+    <a href="/" class="nav-back">Back to App</a>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-icon">📊</div>
+    <h1>Case Study & Examples</h1>
+    <p>Real examples + techniques for effective Facebook Page posting</p>
+  </div>
+
+  <div class="container">
+    <div class="toc">
+      <div class="toc-title">Table of Contents</div>
+      <a href="#case1"><span class="toc-num">1</span> Case: Product Review + Affiliate</a>
+      <a href="#examples"><span class="toc-num">2</span> Affiliate Post Examples</a>
+      <a href="#engagement"><span class="toc-num">3</span> Engagement Techniques</a>
+      <a href="#weekly"><span class="toc-num">4</span> Weekly Bulk Schedule Plan</a>
+    </div>
+
+    <!-- 1. Case Study -->
+    <div class="section" id="case1">
+      <div class="section-header"><div class="section-num">1</div><div class="section-title">Case: Product Review + Affiliate</div></div>
+      <div class="content">
+        <p><strong>Scenario:</strong> A home decor page with 5,000 followers wants to monetize with affiliate links without losing reach.</p>
+
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-num">5K</div><div class="stat-label">Followers</div></div>
+          <div class="stat"><div class="stat-num">12%</div><div class="stat-label">Engagement Rate</div></div>
+          <div class="stat"><div class="stat-num">47</div><div class="stat-label">Clicks/Post</div></div>
+        </div>
+
+        <p><strong>Strategy:</strong> Post genuine reviews with photos. Keep affiliate link OUT of caption (auto-comment instead). Use PAS formula (Problem-Agitate-Solution).</p>
+
+        <div class="post-example">
+          <div class="post-header">
+            <div class="post-avatar">H</div>
+            <div><div class="post-name">Home Decor Hub</div><div class="post-time">2 hours ago</div></div>
+          </div>
+          <div class="post-body">Review from our house! Just tried this minimalist shelf from [brand].
+
+Honest review: Installation took 15 min, no drilling needed. Holds 10kg easy. My cat tested it too 😂
+
+Pros:
+- No drill installation
+- Modern clean look
+- Affordable (under 500 baht)
+
+Cons:
+- Instructions in Chinese only
+- Screws could be better quality
+
+Overall 8/10 — great value for the price.
+
+Who wants the link? Comment below!
+
+#review #homedecor #minimalist #affiliate</div>
+          <div class="post-engagement">
+            <span>❤ 234 likes</span>
+            <span>💬 89 comments</span>
+            <span>🔄 12 shares</span>
+          </div>
+        </div>
+
+        <div class="tip success"><span>Result:</span><span>89 comments asking for link. Auto-comment replied with affiliate URL to each. 47 clicks, 8 sales = 1,200 baht commission from ONE post.</span></div>
+
+        <p><strong>Why it works:</strong></p>
+        <ul style="padding-left:20px;margin-bottom:14px">
+          <li style="margin-bottom:6px;color:var(--sec)">No link in caption = Facebook doesn't suppress reach</li>
+          <li style="margin-bottom:6px;color:var(--sec)">Real photo + honest review = trust + engagement</li>
+          <li style="margin-bottom:6px;color:var(--sec)">"Comment below" CTA = algorithm boost from comments</li>
+          <li style="margin-bottom:6px;color:var(--sec)">Auto-comment handles replies automatically</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. Affiliate Post Examples -->
+    <div class="section" id="examples">
+      <div class="section-header"><div class="section-num">2</div><div class="section-title">Affiliate Post Examples</div></div>
+      <div class="content">
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Example 1: Storytelling Approach</h3>
+        <div class="post-example">
+          <div class="post-body">3 months ago my back pain was so bad I couldn't sleep.
+
+Tried everything — expensive mattresses, chiropractor, yoga. Nothing worked long-term.
+
+Then a friend recommended this ergonomic pillow. I was skeptical (another gimmick?) but tried it anyway.
+
+Week 1: Slightly better
+Week 2: Noticeably less pain
+Week 3: First full night sleep in months
+
+Now 3 months later — zero back pain. Not exaggerating.
+
+I'm not saying it'll work for everyone. But for 890 baht, it's worth trying.
+
+DM me "pillow" for the link.
+
+#backpain #sleepbetter #honestshare</div>
+        </div>
+        <div class="tip info"><span>Why:</span><span>Personal story + timeline + honest disclaimer. "DM me" creates private conversation = higher conversion than public link.</span></div>
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Example 2: Comparison Post</h3>
+        <div class="post-example">
+          <div class="post-body">Tested 3 wireless earbuds under 1,000 baht.
+
+Brand A (499): Sound 6/10, Battery 4hrs, Build 5/10
+Brand B (799): Sound 8/10, Battery 6hrs, Build 7/10
+Brand C (990): Sound 9/10, Battery 8hrs, Build 9/10
+
+Winner: Brand B — best value. Brand C is better but not 2x better for the price.
+
+Full comparison with photos in comments!
+
+#earbuds #techreview #comparison</div>
+        </div>
+        <div class="tip info"><span>Why:</span><span>Comparison = high save rate. People bookmark these. "Full comparison in comments" drives comment engagement.</span></div>
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Example 3: Problem-Solution (Short)</h3>
+        <div class="post-example">
+          <div class="post-body">Kitchen grease won't come off?
+
+This 89 baht spray cleaned my 3-year-old grease stain in 30 seconds.
+
+Before/after photo attached.
+
+Type "clean" in comments for the link.
+
+#kitchenhack #cleaningtip</div>
+        </div>
+        <div class="tip info"><span>Why:</span><span>Short + visual proof. Before/after photos are the highest-engagement format on Facebook.</span></div>
+      </div>
+    </div>
+
+    <!-- 3. Engagement Techniques -->
+    <div class="section" id="engagement">
+      <div class="section-header"><div class="section-num">3</div><div class="section-title">Engagement Techniques</div></div>
+      <div class="content">
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Best Posting Times (Thailand)</h3>
+        <table class="schedule-table">
+          <tr><th>Time</th><th>Audience</th><th>Best For</th></tr>
+          <tr><td>6:00-8:00</td><td>Commuters, early risers</td><td>News, motivation, tips</td></tr>
+          <tr><td>11:30-13:00</td><td>Lunch break workers</td><td>Product reviews, food</td></tr>
+          <tr><td>17:00-19:00</td><td>After work</td><td>Entertainment, shopping</td></tr>
+          <tr><td>20:00-22:00</td><td>Relaxing at home</td><td>Long-form, stories, affiliate</td></tr>
+        </table>
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Caption Hook Formulas</h3>
+        <div class="post-example" style="padding:14px 18px">
+          <p style="margin-bottom:8px;color:var(--text);font-weight:600;font-size:0.85rem">Hooks that stop the scroll:</p>
+          <ul style="padding-left:16px;margin:0">
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem">"I made a mistake buying [X]. Here's why..."</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem">"[Number] things I wish I knew before..."</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem">"This [cheap/free thing] changed my [routine]"</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem">"Before you buy [X], read this"</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem">"Honest review: [product] after [time period]"</li>
+          </ul>
+        </div>
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">CTA (Call-to-Action) That Work</h3>
+        <div class="post-example" style="padding:14px 18px">
+          <ul style="padding-left:16px;margin:0">
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong style="color:var(--success)">High conversion:</strong> "DM me [keyword]" — creates private conversation</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong style="color:var(--success)">High engagement:</strong> "Comment [word] for the link" — boosts algorithm</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong style="color:var(--warning)">Medium:</strong> "Link in first comment" — auto-comment handles this</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong style="color:#ef4444">Avoid:</strong> Direct link in caption — Facebook suppresses reach 40-60%</li>
+          </ul>
+        </div>
+
+        <div class="tip warn"><span>Important:</span><span>Facebook algorithm rewards posts that generate comments in the first 30 minutes. Schedule posts when your audience is online and reply to every comment quickly.</span></div>
+      </div>
+    </div>
+
+    <!-- 4. Weekly Bulk Schedule -->
+    <div class="section" id="weekly">
+      <div class="section-header"><div class="section-num">4</div><div class="section-title">Weekly Bulk Schedule Plan</div></div>
+      <div class="content">
+        <p>A 7-day content plan you can set up in 15 minutes using Bulk Schedule.</p>
+
+        <table class="schedule-table">
+          <tr><th>Day</th><th>Time</th><th>Type</th><th>Content</th></tr>
+          <tr><td>Monday</td><td>12:00</td><td>Tip/Education</td><td>"Did you know..." fact about your niche</td></tr>
+          <tr><td>Tuesday</td><td>18:00</td><td>Story/Personal</td><td>Behind-the-scenes, your experience</td></tr>
+          <tr><td>Wednesday</td><td>20:00</td><td>Product Review</td><td>Honest review + affiliate (auto-comment)</td></tr>
+          <tr><td>Thursday</td><td>12:00</td><td>Engagement</td><td>Poll/Question: "Which do you prefer A or B?"</td></tr>
+          <tr><td>Friday</td><td>18:00</td><td>Comparison</td><td>Product A vs B comparison + affiliate</td></tr>
+          <tr><td>Saturday</td><td>10:00</td><td>Lifestyle</td><td>Weekend vibe photo + soft sell</td></tr>
+          <tr><td>Sunday</td><td>20:00</td><td>Recap/Best of</td><td>"Top 3 things I loved this week" + links</td></tr>
+        </table>
+
+        <div class="tip success"><span>How to set up:</span><span>1. Write all 7 posts as Drafts. 2. Go to Schedule/Bulk. 3. Select all 7 drafts. 4. Set start time = Monday 12:00, interval = 24hr. 5. Done!</span></div>
+
+        <h3 style="font-size:0.95rem;font-weight:600;color:var(--accent);margin:20px 0 10px">Content Mix Rule</h3>
+        <div class="post-example" style="padding:14px 18px">
+          <p style="margin-bottom:8px;color:var(--text);font-weight:600;font-size:0.85rem">80/20 Rule:</p>
+          <ul style="padding-left:16px;margin:0">
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong>80% value</strong> — tips, stories, education, entertainment</li>
+            <li style="margin-bottom:6px;color:var(--sec);font-size:0.85rem"><strong>20% sell</strong> — product reviews, affiliate, promotions</li>
+          </ul>
+          <p style="margin-top:10px;color:var(--sec);font-size:0.82rem">In our 7-day plan: 5 value posts (Mon/Tue/Thu/Sat/Sun) + 2 sell posts (Wed/Fri) = 71% value. Perfect.</p>
+        </div>
+
+        <div class="tip info"><span>Pro tip:</span><span>Use AI Writer to generate all 7 posts at once. Set different tones: Mon=Educational, Tue=Fun, Wed=Sales, etc. Edit each one to add your voice, then save as drafts.</span></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="text-align:center;padding:20px 0">
+      <a href="/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:linear-gradient(135deg,var(--warning),#ef4444);color:white;text-decoration:none;border-radius:12px;font-weight:600;box-shadow:0 4px 16px rgba(245,158,11,0.2)">Start Posting</a>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <a href="/">App</a> &middot; <a href="/guide.html">Guide</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/changelog.html">Changelog</a>
+    <p>Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </footer>
+</body>
+</html>
