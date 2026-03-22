@@ -348,8 +348,9 @@ app.post("/api/posts/:postId/reply", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const commentId = c.req.param("postId"); // actually comment ID
-  const { message } = await c.req.json() as { message: string };
+  const commentId = c.req.param("postId");
+  const { message: rawMsg } = await c.req.json() as { message: string };
+  const message = rawMsg ? sanitize(rawMsg) : "";
   if (!message) return c.json({ error: "message required" }, 400);
 
   const token = await c.env.KV.get("fb_page_token");
@@ -377,7 +378,8 @@ app.post("/api/posts/:postId/auto-comment", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
   const postId = c.req.param("postId");
-  const { message } = await c.req.json() as { message: string };
+  const { message: rawMsg2 } = await c.req.json() as { message: string };
+  const message = rawMsg2 ? sanitize(rawMsg2) : "";
   if (!message) return c.json({ error: "message required" }, 400);
 
   const token = await c.env.KV.get("fb_page_token");

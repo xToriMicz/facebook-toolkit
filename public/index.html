@@ -1331,6 +1331,37 @@
       if (el) el.textContent = algoTips[tipIdx];
     }, 8000);
 
+    // Comments
+    let currentCommentPostId = null;
+    let replyTargetId = null;
+    async function showComments(postId) {
+      currentCommentPostId = postId;
+      replyTargetId = null;
+      document.getElementById('commentsModal').classList.add('open');
+      const el = document.getElementById('commentsList');
+      el.innerHTML = '<div class="empty-state">Loading...</div>';
+      try {
+        const r = await fetch('/api/posts/'+postId+'/comments', {credentials:'same-origin'});
+        const d = await r.json();
+        if (d.error) { el.innerHTML = '<div class="empty-state">'+d.error+'</div>'; return; }
+        const comments = d.comments || [];
+        if (!comments.length) { el.innerHTML = '<div class="empty-state">No comments yet</div>'; return; }
+        el.innerHTML = comments.map(c => '<div style="padding:10px;border-bottom:1px solid var(--border)"><div style="font-size:0.75rem;color:var(--accent);font-weight:600">'+(c.from?.name||'Unknown')+'</div><div style="font-size:0.85rem;color:var(--text);margin:4px 0">'+(c.message||'').replace(/</g,'&lt;')+'</div><div style="font-size:0.7rem;color:var(--text-secondary)">'+new Date(c.created_time).toLocaleString('th-TH')+'</div><button onclick="setReplyTarget(\''+c.id+'\')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0">Reply</button></div>').join('');
+      } catch(e) { el.innerHTML = '<div class="empty-state">Error loading comments</div>'; }
+    }
+    function setReplyTarget(commentId) { replyTargetId = commentId; document.getElementById('replyInput').focus(); document.getElementById('replyInput').placeholder = 'Reply to comment...'; }
+    async function sendReply() {
+      const msg = document.getElementById('replyInput').value.trim();
+      const targetId = replyTargetId || currentCommentPostId;
+      if (!msg || !targetId) return;
+      try {
+        const r = await fetch('/api/posts/'+targetId+'/reply', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({message:msg})});
+        const d = await r.json();
+        if (d.ok) { toast('ok','Reply sent!'); document.getElementById('replyInput').value=''; replyTargetId=null; showComments(currentCommentPostId); }
+        else toast('err', d.error || 'Reply failed');
+      } catch(e) { toast('err', e.message); }
+    }
+
   </script>
 </body>
 </html>
