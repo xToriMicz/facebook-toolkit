@@ -10,6 +10,7 @@ import ai from "./routes/ai";
 import analytics from "./routes/analytics";
 import media from "./routes/media";
 import rss from "./routes/rss";
+import tickets from "./routes/tickets";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -66,6 +67,7 @@ app.route("/api", ai);
 app.route("/api", analytics);
 app.route("/api", media);
 app.route("/api", rss);
+app.route("/api", tickets);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
