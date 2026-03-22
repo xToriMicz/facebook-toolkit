@@ -300,11 +300,9 @@
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
-          <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 แม่แบบ</button>
-          <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
+                    <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
           <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
-          <button class="sidebar-nav-item" onclick="switchTab('drafts',this)">📝 ฉบับร่าง</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
           <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
         </div>
@@ -341,7 +339,11 @@
           <div class="actions">
             <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
             <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
+            <button class="btn btn-ghost" onclick="saveDraftFromCompose()" style="font-size:0.85rem;padding:12px 18px">📝 บันทึกร่าง</button>
           </div>
+
+          <!-- Drafts list inline -->
+          <div id="composeDrafts" style="margin-top:12px"></div>
 
           <!-- Schedule Picker (hidden by default) -->
           <div id="schedulePicker" style="display:none;margin-top:14px;padding:16px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm)">
@@ -555,7 +557,7 @@
     // Auth
     function checkAuth() {
       fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).then(data => {
-        if (data.logged_in && data.user) { currentUser = data.user; userPages = data.user.pages || []; showApp(data.user); populatePages(userPages); loadHistory(); }
+        if (data.logged_in && data.user) { currentUser = data.user; userPages = data.user.pages || []; showApp(data.user); populatePages(userPages); loadHistory(); loadComposeDrafts(); }
         else showLogin();
       }).catch(() => showLogin());
     }
@@ -607,6 +609,7 @@
       if(tabEl) tabEl.classList.remove('hidden');
       if(tab==='history') loadHistory();
       if(tab==='templates') loadTemplates();
+      if(tab==='compose') loadComposeTemplates();
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
@@ -694,12 +697,26 @@
     }
 
     // Templates
+
+    async function loadComposeTemplates() {
+      try {
+        const r=await fetch('/api/templates',{credentials:'same-origin'}); const d=await r.json(); const tpls=d.templates||[];
+        const sel=document.getElementById('tplSelect');
+        if(!sel) return;
+        sel.innerHTML='<option value="">📑 เลือกแม่แบบ...</option>'+tpls.map(t=>'<option value="'+((t.template_text||'').replace(/"/g,'&quot;'))+'">'+t.title+' ('+t.category+')</option>').join('');
+      } catch{}
+    }
+    function applyTemplate() {
+      const sel=document.getElementById('tplSelect');
+      if(sel&&sel.value){document.getElementById('message').value=sel.value;document.getElementById('charCount').textContent=sel.value.length;sel.selectedIndex=0;}
+    }
+
     async function loadTemplates() {
       const el=document.getElementById('templateList');
       try {
         const r=await fetch('/api/templates',{credentials:'same-origin'}); const d=await r.json(); const tpls=d.templates||[];
         if(!tpls.length){el.innerHTML='<div class="empty-state">ยังไม่มีแม่แบบ</div>';return;}
-        el.innerHTML=tpls.map(t=>`<div class="tpl-item" onclick="useTemplate(this)" data-msg="${(t.message||'').replace(/"/g,'&quot;')}"><div class="tpl-name">${t.name||'Template'}</div><div class="tpl-preview">${(t.message||'').replace(/</g,'&lt;')}</div><span class="tpl-use">Use this template →</span></div>`).join('');
+        el.innerHTML=tpls.map(t=>`<div class="tpl-item" onclick="useTemplate(this)" data-msg="${(t.template_text||'').replace(/"/g,'&quot;')}"><div class="tpl-name">${t.title||'Template'}</div><div class="tpl-preview">${(t.template_text||'').replace(/</g,'&lt;')}</div><span class="tpl-use">ใช้แม่แบบนี้ →</span></div>`).join('');
       } catch{el.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ</div>';}
     }
     function useTemplate(el) {
@@ -780,6 +797,57 @@
       } catch { el.innerHTML = ''; }
     }
 
+    // Inline Drafts (in compose)
+    async function saveDraftFromCompose() {
+      const msg = document.getElementById('message').value.trim();
+      if (!msg) { toast('err','กรุณาเขียนข้อความก่อนบันทึก'); return; }
+      try {
+        const r = await fetch('/api/drafts', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:msg, image_url:uploadedImageUrl||null }) });
+        const d = await r.json();
+        if (d.ok) { toast('ok','บันทึกร่างแล้ว'); showNotify('บันทึกฉบับร่างสำเร็จ!'); loadComposeDrafts(); }
+        else toast('err', d.error||'บันทึกไม่สำเร็จ');
+      } catch { toast('err','เกิดข้อผิดพลาด'); }
+    }
+
+    async function loadComposeDrafts() {
+      const el = document.getElementById('composeDrafts');
+      try {
+        const r = await fetch('/api/drafts', { credentials:'include' });
+        const d = await r.json();
+        const drafts = d.drafts || [];
+        if (!drafts.length) { el.innerHTML = ''; return; }
+        el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);font-weight:500;margin-bottom:6px">📝 ฉบับร่าง ('+drafts.length+')</div>' +
+          drafts.slice(0,5).map(dr => {
+            const preview = (dr.message||'').substring(0,60);
+            const time = new Date(dr.created_at||dr.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-input);border-radius:8px;margin-bottom:4px;font-size:0.78rem;border:1px solid var(--border);cursor:pointer" onclick="loadDraftToCompose('+dr.id+')">' +
+              '<span style="flex:1;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+preview+'</span>' +
+              '<span style="color:var(--text-muted);font-size:0.68rem;white-space:nowrap">'+time+'</span>' +
+              '<button onclick="event.stopPropagation();deleteDraftInline('+dr.id+')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:2px 4px">×</button></div>';
+          }).join('');
+      } catch { el.innerHTML = ''; }
+    }
+
+    async function loadDraftToCompose(id) {
+      try {
+        const r = await fetch('/api/drafts', { credentials:'include' });
+        const d = await r.json();
+        const draft = (d.drafts||[]).find(x => x.id === id);
+        if (draft) {
+          document.getElementById('message').value = draft.message || '';
+          document.getElementById('charCount').textContent = (draft.message||'').length;
+          toast('ok','โหลดร่างแล้ว แก้ไขได้เลย');
+        }
+      } catch {}
+    }
+
+    async function deleteDraftInline(id) {
+      if (!confirm('ลบฉบับร่างนี้?')) return;
+      await fetch('/api/drafts/'+id, { method:'DELETE', credentials:'include' });
+      loadComposeDrafts();
+    }
+
+    // Load drafts when compose tab shows
     // Activity Logs
     let allLogs = [];
     const LOG_ICONS = { login:'🟢', logout:'🔴', post_created:'📤', post_scheduled:'📅', draft_saved:'💾', ai_write:'✨', page_switched:'📄', settings_changed:'⚙️' };
