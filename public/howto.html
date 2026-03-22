@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือ Affiliate Link — Facebook Toolkit</title>
+  <meta name="description" content="วิธีใช้งาน Affiliate Link บน Facebook Toolkit — ใส่ลิงก์ ตั้ง auto-comment ตัวอย่างการใช้งาน">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <style>
+    :root {
+      --bg: #0c0c14;
+      --bg-card: #141420;
+      --bg-input: #0e0e18;
+      --border: rgba(255,255,255,0.06);
+      --text: #e8eaed;
+      --text-sec: #8b8fa3;
+      --text-muted: #555;
+      --accent: #4f6ef7;
+      --accent-glow: rgba(79,110,247,0.15);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --fb: #1877f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter','Noto Sans Thai',-apple-system,sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+    /* Nav */
+    .nav { background: rgba(20,20,32,0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .nav a { text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .nav img { width: 28px; height: 28px; border-radius: 6px; }
+    .nav span { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .nav-back { font-size: 0.8rem; color: var(--accent); margin-left: auto; text-decoration: none; }
+    .nav-back:hover { text-decoration: underline; }
+
+    /* Hero */
+    .hero { text-align: center; padding: 48px 20px 32px; max-width: 640px; margin: 0 auto; }
+    .hero-icon { width: 64px; height: 64px; background: linear-gradient(135deg, var(--fb), var(--accent)); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 16px; box-shadow: 0 8px 32px var(--accent-glow); }
+    .hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+    .hero p { color: var(--text-sec); font-size: 0.95rem; line-height: 1.6; }
+    @media (max-width: 480px) { .hero { padding: 32px 16px 24px; } .hero h1 { font-size: 1.3rem; } }
+
+    /* Container */
+    .container { max-width: 700px; margin: 0 auto; padding: 0 20px 48px; }
+    @media (max-width: 480px) { .container { padding: 0 14px 40px; } }
+
+    /* TOC */
+    .toc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 32px; }
+    .toc-title { font-size: 0.8rem; font-weight: 600; color: var(--text-sec); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .toc a { display: flex; align-items: center; gap: 10px; padding: 8px 0; color: var(--accent); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.15s; }
+    .toc a:hover { color: #6380ff; }
+    .toc-num { width: 24px; height: 24px; border-radius: 6px; background: var(--accent-glow); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; }
+
+    /* Section */
+    .section { margin-bottom: 40px; scroll-margin-top: 72px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .section-num { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--fb), var(--accent)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; flex-shrink: 0; }
+    .section-title { font-size: 1.15rem; font-weight: 700; }
+
+    /* Content */
+    .content { font-size: 0.92rem; line-height: 1.8; color: #ccc; }
+    .content p { margin-bottom: 14px; }
+    .content strong { color: var(--text); }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+    .step { display: flex; gap: 12px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; transition: border-color 0.2s; }
+    .step:hover { border-color: rgba(79,110,247,0.2); }
+    .step-num { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-glow); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+    .step-body { flex: 1; min-width: 0; }
+    .step-title { font-size: 0.88rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .step-desc { font-size: 0.82rem; color: var(--text-sec); line-height: 1.5; }
+
+    /* Code block */
+    .code-block { background: #0a0a12; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 12px 0; font-family: 'SF Mono','Fira Code',monospace; font-size: 0.82rem; color: var(--accent); overflow-x: auto; line-height: 1.6; }
+
+    /* Tips */
+    .tip { display: flex; gap: 10px; padding: 14px 16px; border-radius: 10px; margin: 14px 0; font-size: 0.85rem; line-height: 1.5; }
+    .tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .tip.info { background: rgba(79,110,247,0.06); border: 1px solid rgba(79,110,247,0.12); color: #a0b4ff; }
+    .tip.success { background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.12); color: #6ee7a0; }
+    .tip.warning { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.12); color: #fbbf24; }
+
+    /* Screenshot placeholder */
+    .screenshot { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 40px 20px; text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 0.82rem; }
+    .screenshot-label { display: block; margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); }
+
+    /* Example */
+    .example { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin: 14px 0; }
+    .example-title { font-size: 0.78rem; font-weight: 600; color: var(--warning); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .example-body { font-size: 0.88rem; line-height: 1.7; color: #bbb; white-space: pre-wrap; }
+
+    /* Footer */
+    .foot { background: rgba(10,10,16,0.8); border-top: 1px solid var(--border); padding: 20px; text-align: center; margin-top: 48px; }
+    .foot a { color: var(--accent); text-decoration: none; font-size: 0.85rem; font-weight: 500; }
+    .foot a:hover { text-decoration: underline; }
+    .foot p { color: #333; font-size: 0.7rem; margin-top: 8px; }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 32px 0; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="/">
+      <img src="/favicon.svg" alt="">
+      <span>FB Toolkit</span>
+    </a>
+    <a href="/" class="nav-back">← กลับหน้าหลัก</a>
+  </nav>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">🔗</div>
+    <h1>คู่มือ Affiliate Link</h1>
+    <p>วิธีใช้งาน Affiliate Link บน Facebook Toolkit — ใส่ลิงก์ ตั้ง auto-comment เพิ่มรายได้จากเพจ</p>
+  </div>
+
+  <div class="container">
+
+    <!-- TOC -->
+    <div class="toc">
+      <div class="toc-title">สารบัญ</div>
+      <a href="#what"><span class="toc-num">1</span> Affiliate Link คืออะไร?</a>
+      <a href="#setup"><span class="toc-num">2</span> วิธีใส่ Affiliate Link</a>
+      <a href="#autocomment"><span class="toc-num">3</span> ตั้ง Auto-Comment</a>
+      <a href="#examples"><span class="toc-num">4</span> ตัวอย่างการใช้งาน</a>
+      <a href="#tips"><span class="toc-num">5</span> เคล็ดลับเพิ่มยอดคลิก</a>
+    </div>
+
+    <!-- Section 1 -->
+    <div class="section" id="what">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div class="section-title">Affiliate Link คืออะไร?</div>
+      </div>
+      <div class="content">
+        <p><strong>Affiliate Link</strong> คือลิงก์พิเศษที่มีรหัสติดตามของคุณ เมื่อคนคลิกลิงก์แล้วซื้อสินค้า คุณจะได้รับค่าคอมมิชชั่น</p>
+        <p>Facebook Toolkit ช่วยให้คุณ <strong>ใส่ลิงก์ affiliate ในโพส</strong> และ <strong>ตั้ง auto-comment</strong> เพื่อส่งลิงก์ให้คนที่สนใจอัตโนมัติ</p>
+
+        <div class="tip info">
+          <span class="tip-icon">💡</span>
+          <span>Affiliate link ต้องเปิดเผยให้ผู้อ่านรู้เสมอ — ใส่ข้อความเช่น "(ลิงก์ affiliate)" หรือ "#ad" ในโพส</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="section" id="setup">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div class="section-title">วิธีใส่ Affiliate Link</div>
+      </div>
+      <div class="content">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">เข้าหน้าเขียนโพส</div>
+              <div class="step-desc">ไปที่ fb.makeloops.xyz → เลือกเพจ → แท็บ "✏️ เขียนโพส"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">เลือก Style "Affiliate"</div>
+              <div class="step-desc">กด dropdown ข้าง AI เขียนให้ → เลือก "🤝 Affiliate" ระบบจะแนะนำโครงสร้างโพสที่เหมาะ</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">เขียนโพส + ใส่ลิงก์</div>
+              <div class="step-desc">เขียนรีวิวสินค้า → ใส่ affiliate link ในโพส → หรือใช้ AI เขียนให้แล้วเพิ่มลิงก์</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">โพสหรือตั้งเวลา</div>
+              <div class="step-desc">กด "📤 โพสเลย" หรือ "📅 ตั้งเวลา" เลือกวันเวลาที่เหมาะ (แนะนำ 18:00-20:00)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="screenshot">
+          📸 ภาพหน้าจอ: หน้าเขียนโพสพร้อม Style Affiliate
+          <span class="screenshot-label">// Sati จะเพิ่มภาพจริงทีหลัง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="section" id="autocomment">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <div class="section-title">ตั้ง Auto-Comment</div>
+      </div>
+      <div class="content">
+        <p><strong>Auto-Comment</strong> คือระบบที่ตอบ comment อัตโนมัติ เมื่อคน comment คำที่กำหนด (เช่น "สนใจ", "ราคา") ระบบจะส่ง affiliate link ให้ทันที</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">เปิดการตั้งค่า Auto-Comment</div>
+              <div class="step-desc">ไปที่ ⚙️ ตั้งค่า → เปิด "Auto-Comment" → ใส่ข้อความที่ต้องการตอบ</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">ตั้ง Trigger Keywords</div>
+              <div class="step-desc">กำหนดคำที่จะ trigger auto-comment เช่น "สนใจ", "ราคาเท่าไร", "ส่งลิงก์"</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">ตั้งข้อความตอบกลับ</div>
+              <div class="step-desc">เขียนข้อความที่จะตอบอัตโนมัติ พร้อม affiliate link</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">ข้อความตอบกลับตัวอย่าง:
+สวัสดีค่ะ! ดูรายละเอียดได้ที่นี่เลย 👇
+🔗 [affiliate link]
+(ลิงก์ affiliate — ซื้อผ่านนี้ช่วยเราได้ 🙏)</div>
+
+        <div class="tip warning">
+          <span class="tip-icon">⚠️</span>
+          <span>ใช้ auto-comment อย่างระวัง — ตอบบ่อยเกินไป Facebook อาจจำกัดเพจ แนะนำไม่เกิน 10 ครั้ง/ชั่วโมง</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="section" id="examples">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <div class="section-title">ตัวอย่างการใช้งาน</div>
+      </div>
+      <div class="content">
+        <div class="example">
+          <div class="example-title">ตัวอย่าง 1: รีวิวสินค้า</div>
+          <div class="example-body">ใช้ [สินค้า] มา 2 เดือนแล้ว บอกเลยว่าคุ้มมาก!
+
+สิ่งที่ชอบ:
+• ใช้ง่าย ไม่ต้องตั้งค่ายุ่งยาก
+• ผลลัพธ์เห็นตั้งแต่สัปดาห์แรก
+• ราคาถูกกว่าแบรนด์อื่นเยอะ
+
+ใครสนใจดูรายละเอียดได้เลย 👉 [link]
+(ป.ล. เป็นลิงก์ affiliate ซื้อผ่านนี้ช่วยเราได้ 🙏)</div>
+        </div>
+
+        <div class="example">
+          <div class="example-title">ตัวอย่าง 2: โพสขาย + Auto-Comment</div>
+          <div class="example-body">🔥 ลดราคาสุดๆ วันนี้เท่านั้น!
+
+[สินค้า] ลดจาก ฿1,990 เหลือ ฿990
+✅ จัดส่งฟรีทั่วประเทศ
+✅ รับประกัน 30 วัน
+
+พิมพ์ "สนใจ" ในคอมเมนต์ ส่งลิงก์ให้เลยค่ะ! 👇</div>
+        </div>
+
+        <div class="example">
+          <div class="example-title">ตัวอย่าง 3: เล่าเรื่อง + แนะนำ</div>
+          <div class="example-body">เมื่อก่อนมีปัญหาเรื่อง [ปัญหา] มาก ลองมาหลายวิธีก็ไม่ดีขึ้น
+
+จนมาเจอ [สินค้า] เพื่อนแนะนำ ลองใช้ 1 สัปดาห์ เปลี่ยนเลย!
+
+ตอนนี้ [ผลลัพธ์] ดีขึ้นมาก แนะนำเลยค่ะ
+ดูรายละเอียดได้ที่ → [link]</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="section" id="tips">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <div class="section-title">เคล็ดลับเพิ่มยอดคลิก</div>
+      </div>
+      <div class="content">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">💡</div>
+            <div class="step-body">
+              <div class="step-title">80/20 Rule</div>
+              <div class="step-desc">80% ของโพสเป็น content ที่มีประโยชน์ (ให้ความรู้ สนุก) แค่ 20% เป็นการขาย คนจะไม่เลิกติดตาม</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">📸</div>
+            <div class="step-body">
+              <div class="step-title">ใช้รูปจริงเสมอ</div>
+              <div class="step-desc">รูปถ่ายจริงของสินค้าที่ใช้เอง ดีกว่ารูป stock 100 เท่า ถ่ายเอง + แสงธรรมชาติ = engagement สูง</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">⏰</div>
+            <div class="step-body">
+              <div class="step-title">โพสเวลาที่เหมาะ</div>
+              <div class="step-desc">18:00-20:00 คือ peak time ของคนไทยบน Facebook วันพุธ-พฤหัสบดีได้ engagement สูงสุด</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">✍️</div>
+            <div class="step-body">
+              <div class="step-title">Hook 3 วินาที</div>
+              <div class="step-desc">บรรทัดแรกต้องดึงดูด — ใช้คำถาม ตัวเลข หรือ statement ที่ทำให้หยุด scroll</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">🔒</div>
+            <div class="step-body">
+              <div class="step-title">เปิดเผย Affiliate ทุกครั้ง</div>
+              <div class="step-desc">บอกว่าเป็นลิงก์ affiliate เสมอ — สร้างความน่าเชื่อถือ + ไม่ผิดกฎ Facebook</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip success">
+          <span class="tip-icon">✅</span>
+          <span>เริ่มจากสินค้าที่ใช้จริง + รีวิวจริงใจ = คน trust มากกว่า + ยอดคลิกสูงกว่า</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div style="text-align:center;padding:20px 0">
+      <a href="/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:var(--accent);color:white;text-decoration:none;border-radius:12px;font-weight:600;font-size:0.95rem;box-shadow:0 4px 16px var(--accent-glow);transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        ✏️ เริ่มเขียนโพส Affiliate
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="foot">
+    <a href="/">← กลับหน้าหลัก</a> · <a href="/privacy.html">นโยบายความเป็นส่วนตัว</a> · <a href="/terms.html">เงื่อนไขการใช้งาน</a>
+    <p>Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </footer>
+
+</body>
+</html>
