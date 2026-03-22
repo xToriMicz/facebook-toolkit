@@ -515,6 +515,14 @@
         </div>
       </div>
 
+      <!-- Calendar Post Popup -->
+      <div class="cal-popup" id="calPopup" onclick="if(event.target===this)closeCalPopup()">
+        <div class="cal-popup-card">
+          <div class="cal-popup-hdr"><h3 id="calPopupTitle">—</h3><button class="cal-popup-x" onclick="closeCalPopup()">&times;</button></div>
+          <div class="cal-popup-body" id="calPopupBody"></div>
+        </div>
+      </div>
+
       <div id="tabTrends" class="hidden">
         <div class="card">
           <div class="trend-header">
