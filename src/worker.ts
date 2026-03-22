@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "hono/cloudflare-workers";
-import auth from "./auth";
+import auth, { getSession } from "./auth";
+import { getCookie } from "hono/cookie";
 
 interface Env {
   DB: D1Database;
@@ -16,39 +17,53 @@ app.use("/api/*", cors({
   credentials: true,
 }));
 
-// Auth routes: /auth/facebook, /auth/callback, /auth/logout, /api/me
+// Auth routes: /auth/facebook, /auth/callback, /auth/logout, /api/me, /api/pages
 app.route("/auth", auth);
-app.route("/", auth); // for /api/me
+app.route("/", auth);
+
+// Helper: get session from cookie in worker routes
+async function getSessionFromReq(c: any): Promise<any | null> {
+  const sessionId = getCookie(c, "session");
+  if (!sessionId) return null;
+  const data = await c.env.KV.get(`session:${sessionId}`);
+  return data ? JSON.parse(data) : null;
+}
 
 // Health check
 app.get("/api/health", (c) => c.json({ ok: true, service: "facebook-toolkit" }));
 
-// --- Facebook Page Post (reads token from user_pages table) ---
+// --- Facebook Page Post (reads token from user_pages via session) ---
 app.post("/api/post", async (c) => {
-  const { message, image_url, page_id, user_fb_id } = await c.req.json();
-  if (!message) return c.json({ error: "message required" }, 400);
-  if (!page_id || !user_fb_id) return c.json({ error: "page_id and user_fb_id required" }, 400);
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { message, image_url, page_id } = await c.req.json();
+  if (!message && !image_url) return c.json({ error: "message or image_url required" }, 400);
+
+  // Use selected page or provided page_id
+  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
   // Get page token from user_pages table
   const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(user_fb_id, page_id).first<{ page_token: string }>();
+    "SELECT page_token, page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, targetPageId).first<{ page_token: string; page_name: string }>();
 
   if (!page?.page_token) {
     return c.json({ error: "Page not found or token missing. Connect page first." }, 400);
   }
 
   try {
-    let result;
+    let result: any;
     if (image_url) {
-      const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/photos`, {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: image_url, message, access_token: page.page_token }),
+        body: JSON.stringify({ url: image_url, message: message || "", access_token: page.page_token }),
       });
       result = await res.json();
     } else {
-      const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/feed`, {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, access_token: page.page_token }),
@@ -56,11 +71,15 @@ app.post("/api/post", async (c) => {
       result = await res.json();
     }
 
-    await c.env.DB.prepare(
-      "INSERT INTO posts (user_fb_id, page_id, message, image_url, fb_post_id, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-    ).bind(user_fb_id, page_id, message, image_url || null, (result as any).id || (result as any).post_id || null, new Date().toISOString()).run();
+    if (result.error) {
+      return c.json({ error: result.error.message, fb_error: result.error }, 400);
+    }
 
-    return c.json({ ok: true, result });
+    await c.env.DB.prepare(
+      "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
+    ).bind(message || "", image_url || null, result.id || result.post_id || null, new Date().toISOString()).run();
+
+    return c.json({ ok: true, result, page_name: page.page_name });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
@@ -114,10 +133,12 @@ app.get("/api/posts", async (c) => {
 
 // --- Settings (token management) ---
 app.get("/api/settings", async (c) => {
-  const pageId = await c.env.KV.get("fb_page_id");
-  const hasToken = !!(await c.env.KV.get("fb_page_token"));
-  const pageName = await c.env.KV.get("fb_page_name");
-  return c.json({ page_id: pageId, page_name: pageName, has_token: hasToken });
+  const [pageId, pageToken, pageName] = await Promise.all([
+    c.env.KV.get("fb_page_id"),
+    c.env.KV.get("fb_page_token"),
+    c.env.KV.get("fb_page_name"),
+  ]);
+  return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken });
 });
 
 app.post("/api/settings", async (c) => {
