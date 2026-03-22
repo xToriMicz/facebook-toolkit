@@ -72,11 +72,13 @@ async function fetchXTwitterTrends(): Promise<TrendItem[]> {
   try {
     const res = await fetch("https://trends24.in/thailand/");
     const html = await res.text();
-    const tagRegex = /<a[^>]*class="trend-link"[^>]*>([^<]+)<\/a>/gi;
+    const tagRegex = /<a[^>]*href="https?:\/\/twitter\.com\/search\?q=[^"]*"[^>]*>([^<]+)<\/a>/gi;
+    const seen = new Set<string>();
     let m;
     while ((m = tagRegex.exec(html)) !== null && items.length < 10) {
       const title = m[1].trim();
-      if (title) items.push({ title, source: "X/Twitter", category: guessCategory(title) });
+      const key = title.toLowerCase();
+      if (title && !seen.has(key)) { seen.add(key); items.push({ title, source: "X/Twitter", category: guessCategory(title) }); }
     }
   } catch {}
   return items;
