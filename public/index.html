@@ -265,12 +265,29 @@
       <!-- Compose -->
       <div id="tabCompose">
         <div class="card">
-          <div style="display:flex;gap:8px;align-items:flex-start">
-            <textarea class="compose-area" id="message" placeholder="What's on your mind?" style="flex:1"></textarea>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
-            <div class="char-count"><span id="charCount">0</span> characters</div>
-            <button class="btn" style="padding:6px 14px;font-size:0.8rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;cursor:pointer" onclick="openAiModal()">✨ AI Write</button>
+          <textarea class="compose-area" id="message" placeholder="What's on your mind?"></textarea>
+          <div class="char-count"><span id="charCount">0</span> characters</div>
+
+          <!-- AI Writer (inline) -->
+          <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin:10px 0;background:rgba(99,102,241,0.03)">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+              <span style="font-size:0.8rem;color:#818cf8;font-weight:600">✨ AI Writer</span>
+            </div>
+            <input id="aiTopic" placeholder="Topic: e.g. โปรโมชั่นบ้านใหม่ ลด 30%" style="width:100%;padding:8px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;margin-bottom:8px;box-sizing:border-box">
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <select id="aiTone" style="flex:1;padding:7px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
+                <option value="สนุก">Fun 🎉</option><option value="จริงจัง">Formal 📋</option><option value="ขายของ" selected>Sales 💰</option><option value="ให้ความรู้">Edu 📚</option>
+              </select>
+              <select id="aiFormat" style="flex:1;padding:7px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
+                <option value="สั้น">Short</option><option value="ปานกลาง" selected>Medium</option><option value="ยาว">Long</option>
+              </select>
+              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:7px 14px;font-size:0.8rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;cursor:pointer;white-space:nowrap">✨ Generate</button>
+            </div>
+            <div id="aiResult" style="display:none">
+              <div id="aiText" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.85rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:150px;overflow-y:auto"></div>
+              <div id="aiHashtags" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px"></div>
+              <button class="btn" id="aiUseBtn" onclick="useAiText()" style="margin-top:8px;padding:6px 14px;font-size:0.8rem;background:var(--success);color:#fff;border:none;border-radius:8px;cursor:pointer">✅ Use This</button>
+            </div>
           </div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 Click to upload image or drag & drop
@@ -311,46 +328,6 @@
     </div><!-- end right column -->
     </div><!-- end dashboard-grid -->
     </div><!-- end appScreen -->
-  </div>
-
-  <!-- AI Writer Modal -->
-  <div class="modal" id="aiModal" onclick="if(event.target===this)closeAiModal()">
-    <div class="modal-card" style="max-width:460px;padding:28px">
-      <h2 style="margin-bottom:16px">✨ AI Content Writer</h2>
-      <div class="field">
-        <label>Topic</label>
-        <input id="aiTopic" placeholder="e.g. โปรโมชั่นบ้านใหม่ ลด 30%">
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:14px">
-        <div class="field" style="flex:1;margin-bottom:0">
-          <label>Tone</label>
-          <select id="aiTone" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
-            <option value="สนุก">Fun 🎉</option>
-            <option value="จริงจัง">Formal 📋</option>
-            <option value="ขายของ" selected>Sales 💰</option>
-            <option value="ให้ความรู้">Educational 📚</option>
-          </select>
-        </div>
-        <div class="field" style="flex:1;margin-bottom:0">
-          <label>Length</label>
-          <select id="aiFormat" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
-            <option value="สั้น">Short</option>
-            <option value="ปานกลาง" selected>Medium</option>
-            <option value="ยาว">Long</option>
-          </select>
-        </div>
-      </div>
-      <div id="aiResult" style="display:none;margin-bottom:14px">
-        <label style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;display:block">Result</label>
-        <div id="aiText" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:200px;overflow-y:auto"></div>
-        <div id="aiHashtags" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-accent" id="aiGenBtn" onclick="generateAI()">✨ Generate</button>
-        <button class="btn" id="aiUseBtn" onclick="useAiText()" style="display:none;background:var(--success);color:#fff">✅ Use This</button>
-        <button class="btn btn-ghost" onclick="closeAiModal()">Cancel</button>
-      </div>
-    </div>
   </div>
 
   <!-- Footer -->
@@ -561,10 +538,8 @@
     function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
     async function saveSettings(){const body={page_id:document.getElementById('pageId').value,page_name:document.getElementById('pageName').value,page_token:document.getElementById('pageToken').value||undefined};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();const el=document.getElementById('settingsStatus');el.className='toast '+(d.ok?'ok':'err');el.textContent=d.ok?'Saved!':'Failed';setTimeout(()=>{el.className='toast';},3000);}
 
-    // AI Writer
+    // AI Writer (inline)
     let aiGeneratedText = '';
-    function openAiModal() { document.getElementById('aiModal').classList.add('open'); document.getElementById('aiTopic').focus(); }
-    function closeAiModal() { document.getElementById('aiModal').classList.remove('open'); }
     async function generateAI() {
       const topic = document.getElementById('aiTopic').value.trim();
       if (!topic) { toast('err', 'Please enter a topic'); return; }
@@ -591,7 +566,6 @@
       const hashtags = document.getElementById('aiHashtags').textContent;
       ta.value = aiGeneratedText + (hashtags ? '\n\n' + hashtags : '');
       document.getElementById('charCount').textContent = ta.value.length;
-      closeAiModal();
     }
     function addHashtag(tag) {
       const ta = document.getElementById('message');
