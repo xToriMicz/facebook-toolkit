@@ -17,3 +17,6 @@ bucket_name = "fb-toolkit-assets"
 [[kv_namespaces]]
 binding = "KV"
 id = "6447fb51f8d0414e8c6d2bd93eac236a"
+
+[triggers]
+crons = ["*/5 * * * *"]

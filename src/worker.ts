@@ -9,6 +9,7 @@ interface Env {
   ASSETS: R2Bucket;
   KV: KVNamespace;
   FB_APP_SECRET: string;
+  ANTHROPIC_API_KEY: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -147,6 +148,75 @@ app.post("/api/settings", async (c) => {
   if (page_token) await c.env.KV.put("fb_page_token", page_token);
   if (page_name) await c.env.KV.put("fb_page_name", page_name);
   return c.json({ ok: true });
+});
+
+// --- AI Content Writer ---
+app.post("/api/ai-write", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { topic, tone, format } = await c.req.json() as { topic?: string; tone?: string; format?: string };
+  if (!topic) return c.json({ error: "topic required" }, 400);
+
+  const toneMap: Record<string, string> = {
+    "สนุก": "สนุกสนาน ใช้อีโมจิ เป็นกันเอง",
+    "จริงจัง": "จริงจัง น่าเชื่อถือ เป็นทางการ",
+    "ขายของ": "กระตุ้นให้ซื้อ มี CTA ชัดเจน เน้นประโยชน์",
+    "ให้ความรู้": "ให้ข้อมูลที่เป็นประโยชน์ อธิบายง่าย",
+  };
+  const formatMap: Record<string, string> = {
+    "สั้น": "1-2 บรรทัด สั้นกระชับ",
+    "ปานกลาง": "3-5 บรรทัด",
+    "ยาว": "6-10 บรรทัด ละเอียด",
+  };
+
+  const toneDesc = toneMap[tone || "สนุก"] || toneMap["สนุก"];
+  const formatDesc = formatMap[format || "ปานกลาง"] || formatMap["ปานกลาง"];
+
+  const systemPrompt = `คุณเป็น Social Media Content Writer มืออาชีพ เขียนเป็นภาษาไทย
+กฎ:
+- เขียน caption สำหรับโพส Facebook
+- โทน: ${toneDesc}
+- ความยาว: ${formatDesc}
+- ใส่อีโมจิตามความเหมาะสม
+- แนะนำ hashtag ภาษาไทย 3-5 อัน
+- ตอบเป็น JSON: {"text":"caption ที่เขียน","hashtags":["#tag1","#tag2"]}
+- ตอบ JSON เท่านั้น ไม่มีข้อความอื่น`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": c.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: `เขียน caption Facebook เกี่ยวกับ: ${topic}` }],
+        system: systemPrompt,
+      }),
+    });
+
+    const data = await res.json() as any;
+    if (data.error) {
+      return c.json({ error: data.error.message }, 500);
+    }
+
+    const responseText = data.content?.[0]?.text || "";
+
+    // Parse JSON from response
+    try {
+      const parsed = JSON.parse(responseText);
+      return c.json({ ok: true, text: parsed.text, hashtags: parsed.hashtags || [] });
+    } catch {
+      // If not valid JSON, return raw text
+      return c.json({ ok: true, text: responseText, hashtags: [] });
+    }
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
 });
 
 // --- Content Templates ---
@@ -323,4 +393,53 @@ h1{color:#2e7d32}</style></head><body>
 // Serve frontend
 app.get("/*", serveStatic({ root: "./" }));
 
-export default app;
+// --- Cron: Process Scheduled Posts ---
+async function processScheduledPosts(env: Env) {
+  const now = new Date().toISOString();
+  const { results: pending } = await env.DB.prepare(
+    "SELECT sp.*, up.page_token FROM scheduled_posts sp JOIN user_pages up ON sp.user_fb_id = up.user_fb_id AND sp.page_id = up.page_id WHERE sp.status = 'pending' AND sp.scheduled_at <= ? LIMIT 10"
+  ).bind(now).all();
+
+  for (const post of pending as any[]) {
+    if (!post.page_token) {
+      await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+      continue;
+    }
+    try {
+      let result: any;
+      if (post.image_url) {
+        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: post.image_url, message: post.message, access_token: post.page_token }),
+        });
+        result = await res.json();
+      } else {
+        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: post.message, access_token: post.page_token }),
+        });
+        result = await res.json();
+      }
+      if (result.error) {
+        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+      } else {
+        const fbPostId = result.id || result.post_id || null;
+        await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
+        await env.DB.prepare(
+          "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
+        ).bind(post.message, post.image_url, fbPostId, new Date().toISOString()).run();
+      }
+    } catch {
+      await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+    }
+  }
+}
+
+export default {
+  fetch: app.fetch,
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(processScheduledPosts(env));
+  },
+};
