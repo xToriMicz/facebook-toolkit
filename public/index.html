@@ -882,6 +882,20 @@
     dz.addEventListener('dragleave', ()=>{dz.style.borderColor='';});
     dz.addEventListener('drop', e=>{e.preventDefault();dz.style.borderColor='';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
 
+    // Reels drop zone
+    const rdz=document.getElementById('reelDropZone');
+    rdz.addEventListener('dragover',e=>{e.preventDefault();rdz.style.borderColor='var(--accent)';});
+    rdz.addEventListener('dragleave',()=>{rdz.style.borderColor='';});
+    rdz.addEventListener('drop',e=>{e.preventDefault();rdz.style.borderColor='';if(e.dataTransfer.files.length)handleReelFile(e.dataTransfer.files[0]);});
+    // Stories drop zones
+    ['storyDropZone','storyVideoDropZone'].forEach(id=>{
+      const sdz=document.getElementById(id);
+      if(!sdz)return;
+      sdz.addEventListener('dragover',e=>{e.preventDefault();sdz.style.borderColor='var(--accent)';});
+      sdz.addEventListener('dragleave',()=>{sdz.style.borderColor='';});
+      sdz.addEventListener('drop',e=>{e.preventDefault();sdz.style.borderColor='';if(e.dataTransfer.files.length)handleStoryFile(e.dataTransfer.files[0],id.includes('Video')?'video':'photo');});
+    });
+
     let uploadedImages = [];
     const MAX_IMG_PX = 2048;
     const COMPRESS_Q = 0.8;
@@ -1086,6 +1100,84 @@
       document.getElementById('charCount').textContent = document.getElementById('message').value.length;
       switchTab('compose', document.querySelector('.sidebar-nav-item'));
     }
+
+    // === Reels ===
+    let reelVideoUrl = null;
+    function handleReelFile(file) {
+      if (!file) return;
+      if (!file.type.startsWith('video/')) { toast('err','กรุณาเลือกไฟล์วิดีโอเท่านั้น'); return; }
+      if (file.size > 100*1024*1024) { toast('err','ไฟล์ใหญ่เกิน 100MB'); return; }
+      const preview = document.getElementById('reelPreview');
+      preview.innerHTML = '<div style="padding:8px;background:var(--bg-input);border-radius:8px;font-size:0.82rem;color:var(--text-secondary)">📎 '+file.name+' ('+Math.round(file.size/1024/1024)+'MB) — กำลังอัพโหลด...</div>';
+      const form = new FormData(); form.append('file', file);
+      fetch('/api/upload-video', { method:'POST', body:form, credentials:'same-origin' })
+        .then(r=>r.json()).then(d=>{
+          if(d.ok) { reelVideoUrl=d.url; preview.innerHTML='<div style="padding:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:0.82rem;color:var(--success)">✅ '+file.name+' พร้อมโพส</div>'; }
+          else { preview.innerHTML='<div style="color:var(--danger);font-size:0.82rem">❌ '+d.error+'</div>'; }
+        }).catch(e=>{ preview.innerHTML='<div style="color:var(--danger);font-size:0.82rem">❌ อัพโหลดไม่สำเร็จ</div>'; });
+    }
+    async function submitReel() {
+      if (!reelVideoUrl) { reelToast('err','กรุณาอัพโหลดวิดีโอก่อน'); return; }
+      if (!selectedPage) { reelToast('err','กรุณาเลือกเพจก่อน'); return; }
+      const btn=document.getElementById('reelPostBtn'); btn.disabled=true; btn.textContent='⏳ กำลังโพส...';
+      try {
+        const r=await fetch('/api/reels',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({video_url:reelVideoUrl,description:document.getElementById('reelCaption').value,page_id:selectedPage.id})});
+        const d=await r.json();
+        if(d.ok){reelToast('ok','🎬 โพส Reel สำเร็จ!');reelVideoUrl=null;document.getElementById('reelPreview').innerHTML='';document.getElementById('reelCaption').value='';document.getElementById('reelFileInput').value='';}
+        else{reelToast('err','❌ '+d.error);}
+      } catch(e){reelToast('err','❌ เกิดข้อผิดพลาด');}
+      btn.disabled=false; btn.textContent='🎬 โพส Reel';
+    }
+    function reelToast(type,msg){const el=document.getElementById('reelStatus');el.textContent=msg;el.className='toast '+type;setTimeout(()=>{el.className='toast';},4000);}
+
+    // === Stories ===
+    let storyMediaUrl = null, storyMediaType = 'photo';
+    function setStoryType(type) {
+      storyMediaType = type;
+      document.getElementById('storyTypePhoto').style.background = type==='photo'?'var(--accent)':'var(--bg-input)';
+      document.getElementById('storyTypePhoto').style.color = type==='photo'?'#fff':'var(--text-secondary)';
+      document.getElementById('storyTypeVideo').style.background = type==='video'?'var(--accent)':'var(--bg-input)';
+      document.getElementById('storyTypeVideo').style.color = type==='video'?'#fff':'var(--text-secondary)';
+      document.getElementById('storyPhotoUpload').style.display = type==='photo'?'block':'none';
+      document.getElementById('storyVideoUpload').style.display = type==='video'?'block':'none';
+      storyMediaUrl = null; document.getElementById('storyPreview').innerHTML = '';
+    }
+    function handleStoryFile(file, type) {
+      if (!file) return;
+      const isVideo = type === 'video';
+      if (isVideo && !file.type.startsWith('video/')) { toast('err','กรุณาเลือกไฟล์วิดีโอ'); return; }
+      if (!isVideo && !file.type.startsWith('image/')) { toast('err','กรุณาเลือกไฟล์รูปภาพ'); return; }
+      const maxSize = isVideo ? 100*1024*1024 : 10*1024*1024;
+      if (file.size > maxSize) { toast('err','ไฟล์ใหญ่เกิน '+(isVideo?'100':'10')+'MB'); return; }
+      const preview = document.getElementById('storyPreview');
+      preview.innerHTML = '<div style="padding:8px;background:var(--bg-input);border-radius:8px;font-size:0.82rem;color:var(--text-secondary)">📎 '+file.name+' — กำลังอัพโหลด...</div>';
+      const form = new FormData(); form.append('file', file);
+      const endpoint = isVideo ? '/api/upload-video' : '/api/upload';
+      fetch(endpoint, { method:'POST', body:form, credentials:'same-origin' })
+        .then(r=>r.json()).then(d=>{
+          if(d.ok) {
+            storyMediaUrl = d.url;
+            if(isVideo) { preview.innerHTML='<div style="padding:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;font-size:0.82rem;color:var(--success)">✅ '+file.name+' พร้อมโพส</div>'; }
+            else { preview.innerHTML='<img src="'+d.url+'" style="max-width:200px;max-height:200px;border-radius:8px;margin-top:4px">'; }
+          } else { preview.innerHTML='<div style="color:var(--danger);font-size:0.82rem">❌ '+d.error+'</div>'; }
+        }).catch(()=>{ preview.innerHTML='<div style="color:var(--danger);font-size:0.82rem">❌ อัพโหลดไม่สำเร็จ</div>'; });
+    }
+    async function submitStory() {
+      if (!storyMediaUrl) { storyToast('err','กรุณาอัพโหลดรูปหรือวิดีโอก่อน'); return; }
+      if (!selectedPage) { storyToast('err','กรุณาเลือกเพจก่อน'); return; }
+      const btn=document.getElementById('storyPostBtn'); btn.disabled=true; btn.textContent='⏳ กำลังโพส...';
+      try {
+        const body = { page_id: selectedPage.id };
+        if (storyMediaType === 'video') body.video_url = storyMediaUrl;
+        else body.image_url = storyMediaUrl;
+        const r=await fetch('/api/stories',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+        const d=await r.json();
+        if(d.ok){storyToast('ok','📱 โพส Story สำเร็จ!');storyMediaUrl=null;document.getElementById('storyPreview').innerHTML='';document.getElementById('storyFileInput').value='';document.getElementById('storyVideoFileInput').value='';}
+        else{storyToast('err','❌ '+d.error);}
+      } catch(e){storyToast('err','❌ เกิดข้อผิดพลาด');}
+      btn.disabled=false; btn.textContent='📱 โพส Story';
+    }
+    function storyToast(type,msg){const el=document.getElementById('storyStatus');el.textContent=msg;el.className='toast '+type;setTimeout(()=>{el.className='toast';},4000);}
 
     // Schedule
     function toggleSchedule() {

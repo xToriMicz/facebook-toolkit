@@ -35,8 +35,8 @@ media.post("/reels", async (c) => {
     const pubData: any = await pubRes.json();
     if (pubData.error) return c.json({ error: pubData.error.message, step: "publish" }, 400);
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, fb_post_id, status, created_at) VALUES (?, ?, 'posted', ?)"
-    ).bind("[Reel] " + (description || ""), pubData.id || videoId, new Date().toISOString()).run();
+      "INSERT INTO posts (message, fb_post_id, page_id, post_type, status, created_at) VALUES (?, ?, ?, 'reel', 'posted', ?)"
+    ).bind(description || "", pubData.id || videoId, targetPageId, new Date().toISOString()).run();
     return c.json({ ok: true, video_id: videoId, result: pubData });
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 });
@@ -64,8 +64,8 @@ media.post("/stories", async (c) => {
     const data: any = await res.json();
     if (data.error) return c.json({ error: data.error.message }, 400);
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, fb_post_id, status, created_at) VALUES (?, ?, 'posted', ?)"
-    ).bind("[Story] " + (isVideo ? "Video" : "Photo"), data.id || data.post_id, new Date().toISOString()).run();
+      "INSERT INTO posts (message, fb_post_id, page_id, post_type, status, created_at) VALUES (?, ?, ?, 'story', 'posted', ?)"
+    ).bind(isVideo ? "Video Story" : "Photo Story", data.id || data.post_id, targetPageId, new Date().toISOString()).run();
     return c.json({ ok: true, result: data });
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 });

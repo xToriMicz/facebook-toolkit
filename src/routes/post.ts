@@ -76,7 +76,7 @@ post.post("/post", async (c) => {
 
     const fbPostId = result.id || result.post_id || null;
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
+      "INSERT INTO posts (message, image_url, fb_post_id, page_id, post_type, status, created_at) VALUES (?, ?, ?, ?, 'post', 'posted', ?)"
     ).bind(message || "", image_url || null, fbPostId, targetPageId, new Date().toISOString()).run();
 
     let commentResult = null;
@@ -108,6 +108,24 @@ post.post("/upload", async (c) => {
   if (file.size > 10 * 1024 * 1024) return c.json({ error: "File too large (max 10MB)" }, 400);
 
   const key = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
+  await c.env.ASSETS.put(key, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
+  return c.json({ ok: true, url: `https://fb.makeloops.xyz/img/${key}`, key });
+});
+
+// POST /api/upload-video — upload video to R2
+post.post("/upload-video", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const formData = await c.req.formData();
+  const file = formData.get("file") as File;
+  if (!file) return c.json({ error: "No file" }, 400);
+  if (!file.type.startsWith("video/")) return c.json({ error: "Only video files allowed" }, 400);
+  if (file.size > 100 * 1024 * 1024) return c.json({ error: "File too large (max 100MB)" }, 400);
+
+  const key = `videos/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
   await c.env.ASSETS.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type },
   });
