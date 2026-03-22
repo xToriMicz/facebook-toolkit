@@ -572,6 +572,50 @@
       } catch(e) { toast('err', 'AI error: ' + e.message); }
       btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
     }
+
+    // Schedule
+    async function loadSchedule() {
+      const list = document.getElementById('scheduleList');
+      try {
+        const res = await fetch('/api/schedule', {credentials:'include'});
+        const data = await res.json();
+        if (!data.scheduled || data.scheduled.length === 0) {
+          list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
+          return;
+        }
+        list.innerHTML = data.scheduled.map(s => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.message.slice(0,60)}${s.message.length>60?'...':''}</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ${new Date(s.scheduled_at).toLocaleString('th-TH')} · <span style="color:${s.status==='pending'?'var(--accent)':s.status==='posted'?'#4caf50':'#ef4444'}">${s.status==='pending'?'รอโพส':s.status==='posted'?'โพสแล้ว':'ล้มเหลว'}</span></div>
+            </div>
+            ${s.status==='pending'?'<button onclick="cancelSchedule('+s.id+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;margin-left:8px">ยกเลิก</button>':''}
+          </div>
+        `).join('');
+      } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
+    }
+
+    async function createSchedule() {
+      const msg = document.getElementById('scheduleMsg').value.trim();
+      const date = document.getElementById('scheduleDate').value;
+      const time = document.getElementById('scheduleTime').value;
+      const st = document.getElementById('scheduleStatus');
+      if (!msg) { st.textContent='กรุณาเขียนข้อความ'; st.className='toast err'; return; }
+      if (!date || !time) { st.textContent='กรุณาเลือกวันและเวลา'; st.className='toast err'; return; }
+      const scheduledAt = new Date(date+'T'+time+':00').toISOString();
+      try {
+        const res = await fetch('/api/schedule', {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg,scheduled_at:scheduledAt})});
+        const data = await res.json();
+        if (data.ok) { st.textContent='ตั้งเวลาสำเร็จ!'; st.className='toast ok'; document.getElementById('scheduleMsg').value=''; loadSchedule(); }
+        else { st.textContent=data.error||'Error'; st.className='toast err'; }
+      } catch(e) { st.textContent='Error: '+e.message; st.className='toast err'; }
+    }
+
+    async function cancelSchedule(id) {
+      if (!confirm('ยกเลิก?')) return;
+      await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'include'});
+      loadSchedule();
+    }
   </script>
 </body>
 </html>
