@@ -244,6 +244,26 @@
     .multi-thumb img { width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
     .multi-thumb-remove { position:absolute; top:-4px; right:-4px; width:20px; height:20px; background:var(--danger); color:white; border:none; border-radius:50%; font-size:0.65rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
+    /* === Tickets === */
+    .ticket-item { display:flex; gap:12px; padding:12px; border-bottom:1px solid rgba(255,255,255,0.03); transition:background 0.15s; }
+    .ticket-item:last-child { border-bottom:none; }
+    .ticket-item:hover { background:rgba(255,255,255,0.02); }
+    .ticket-type { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
+    .ticket-type.bug { background:rgba(239,68,68,0.1); }
+    .ticket-type.feature { background:rgba(79,110,247,0.1); }
+    .ticket-type.question { background:rgba(245,158,11,0.1); }
+    .ticket-body { flex:1; min-width:0; }
+    .ticket-title { font-size:0.85rem; font-weight:600; color:var(--text); margin-bottom:2px; }
+    .ticket-desc { font-size:0.75rem; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ticket-meta { display:flex; gap:8px; align-items:center; margin-top:4px; }
+    .ticket-status { font-size:0.65rem; padding:2px 8px; border-radius:6px; font-weight:600; }
+    .ticket-status.open { background:rgba(79,110,247,0.1); color:var(--accent); }
+    .ticket-status.in-progress { background:rgba(245,158,11,0.1); color:var(--warning); }
+    .ticket-status.closed { background:rgba(34,197,94,0.1); color:var(--success); }
+    .ticket-time { font-size:0.68rem; color:var(--text-muted); }
+    .ticket-link { font-size:0.68rem; color:var(--accent); text-decoration:none; }
+    .ticket-link:hover { text-decoration:underline; }
+
     /* === Trends === */
     .trend-item { display: flex; align-items: center; gap: 14px; padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; cursor: default; }
     .trend-item:last-child { border-bottom: none; }
@@ -320,6 +340,7 @@
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
           <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
+          <button class="sidebar-nav-item" onclick="switchTab('tickets',this)" style="color:#ef4444;border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-top:8px">🐛 แจ้งบัค</button>
           <a href="/howto.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📖 คู่มือ Affiliate</a>
           <a href="/howto-affiliate.html" class="sidebar-nav-item" style="text-decoration:none;display:block;font-size:0.82rem;padding-left:28px">└ 🤝 Affiliate ละเอียด</a>
         </div>
@@ -556,6 +577,51 @@
           <button class="btn btn-accent" onclick="loadInsights()" style="margin-top:12px">📊 โหลด Insights</button>
         </div>
       </div>
+
+      <!-- Tickets -->
+      <div id="tabTickets" class="hidden">
+        <!-- Ticket Form -->
+        <div class="card" style="border-color:rgba(239,68,68,0.12)">
+          <div class="card-title"><span class="card-title-icon">🐛</span> แจ้งบัค / ขอฟีเจอร์</div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>ประเภท</label>
+            <select id="ticketType" class="page-select" style="background-image:none">
+              <option value="bug">🐛 Bug — เจอปัญหา</option>
+              <option value="feature">✨ Feature — ขอฟีเจอร์ใหม่</option>
+              <option value="question">❓ Question — สงสัย/ถาม</option>
+            </select>
+          </div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>หัวข้อ</label>
+            <input id="ticketTitle" placeholder="เช่น กดโพสแล้ว error" style="width:100%;padding:11px 14px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit">
+          </div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>รายละเอียด</label>
+            <textarea id="ticketBody" class="compose-area" placeholder="อธิบายขั้นตอนที่ทำให้เกิด bug&#10;1. กดปุ่ม...&#10;2. เลือก...&#10;3. เจอ error..." style="min-height:100px"></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:14px">
+            <label>รูปประกอบ (optional)</label>
+            <div style="display:flex;gap:8px">
+              <input id="ticketImage" placeholder="วาง URL รูปหรือ screenshot" style="flex:1;padding:11px 14px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit">
+              <button onclick="document.getElementById('ticketFileInput').click()" class="btn btn-ghost" style="padding:10px 14px;font-size:0.8rem;white-space:nowrap">📎 แนบไฟล์</button>
+            </div>
+            <input type="file" id="ticketFileInput" accept="image/*" style="display:none" onchange="uploadTicketImage(this.files[0])">
+          </div>
+
+          <button class="btn btn-accent" onclick="submitTicket()" id="ticketSubmitBtn" style="width:100%;font-size:0.95rem;padding:14px">📮 ส่ง Ticket</button>
+          <div class="toast" id="ticketStatus"></div>
+        </div>
+
+        <!-- Ticket List -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-title"><span class="card-title-icon">📋</span> Tickets ของฉัน</div>
+          <div id="ticketList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
     </div>
     </div>
     </div>
@@ -654,7 +720,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabTickets'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -667,8 +733,10 @@
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
+      if(tab==='tickets') loadTickets();
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
+      if(tab==='tickets') loadTickets();
     }
 
     // Compose
@@ -1421,6 +1489,52 @@
         if (d.ok) { st.textContent = 'ตั้งเวลา ' + d.scheduled + ' โพสสำเร็จ!'; st.className = 'toast ok'; loadSchedule(); loadBulkDrafts(); }
         else { st.textContent = d.error || 'Error'; st.className = 'toast err'; }
       } catch(e) { st.textContent = 'Error: ' + e.message; st.className = 'toast err'; }
+    }
+
+
+    // Tickets
+    async function submitTicket() {
+      const type = document.getElementById('ticketType').value;
+      const title = document.getElementById('ticketTitle').value.trim();
+      const body = document.getElementById('ticketBody').value.trim();
+      const image = document.getElementById('ticketImage').value.trim();
+      const st = document.getElementById('ticketStatus');
+      if (!title) { st.textContent = 'กรุณาใส่หัวข้อ'; st.className = 'toast err'; return; }
+      if (!body) { st.textContent = 'กรุณาใส่รายละเอียด'; st.className = 'toast err'; return; }
+      try {
+        const r = await fetch('/api/tickets', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, title, body, image_url: image || null }) });
+        const d = await r.json();
+        if (d.ok) {
+          st.textContent = 'ส่ง ticket สำเร็จ!'; st.className = 'toast ok';
+          document.getElementById('ticketTitle').value = '';
+          document.getElementById('ticketBody').value = '';
+          document.getElementById('ticketImage').value = '';
+          loadTickets();
+        } else { st.textContent = d.error || 'Error'; st.className = 'toast err'; }
+      } catch(e) { st.textContent = 'Error: ' + e.message; st.className = 'toast err'; }
+    }
+
+    async function loadTickets() {
+      const el = document.getElementById('ticketList');
+      try {
+        const r = await fetch('/api/tickets', { credentials: 'include' });
+        const d = await r.json();
+        if (!d.tickets || d.tickets.length === 0) {
+          el.innerHTML = '<div class="empty-state">ยังไม่มี tickets</div>';
+          return;
+        }
+        const typeIcons = { bug: '🐛', feature: '✨', question: '❓' };
+        const statusColors = { open: 'var(--accent)', closed: '#4caf50', in_progress: '#2196f3' };
+        el.innerHTML = d.tickets.map(t => '<div style="padding:12px;background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-size:0.85rem;font-weight:600;color:var(--text)">' + (typeIcons[t.type] || '📌') + ' ' + (t.title || '').slice(0, 50) + '</span>' +
+          '<span style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:' + (statusColors[t.status] || 'var(--text-muted)') + '20;color:' + (statusColors[t.status] || 'var(--text-muted)') + '">' + t.status + '</span>' +
+          '</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">' + (t.body || '').slice(0, 80) + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">' + new Date(t.created_at).toLocaleString('th-TH') + '</div>' +
+          '</div>').join('');
+      } catch(e) { el.innerHTML = '<div class="empty-state">Error loading tickets</div>'; }
     }
 
   </script>
