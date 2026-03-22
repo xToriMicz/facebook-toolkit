@@ -65,6 +65,23 @@ schedule.get("/schedule", async (c) => {
   return c.json({ scheduled: results, total: results.length });
 });
 
+// PUT /api/schedule/:id/reschedule
+schedule.put("/schedule/:id/reschedule", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const id = c.req.param("id");
+  const { scheduled_at } = await c.req.json();
+  if (!scheduled_at) return c.json({ error: "scheduled_at required" }, 400);
+  const post = await c.env.DB.prepare(
+    "SELECT id FROM scheduled_posts WHERE id = ? AND user_fb_id = ? AND status = 'pending'"
+  ).bind(id, session.fb_id).first();
+  if (!post) return c.json({ error: "Post not found or not pending" }, 404);
+  await c.env.DB.prepare(
+    "UPDATE scheduled_posts SET scheduled_at = ? WHERE id = ?"
+  ).bind(scheduled_at, id).run();
+  return c.json({ ok: true, id: Number(id), scheduled_at });
+});
+
 // DELETE /api/schedule/:id
 schedule.delete("/schedule/:id", async (c) => {
   const id = c.req.param("id");
