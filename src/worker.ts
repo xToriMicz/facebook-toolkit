@@ -857,6 +857,39 @@ app.delete("/api/schedule/:id", async (c) => {
   return c.json({ ok: true });
 });
 
+// --- Bulk Schedule ---
+app.post("/api/schedule/bulk", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { posts, page_id } = await c.req.json();
+  if (!Array.isArray(posts) || posts.length === 0) {
+    return c.json({ error: "posts array required" }, 400);
+  }
+  if (posts.length > 20) {
+    return c.json({ error: "Maximum 20 posts per bulk schedule" }, 400);
+  }
+
+  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  if (!targetPageId) return c.json({ error: "No page selected" }, 400);
+
+  const page = await c.env.DB.prepare(
+    "SELECT page_id FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, targetPageId).first();
+  if (!page) return c.json({ error: "Page not found for this user" }, 400);
+
+  const results: { id: number | null; message: string; scheduled_at: string }[] = [];
+  for (const post of posts) {
+    if (!post.message || !post.scheduled_at) continue;
+    const { meta } = await c.env.DB.prepare(
+      "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
+    ).bind(session.fb_id, targetPageId, post.message, post.image_url || null, post.scheduled_at).run();
+    results.push({ id: meta.last_row_id as number, message: post.message.slice(0, 40), scheduled_at: post.scheduled_at });
+  }
+
+  return c.json({ ok: true, scheduled: results.length, total_requested: posts.length, results }, 201);
+});
+
 // --- Performance Analytics ---
 app.get("/api/analytics/performance", async (c) => {
   const session = await getSessionFromReq(c);

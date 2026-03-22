@@ -523,6 +523,17 @@
           </div>
           <button class="btn btn-accent" onclick="createSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาโพส</button>
           <div class="toast" id="scheduleStatus"></div>
+          <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">Bulk Schedule จากฉบับร่าง</h4>
+          <div id="bulkDraftList" style="margin-bottom:16px"><div class="empty-state">โหลดฉบับร่าง...</div></div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <input type="datetime-local" id="bulkStartTime" style="flex:1;min-width:180px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+            <select id="bulkInterval" style="padding:8px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+              <option value="60">ทุก 1 ชม.</option><option value="120">ทุก 2 ชม.</option><option value="180" selected>ทุก 3 ชม.</option><option value="360">ทุก 6 ชม.</option><option value="720">ทุก 12 ชม.</option><option value="1440">ทุกวัน</option>
+            </select>
+          </div>
+          <button class="btn btn-accent" onclick="bulkSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาที่เลือกทั้งหมด</button>
+          <div class="toast" id="bulkStatus"></div>
+
           <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">รายการที่ตั้งเวลาไว้</h4>
           <div id="scheduleList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
@@ -653,7 +664,7 @@
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
-      if(tab==='schedule') loadSchedule();
+      if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
     }
 
@@ -1360,6 +1371,45 @@
         if (d.ok) { toast('ok','Reply sent!'); document.getElementById('replyInput').value=''; replyTargetId=null; showComments(currentCommentPostId); }
         else toast('err', d.error || 'Reply failed');
       } catch(e) { toast('err', e.message); }
+    }
+
+
+    // Bulk Schedule from Drafts
+    async function loadBulkDrafts() {
+      const el = document.getElementById('bulkDraftList');
+      try {
+        const r = await fetch('/api/drafts', {credentials:'include'});
+        const d = await r.json();
+        if (!d.drafts || d.drafts.length === 0) {
+          el.innerHTML = '<div class="empty-state">ไม่มีฉบับร่าง — เขียนฉบับร่างก่อน</div>';
+          return;
+        }
+        el.innerHTML = d.drafts.map(dr => '<label style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg-input);border-radius:8px;margin-bottom:4px;border:1px solid var(--border);cursor:pointer">' +
+          '<input type="checkbox" class="bulk-draft-check" value="' + dr.id + '" data-msg="' + (dr.message || '').replace(/"/g, '&quot;').slice(0, 200) + '" style="margin-top:3px">' +
+          '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (dr.message || '').slice(0, 60) + '</div>' +
+          '<div style="font-size:0.7rem;color:var(--text-muted)">' + new Date(dr.updated_at).toLocaleString('th-TH') + '</div></div></label>').join('');
+      } catch(e) { el.innerHTML = '<div class="empty-state">Error</div>'; }
+    }
+
+    async function bulkSchedule() {
+      const checks = document.querySelectorAll('.bulk-draft-check:checked');
+      const st = document.getElementById('bulkStatus');
+      if (checks.length === 0) { st.textContent = 'เลือกฉบับร่างก่อน'; st.className = 'toast err'; return; }
+      const startInput = document.getElementById('bulkStartTime').value;
+      if (!startInput) { st.textContent = 'กรุณาเลือกเวลาเริ่มต้น'; st.className = 'toast err'; return; }
+      const interval = parseInt(document.getElementById('bulkInterval').value);
+      const startTime = new Date(startInput);
+      const posts = [];
+      checks.forEach((cb, i) => {
+        const schedAt = new Date(startTime.getTime() + i * interval * 60000);
+        posts.push({ message: cb.dataset.msg, scheduled_at: schedAt.toISOString() });
+      });
+      try {
+        const r = await fetch('/api/schedule/bulk', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts }) });
+        const d = await r.json();
+        if (d.ok) { st.textContent = 'ตั้งเวลา ' + d.scheduled + ' โพสสำเร็จ!'; st.className = 'toast ok'; loadSchedule(); loadBulkDrafts(); }
+        else { st.textContent = d.error || 'Error'; st.className = 'toast err'; }
+      } catch(e) { st.textContent = 'Error: ' + e.message; st.className = 'toast err'; }
     }
 
   </script>
