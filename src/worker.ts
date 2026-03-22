@@ -85,6 +85,11 @@ async function getSessionFromReq(c: any): Promise<any | null> {
   return data ? JSON.parse(data) : null;
 }
 
+// Favicon — prevent __STATIC_CONTENT_MANIFEST error
+app.get("/favicon.ico", (c) => {
+  return new Response(null, { status: 204, headers: { "Cache-Control": "public, max-age=86400" } });
+});
+
 // Health check
 app.get("/api/health", (c) => c.json({ ok: true, service: "facebook-toolkit" }));
 
