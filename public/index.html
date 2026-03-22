@@ -879,7 +879,7 @@
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
           const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
-          const pageName=p.page_name?`<span style="font-size:0.7rem;color:var(--accent);margin-right:4px">📄 ${p.page_name}</span>`:'';
+          const pageName=`<span style="font-size:0.7rem;color:${p.page_name?'var(--accent)':'var(--text-muted)'};margin-right:4px">📄 ${p.page_name||'ไม่ระบุเพจ'}</span>`;
           const eng=p.engagement?`<div style="display:flex;gap:10px;margin-top:4px;font-size:0.72rem;color:var(--text-secondary)"><span>❤️ ${p.engagement.likes}</span><span>💬 ${p.engagement.comments}</span><span>🔄 ${p.engagement.shares}</span></div>`:'';
           const cmtBtn=p.fb_post_id?` <button onclick="showComments('${p.fb_post_id}')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">💬 comments</button>`:'';
           return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
