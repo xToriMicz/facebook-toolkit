@@ -76,8 +76,8 @@ post.post("/post", async (c) => {
 
     const fbPostId = result.id || result.post_id || null;
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
-    ).bind(message || "", image_url || null, fbPostId, new Date().toISOString()).run();
+      "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
+    ).bind(message || "", image_url || null, fbPostId, targetPageId, new Date().toISOString()).run();
 
     let commentResult = null;
     if (affiliate_link && fbPostId) {

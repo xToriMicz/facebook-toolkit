@@ -71,8 +71,8 @@ drafts.post("/drafts/:id/publish", async (c) => {
 
   await c.env.DB.prepare("DELETE FROM drafts WHERE id = ?").bind(id).run();
   await c.env.DB.prepare(
-    "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
-  ).bind(draft.message, draft.image_url, result.id || result.post_id, new Date().toISOString()).run();
+    "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
+  ).bind(draft.message, draft.image_url, result.id || result.post_id, pageId, new Date().toISOString()).run();
 
   return c.json({ ok: true, result });
 });
