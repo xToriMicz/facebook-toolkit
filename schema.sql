@@ -24,3 +24,11 @@ CREATE TABLE IF NOT EXISTS deletion_requests (
   status TEXT NOT NULL DEFAULT 'completed',
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS content_templates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  template_text TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'ทั่วไป',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

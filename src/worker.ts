@@ -11,7 +11,10 @@ interface Env {
 }
 
 const app = new Hono<{ Bindings: Env }>();
-app.use("/api/*", cors());
+app.use("/api/*", cors({
+  origin: "https://fb.makeloops.xyz",
+  credentials: true,
+}));
 
 // Auth routes: /auth/facebook, /auth/callback, /auth/logout, /api/me
 app.route("/auth", auth);
@@ -112,6 +115,36 @@ app.post("/api/settings", async (c) => {
   return c.json({ ok: true });
 });
 
+// --- Content Templates ---
+app.get("/api/templates", async (c) => {
+  const category = c.req.query("category");
+  let query = "SELECT * FROM content_templates";
+  const params: string[] = [];
+  if (category && category !== "all") {
+    query += " WHERE category = ?";
+    params.push(category);
+  }
+  query += " ORDER BY created_at DESC";
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  return c.json({ templates: results, total: results.length });
+});
+
+app.post("/api/templates", async (c) => {
+  const { title, template_text, category } = await c.req.json();
+  if (!title || !template_text) return c.json({ error: "title and template_text required" }, 400);
+  const cat = category || "ทั่วไป";
+  const { meta } = await c.env.DB.prepare(
+    "INSERT INTO content_templates (title, template_text, category) VALUES (?, ?, ?)"
+  ).bind(title, template_text, cat).run();
+  return c.json({ ok: true, id: meta.last_row_id }, 201);
+});
+
+app.delete("/api/templates/:id", async (c) => {
+  const id = c.req.param("id");
+  await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(id).run();
+  return c.json({ ok: true });
+});
+
 // --- Data Deletion Callback (Facebook requirement) ---
 
 async function parseSignedRequest(signedRequest: string, appSecret: string): Promise<{ user_id: string; algorithm: string; issued_at: number } | null> {
@@ -144,8 +177,13 @@ async function parseSignedRequest(signedRequest: string, appSecret: string): Pro
 }
 
 app.post("/auth/deauthorize", async (c) => {
-  const formData = await c.req.formData();
-  const signedRequest = formData.get("signed_request") as string;
+  let signedRequest: string | null = null;
+  try {
+    const formData = await c.req.formData();
+    signedRequest = formData.get("signed_request") as string;
+  } catch {
+    return c.json({ error: "Missing signed_request" }, 400);
+  }
   if (!signedRequest) return c.json({ error: "Missing signed_request" }, 400);
 
   const appSecret = await c.env.KV.get("fb_app_secret");
