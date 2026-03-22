@@ -114,16 +114,29 @@ post.post("/upload", async (c) => {
   return c.json({ ok: true, url: `https://fb.makeloops.xyz/img/${key}`, key });
 });
 
-// GET /api/posts — post history with optional engagement
+// GET /api/posts — post history with page info + optional engagement
 post.get("/posts", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const limit = Math.min(50, +(c.req.query("limit") || "20"));
+  const pageFilter = c.req.query("page_id");
   const withEngagement = c.req.query("engagement") === "1";
 
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM posts ORDER BY created_at DESC LIMIT ?"
-  ).bind(limit).all();
+  let query = "SELECT p.*, up.page_name, up.page_id as matched_page_id FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id";
+  const params: (string | number)[] = [];
+  if (pageFilter) {
+    query += " WHERE p.page_id = ?";
+    params.push(pageFilter);
+  }
+  query += " ORDER BY p.created_at DESC LIMIT ?";
+  params.push(limit);
+
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+
+  // Get unique pages for filter dropdown
+  const { results: pages } = await c.env.DB.prepare(
+    "SELECT DISTINCT p.page_id, up.page_name FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id WHERE p.page_id IS NOT NULL"
+  ).all();
 
   if (withEngagement && results.length > 0) {
     const token = await c.env.KV.get("fb_page_token");
@@ -142,10 +155,10 @@ post.get("/posts", async (c) => {
         });
         return { ...post, engagement: eng };
       }));
-      return c.json({ posts: enriched, total: enriched.length });
+      return c.json({ posts: enriched, total: enriched.length, pages });
     }
   }
-  return c.json({ posts: results, total: results.length });
+  return c.json({ posts: results, total: results.length, pages });
 });
 
 // GET /api/posts/:postId/comments
