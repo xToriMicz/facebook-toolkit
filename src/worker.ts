@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { serveStatic } from "hono/cloudflare-workers";
 import auth, { getSession } from "./auth";
 import { getCookie } from "hono/cookie";
+import { callAI } from "./ai-providers";
 
 interface Env {
   DB: D1Database;
@@ -150,6 +151,58 @@ app.post("/api/settings", async (c) => {
   return c.json({ ok: true });
 });
 
+// --- AI Settings ---
+app.get("/api/ai-settings", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const row = await c.env.DB.prepare(
+    "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
+  ).bind(session.fb_id).first<{ provider: string; model: string; api_key: string; endpoint_url: string }>();
+
+  if (!row) return c.json({ configured: false });
+
+  return c.json({
+    configured: true,
+    provider: row.provider,
+    model: row.model,
+    api_key_preview: row.api_key ? row.api_key.slice(0, 8) + "****" : null,
+    endpoint_url: row.endpoint_url,
+  });
+});
+
+app.post("/api/ai-settings", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { provider, model, api_key, endpoint_url } = await c.req.json() as any;
+  if (!provider) return c.json({ error: "provider required" }, 400);
+
+  const defaults: Record<string, { model: string; endpoint: string }> = {
+    anthropic: { model: "claude-haiku-4-5-20251001", endpoint: "https://api.anthropic.com/v1/messages" },
+    openai: { model: "gpt-4o-mini", endpoint: "https://api.openai.com/v1/chat/completions" },
+    google: { model: "gemini-2.0-flash", endpoint: "https://generativelanguage.googleapis.com/v1beta/models" },
+  };
+  const def = defaults[provider];
+
+  await c.env.DB.prepare(
+    `INSERT INTO user_ai_settings (user_fb_id, provider, model, api_key, endpoint_url, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_fb_id) DO UPDATE SET
+       provider = excluded.provider, model = excluded.model,
+       api_key = excluded.api_key, endpoint_url = excluded.endpoint_url`
+  ).bind(
+    session.fb_id,
+    provider,
+    model || def?.model || "",
+    api_key || "",
+    endpoint_url || def?.endpoint || "",
+    new Date().toISOString()
+  ).run();
+
+  return c.json({ ok: true });
+});
+
 // --- AI Content Writer ---
 app.post("/api/ai-write", async (c) => {
   const session = await getSessionFromReq(c);
@@ -183,36 +236,57 @@ app.post("/api/ai-write", async (c) => {
 - ตอบเป็น JSON: {"text":"caption ที่เขียน","hashtags":["#tag1","#tag2"]}
 - ตอบ JSON เท่านั้น ไม่มีข้อความอื่น`;
 
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": c.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: `เขียน caption Facebook เกี่ยวกับ: ${topic}` }],
-        system: systemPrompt,
-      }),
-    });
+  // Load user AI settings, fallback to env
+  const aiSettings = await c.env.DB.prepare(
+    "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
+  ).bind(session.fb_id).first<{ provider: string; model: string; api_key: string; endpoint_url: string }>();
 
-    const data = await res.json() as any;
-    if (data.error) {
-      return c.json({ error: data.error.message }, 500);
+  const provider = aiSettings?.provider || "anthropic";
+  const apiKey = aiSettings?.api_key || c.env.ANTHROPIC_API_KEY;
+  const model = aiSettings?.model || "claude-haiku-4-5-20251001";
+  const endpoint = aiSettings?.endpoint_url || "https://api.anthropic.com/v1/messages";
+
+  if (!apiKey) return c.json({ error: "No API key configured. Go to Settings > AI to add one." }, 400);
+
+  const userMsg = `เขียน caption Facebook เกี่ยวกับ: ${topic}`;
+
+  try {
+    let responseText = "";
+
+    if (provider === "openai") {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }] }),
+      });
+      const data = await res.json() as any;
+      if (data.error) return c.json({ error: data.error.message }, 500);
+      responseText = data.choices?.[0]?.message?.content || "";
+    } else if (provider === "google") {
+      const res = await fetch(`${endpoint}/${model}:generateContent?key=${apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMsg}` }] }] }),
+      });
+      const data = await res.json() as any;
+      if (data.error) return c.json({ error: data.error.message }, 500);
+      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: "user", content: userMsg }], system: systemPrompt }),
+      });
+      const data = await res.json() as any;
+      if (data.error) return c.json({ error: data.error.message }, 500);
+      responseText = data.content?.[0]?.text || "";
     }
 
-    const responseText = data.content?.[0]?.text || "";
-
-    // Parse JSON from response
     try {
       const parsed = JSON.parse(responseText);
-      return c.json({ ok: true, text: parsed.text, hashtags: parsed.hashtags || [] });
+      return c.json({ ok: true, text: parsed.text, hashtags: parsed.hashtags || [], provider });
     } catch {
-      // If not valid JSON, return raw text
-      return c.json({ ok: true, text: responseText, hashtags: [] });
+      return c.json({ ok: true, text: responseText, hashtags: [], provider });
     }
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
@@ -247,6 +321,20 @@ app.delete("/api/templates/:id", async (c) => {
   const id = c.req.param("id");
   await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(id).run();
   return c.json({ ok: true });
+});
+
+// --- AI Provider Test ---
+app.post("/api/ai-settings/test", async (c) => {
+  const { provider, api_key, model, endpoint } = await c.req.json();
+  if (!provider || !api_key || !model) {
+    return c.json({ error: "provider, api_key, model required" }, 400);
+  }
+  try {
+    const result = await callAI(provider, api_key, model, "Say hello in Thai, one sentence only.", endpoint);
+    return c.json({ ok: true, provider, model: result.model, response: result.text, usage: result.usage });
+  } catch (e: any) {
+    return c.json({ ok: false, error: e.message }, 400);
+  }
 });
 
 // --- Scheduled Posts ---
