@@ -205,7 +205,7 @@
     <div class="nav-user hidden" id="navUser">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-name" id="navName"></span>
-      <button class="nav-btn" onclick="openSettings()">Settings</button>
+      <button class="nav-btn" onclick="switchTab('aiSettings',this)">Settings</button>
       <button class="nav-btn" onclick="logout()">Logout</button>
     </div>
   </nav>
@@ -406,20 +406,6 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
-  <div class="modal-bg modal-settings" id="settingsModal" onclick="if(event.target===this)closeSettings()">
-    <div class="modal-card" style="padding:28px">
-      <h2>Settings</h2>
-      <div class="field"><label>Page ID</label><input id="pageId" placeholder="123456789"></div>
-      <div class="field"><label>Page Name</label><input id="pageName" placeholder="Your page name"></div>
-      <div class="field"><label>Page Access Token</label><input id="pageToken" type="password" placeholder="Paste token here"></div>
-      <div class="actions">
-        <button class="btn btn-accent" onclick="saveSettings()">Save</button>
-        <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
-      </div>
-      <div class="toast" id="settingsStatus"></div>
-    </div>
-  </div>
 
   <script>
     let uploadedImageUrl = null, uploadedImageData = null, currentUser = null, selectedPage = null, userPages = [];
@@ -684,10 +670,6 @@
     }
 
     // Settings
-    function openSettings(){document.getElementById('settingsModal').classList.add('open');fetch('/api/settings').then(r=>r.json()).then(d=>{if(d.page_id)document.getElementById('pageId').value=d.page_id;if(d.page_name)document.getElementById('pageName').value=d.page_name;}).catch(()=>{});}
-    function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
-    async function saveSettings(){const body={page_id:document.getElementById('pageId').value,page_name:document.getElementById('pageName').value,page_token:document.getElementById('pageToken').value||undefined};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();const el=document.getElementById('settingsStatus');el.className='toast '+(d.ok?'ok':'err');el.textContent=d.ok?'Saved!':'Failed';setTimeout(()=>{el.className='toast';},3000);}
-
     // AI Writer (direct to textarea)
     async function generateAI() {
       const ta = document.getElementById('message');
