@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Toolkit — fb.makeloops.xyz</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a12; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 640px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 1.5rem; color: #64b5f6; margin-bottom: 8px; }
+    .subtitle { color: #666; font-size: 0.85rem; margin-bottom: 24px; }
+    .card { background: #12121a; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; color: #ffa726; margin-bottom: 12px; }
+    textarea { width: 100%; min-height: 120px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; font-size: 0.95rem; resize: vertical; font-family: inherit; }
+    textarea:focus { outline: none; border-color: #64b5f6; }
+    .upload-area { border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; text-align: center; color: #555; cursor: pointer; margin: 12px 0; transition: border-color 0.2s; }
+    .upload-area:hover { border-color: #64b5f6; color: #64b5f6; }
+    .upload-area.has-image { border-color: #4caf50; }
+    .preview-img { max-width: 100%; border-radius: 8px; margin-top: 12px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #1877f2; color: white; }
+    .btn-primary:hover { background: #166fe5; transform: translateY(-1px); }
+    .btn-primary:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+    .btn-row { display: flex; gap: 8px; margin-top: 16px; }
+    .status { padding: 12px; border-radius: 8px; margin-top: 12px; font-size: 0.85rem; display: none; }
+    .status.success { display: block; background: rgba(76,175,80,0.1); color: #4caf50; border: 1px solid rgba(76,175,80,0.2); }
+    .status.error { display: block; background: rgba(244,67,54,0.1); color: #f44336; border: 1px solid rgba(244,67,54,0.2); }
+    .settings-link { color: #555; font-size: 0.8rem; text-decoration: none; }
+    .settings-link:hover { color: #64b5f6; }
+    .char-count { text-align: right; font-size: 0.75rem; color: #444; margin-top: 4px; }
+    input[type="file"] { display: none; }
+
+    /* Settings modal */
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-body { background: #12121a; border-radius: 16px; padding: 24px; max-width: 480px; width: 90%; }
+    .modal-body h2 { margin-bottom: 16px; }
+    .input { width: 100%; padding: 10px 12px; background: #0a0a0f; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; }
+    .input:focus { outline: none; border-color: #64b5f6; }
+    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📘 Facebook Toolkit</h1>
+    <p class="subtitle">โพสรูปและข้อความลงเพจ — <a href="#" class="settings-link" onclick="openSettings()">⚙️ ตั้งค่า</a></p>
+
+    <div class="card">
+      <h2>✏️ เขียนโพส</h2>
+      <textarea id="message" placeholder="เขียนข้อความที่จะโพส..."></textarea>
+      <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
+
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+      <div id="imagePreview"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="postBtn" onclick="submitPost()">
+          📤 โพสลงเพจ
+        </button>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-body">
+      <h2>⚙️ ตั้งค่า Facebook Page</h2>
+      <label>Page ID</label>
+      <input class="input" id="pageId" placeholder="เช่น 123456789">
+      <label>Page Name</label>
+      <input class="input" id="pageName" placeholder="ชื่อเพจ">
+      <label>Page Access Token</label>
+      <input class="input" id="pageToken" type="password" placeholder="paste token ที่นี่">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveSettings()">💾 บันทึก</button>
+        <button class="btn" style="background:#333;color:#aaa" onclick="closeSettings()">ปิด</button>
+      </div>
+      <div class="status" id="settingsStatus"></div>
+    </div>
+  </div>
+
+  <script>
+    let uploadedImageUrl = null;
+
+    // Character count
+    document.getElementById('message').addEventListener('input', (e) => {
+      document.getElementById('charCount').textContent = e.target.value.length;
+    });
+
+    // Drag & drop
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#64b5f6'; });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'rgba(255,255,255,0.1)'; });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = 'rgba(255,255,255,0.1)';
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    async function handleFile(file) {
+      if (!file) return;
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('imagePreview').innerHTML = `<img src="${e.target.result}" class="preview-img">`;
+        uploadArea.classList.add('has-image');
+        uploadArea.textContent = `✅ ${file.name}`;
+      };
+      reader.readAsDataURL(file);
+
+      // Upload to R2
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.ok) uploadedImageUrl = data.url;
+      } catch (e) {
+        showStatus('error', 'อัพโหลดรูปไม่สำเร็จ');
+      }
+    }
+
+    async function submitPost() {
+      const message = document.getElementById('message').value.trim();
+      if (!message && !uploadedImageUrl) { showStatus('error', 'กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+
+      const btn = document.getElementById('postBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังโพส...';
+
+      try {
+        const res = await fetch('/api/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, image_url: uploadedImageUrl }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showStatus('success', '✅ โพสสำเร็จ!');
+          document.getElementById('message').value = '';
+          document.getElementById('imagePreview').innerHTML = '';
+          uploadArea.classList.remove('has-image');
+          uploadArea.textContent = '📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง';
+          uploadedImageUrl = null;
+          document.getElementById('charCount').textContent = '0';
+        } else {
+          showStatus('error', data.error || 'โพสไม่สำเร็จ');
+        }
+      } catch (e) {
+        showStatus('error', 'เกิดข้อผิดพลาด: ' + e.message);
+      }
+      btn.disabled = false;
+      btn.textContent = '📤 โพสลงเพจ';
+    }
+
+    function showStatus(type, msg) {
+      const el = document.getElementById('status');
+      el.className = 'status ' + type;
+      el.textContent = msg;
+      setTimeout(() => { el.className = 'status'; }, 5000);
+    }
+
+    function openSettings() {
+      document.getElementById('settingsModal').classList.add('open');
+      fetch('/api/settings').then(r => r.json()).then(data => {
+        if (data.page_id) document.getElementById('pageId').value = data.page_id;
+        if (data.page_name) document.getElementById('pageName').value = data.page_name;
+      });
+    }
+
+    function closeSettings() { document.getElementById('settingsModal').classList.remove('open'); }
+
+    async function saveSettings() {
+      const body = {
+        page_id: document.getElementById('pageId').value,
+        page_name: document.getElementById('pageName').value,
+        page_token: document.getElementById('pageToken').value || undefined,
+      };
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      const el = document.getElementById('settingsStatus');
+      if (data.ok) { el.className = 'status success'; el.textContent = '✅ บันทึกแล้ว'; }
+      else { el.className = 'status error'; el.textContent = 'บันทึกไม่สำเร็จ'; }
+      setTimeout(() => { el.className = 'status'; }, 3000);
+    }
+  </script>
+</body>
+</html>

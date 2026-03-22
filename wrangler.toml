@@ -1,0 +1,19 @@
+name = "facebook-toolkit"
+main = "src/worker.ts"
+compatibility_date = "2024-12-01"
+assets = { directory = "./public" }
+workers_dev = false
+routes = [{ pattern = "fb.makeloops.xyz", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "facebook-toolkit"
+database_id = "dc4c8aa4-8a97-415a-bdb5-0a86cf36d759"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "fb-toolkit-assets"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "6447fb51f8d0414e8c6d2bd93eac236a"
