@@ -599,40 +599,45 @@ app.post("/api/ai-settings/test", async (c) => {
 });
 
 // --- Scheduled Posts ---
-app.post("/api/schedule", async (c) => {
-  const { user_fb_id, page_id, message, image_url, scheduled_at } = await c.req.json();
-  if (!user_fb_id || !page_id || !message || !scheduled_at) {
-    return c.json({ error: "user_fb_id, page_id, message, scheduled_at required" }, 400);
+// Support both /api/schedule and /api/post/schedule
+const scheduleHandler = async (c: any) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { page_id, message, image_url, scheduled_at } = await c.req.json();
+  if (!message || !scheduled_at) {
+    return c.json({ error: "message and scheduled_at required" }, 400);
   }
+
+  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
   // Verify page belongs to user
   const page = await c.env.DB.prepare(
     "SELECT page_id FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(user_fb_id, page_id).first();
+  ).bind(session.fb_id, targetPageId).first();
   if (!page) return c.json({ error: "Page not found for this user" }, 400);
 
   const { meta } = await c.env.DB.prepare(
     "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
-  ).bind(user_fb_id, page_id, message, image_url || null, scheduled_at).run();
+  ).bind(session.fb_id, targetPageId, message, image_url || null, scheduled_at).run();
 
   return c.json({ ok: true, id: meta.last_row_id }, 201);
-});
+};
+app.post("/api/schedule", scheduleHandler);
+app.post("/api/post/schedule", scheduleHandler);
 
-app.get("/api/schedule", async (c) => {
-  const userId = c.req.query("user_fb_id");
-  const pageId = c.req.query("page_id");
-  const status = c.req.query("status") || "pending";
+const getScheduleHandler = async (c: any) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  let query = "SELECT * FROM scheduled_posts WHERE status = ?";
-  const params: string[] = [status];
-
-  if (userId) { query += " AND user_fb_id = ?"; params.push(userId); }
-  if (pageId) { query += " AND page_id = ?"; params.push(pageId); }
-  query += " ORDER BY scheduled_at ASC";
-
-  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM scheduled_posts WHERE user_fb_id = ? ORDER BY scheduled_at ASC"
+  ).bind(session.fb_id).all();
   return c.json({ scheduled: results, total: results.length });
-});
+};
+app.get("/api/schedule", getScheduleHandler);
+app.get("/api/posts/scheduled", getScheduleHandler);
 
 app.delete("/api/schedule/:id", async (c) => {
   const id = c.req.param("id");
