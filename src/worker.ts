@@ -101,7 +101,12 @@ app.post("/api/post", async (c) => {
     return c.json({ error: "Rate limit: max 50 posts/hour" }, 429);
   }
 
-  const { message, image_url, image_urls, page_id, affiliate_link } = await c.req.json();
+  const body = await c.req.json() as any;
+  const message = body.message ? sanitize(body.message) : "";
+  const image_url = body.image_url;
+  const image_urls = body.image_urls;
+  const page_id = body.page_id;
+  const affiliate_link = body.affiliate_link ? sanitize(body.affiliate_link) : null;
   if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
@@ -787,6 +792,8 @@ app.post("/api/drafts/:id/publish", async (c) => {
 
 // --- AI Provider Test ---
 app.post("/api/ai-settings/test", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { provider, api_key, model, endpoint } = await c.req.json();
   if (!provider || !api_key || !model) {
     return c.json({ error: "provider, api_key, model required" }, 400);
@@ -1001,11 +1008,7 @@ app.post("/api/rss-feeds/:id/fetch", async (c) => {
     if (feed.auto_draft && items.length > 0) {
       const newest = items[0];
       if (newest.title !== feed.last_item_id) {
-        const msg = newest.title + "
-
-" + newest.description + "
-
-" + "อ่านเพิ่มเติม: " + newest.link;
+        const msg = newest.title + "\n\n" + newest.description + "\n\n" + "อ่านเพิ่มเติม: " + newest.link;
         await c.env.DB.prepare(
           "INSERT INTO drafts (user_fb_id, message, image_url) VALUES (?, ?, NULL)"
         ).bind(session.fb_id, msg).run();
