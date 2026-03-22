@@ -937,7 +937,7 @@
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-input);border-radius:8px;margin-bottom:4px;font-size:0.78rem;border:1px solid var(--border);cursor:pointer" onclick="loadDraftToCompose('+dr.id+')">' +
               '<span style="flex:1;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+preview+'</span>' +
               '<span style="color:var(--text-muted);font-size:0.68rem;white-space:nowrap">'+time+'</span>' +
-              '<button onclick="event.stopPropagation();deleteDraftInline('+dr.id+')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:2px 4px">×</button></div>';
+              '<button onclick="event.stopPropagation();deleteDraftInline('+dr.id+',this)" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:2px 4px">×</button></div>';
           }).join('');
       } catch { el.innerHTML = ''; }
     }
@@ -956,7 +956,7 @@
     }
 
     async function deleteDraftInline(id) {
-      if (!confirm('ลบฉบับร่างนี้?')) return;
+      
       await fetch('/api/drafts/'+id, { method:'DELETE', credentials:'same-origin' });
       loadComposeDrafts();
     }
@@ -1217,7 +1217,7 @@
     }
 
     async function cancelSchedule(id) {
-      if (!confirm('ยกเลิก?')) return;
+      // inline confirm handled by UI
       await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'same-origin'});
       loadSchedule();
     }
@@ -1259,7 +1259,7 @@
     }
 
     async function publishDraft(id) {
-      if (!confirm('โพสฉบับร่างนี้เลย?')) return;
+      // inline confirm handled by UI
       try {
         const res = await fetch('/api/drafts/'+id+'/publish', {method:'POST', credentials:'same-origin'});
         const data = await res.json();
@@ -1282,7 +1282,7 @@
     }
 
     async function deleteDraft(id) {
-      if (!confirm('ลบฉบับร่างนี้?')) return;
+      
       await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'same-origin'});
       loadDrafts();
     }
