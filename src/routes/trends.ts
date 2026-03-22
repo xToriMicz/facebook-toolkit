@@ -23,7 +23,7 @@ trends.get("/trends", async (c) => {
   const categoryFilter = c.req.query("category");
 
   try {
-    const data = await kvCache(c.env.KV, "trends:th:all", 900, async () => {
+    const data = await kvCache(c.env.KV, "trends:th:v2", 900, async () => {
       // Parallel fetch both sources
       const [googleItems, xItems] = await Promise.all([
         fetchGoogleTrends(),
@@ -71,7 +71,10 @@ async function fetchGoogleTrends(): Promise<TrendItem[]> {
 async function fetchXTwitterTrends(): Promise<TrendItem[]> {
   const items: TrendItem[] = [];
   try {
-    const res = await fetch("https://trends24.in/thailand/");
+    const res = await fetch("https://trends24.in/thailand/", {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; FBToolkit/1.0)" },
+    });
+    if (!res.ok) return items;
     const html = await res.text();
     const tagRegex = /<a[^>]*href="https?:\/\/(?:twitter|x)\.com\/search[^"]*"[^>]*>([^<]+)<\/a>/gi;
     const seen = new Set<string>();
