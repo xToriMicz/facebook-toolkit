@@ -4,25 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Documentation — Facebook Toolkit</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <style>
-    :root { --bg: #0a0a0f; --bg-card: #12121a; --text: #e8e8ed; --text-muted: #888; --accent: #3b82f6; --border: rgba(255,255,255,0.08); --green: #4caf50; --warn: #f59e0b; }
+    :root { --bg: #0c0c14; --bg-card: #141420; --bg-input: #0e0e18; --text: #e8eaed; --text-muted: #8b8fa3; --accent: #4f6ef7; --accent-glow: rgba(79,110,247,0.15); --border: rgba(255,255,255,0.06); --green: #22c55e; --warn: #f59e0b; --fb: #1877f2; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+    body { font-family: 'Inter','Noto Sans Thai',-apple-system,sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; -webkit-font-smoothing: antialiased; }
     .layout { display: flex; min-height: 100vh; }
     .sidebar { width: 220px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 20px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-    .sidebar h2 { font-size: 0.85rem; color: var(--accent); margin-bottom: 16px; }
-    .sidebar a { display: block; padding: 6px 10px; color: var(--text-muted); text-decoration: none; font-size: 0.82rem; border-radius: 6px; margin-bottom: 2px; }
-    .sidebar a:hover { background: rgba(255,255,255,0.04); color: var(--text); }
-    .sidebar a.active { background: var(--accent); color: #fff; }
+    .sidebar h2 { font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 16px; letter-spacing: 0.5px; }
+    .sidebar a { display: block; padding: 8px 12px; color: var(--text-muted); text-decoration: none; font-size: 0.82rem; border-radius: 8px; margin-bottom: 2px; transition: all 0.15s; font-weight: 500; }
+    .sidebar a:hover { background: rgba(79,110,247,0.06); color: var(--text); }
+    .sidebar a.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px var(--accent-glow); }
     .main { flex: 1; max-width: 760px; margin: 0 auto; padding: 40px 24px; }
     h1 { font-size: 1.6rem; color: var(--accent); margin-bottom: 8px; }
     h2 { font-size: 1.15rem; color: var(--accent); margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
     h3 { font-size: 0.95rem; color: var(--text); margin: 16px 0 6px; }
     p { margin-bottom: 10px; color: var(--text-muted); }
-    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 12px 0; }
-    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--warn); }
-    .step { display: flex; gap: 10px; margin-bottom: 12px; }
-    .step-n { width: 24px; height: 24px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin: 14px 0; transition: border-color 0.2s; }
+    .card:hover { border-color: rgba(79,110,247,0.15); }
+    code { background: rgba(79,110,247,0.08); padding: 2px 8px; border-radius: 5px; font-size: 0.85em; color: var(--accent); font-family: 'SF Mono','Fira Code',monospace; }
+    .step { display: flex; gap: 12px; margin-bottom: 14px; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+    .step-n { width: 26px; height: 26px; background: linear-gradient(135deg, var(--fb), var(--accent)); color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
     ol, ul { padding-left: 20px; margin-bottom: 10px; }
     li { margin-bottom: 4px; color: var(--text-muted); }
     .back { display: inline-block; margin-bottom: 16px; color: var(--accent); text-decoration: none; font-size: 0.82rem; }
