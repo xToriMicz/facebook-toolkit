@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — Facebook Toolkit</title>
+  <style>
+    :root { --bg: #0a0a0f; --bg-card: #12121a; --text: #e8e8ed; --text-muted: #888; --accent: #3b82f6; --border: rgba(255,255,255,0.08); --green: #4caf50; --warn: #f59e0b; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--bg-card); border-right: 1px solid var(--border); padding: 20px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .sidebar h2 { font-size: 0.85rem; color: var(--accent); margin-bottom: 16px; }
+    .sidebar a { display: block; padding: 6px 10px; color: var(--text-muted); text-decoration: none; font-size: 0.82rem; border-radius: 6px; margin-bottom: 2px; }
+    .sidebar a:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar a.active { background: var(--accent); color: #fff; }
+    .main { flex: 1; max-width: 760px; margin: 0 auto; padding: 40px 24px; }
+    h1 { font-size: 1.6rem; color: var(--accent); margin-bottom: 8px; }
+    h2 { font-size: 1.15rem; color: var(--accent); margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 0.95rem; color: var(--text); margin: 16px 0 6px; }
+    p { margin-bottom: 10px; color: var(--text-muted); }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 12px 0; }
+    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--warn); }
+    .step { display: flex; gap: 10px; margin-bottom: 12px; }
+    .step-n { width: 24px; height: 24px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
+    ol, ul { padding-left: 20px; margin-bottom: 10px; }
+    li { margin-bottom: 4px; color: var(--text-muted); }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+    @media (max-width: 768px) { .layout { flex-direction: column; } .sidebar { width: 100%; height: auto; position: static; display: flex; flex-wrap: wrap; gap: 4px; padding: 12px; } .sidebar h2 { width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>Facebook Toolkit</h2>
+    <a href="#login">Login / Logout</a>
+    <a href="#compose">เขียนโพส</a>
+    <a href="#history">ประวัติโพส</a>
+    <a href="#schedule">ตั้งเวลา / Bulk</a>
+    <a href="#drafts">ฉบับร่าง</a>
+    <a href="#insights">Insights สถิติ</a>
+    <a href="#tickets">แจ้งบัค</a>
+    <a href="#rss">RSS Auto-post</a>
+    <a href="#affiliate">Affiliate</a>
+    <a href="#ai">AI Writer</a>
+    <a href="/">กลับหน้าหลัก</a>
+  </nav>
+
+  <main class="main">
+    <a href="/" class="back">&larr; กลับ Dashboard</a>
+    <h1>Documentation</h1>
+    <p>คู่มือใช้งาน Facebook Toolkit ทุกฟีเจอร์</p>
+
+    <h2 id="login">Login / Logout</h2>
+    <div class="card">
+      <div class="step"><div class="step-n">1</div><div>กดปุ่ม <strong>Login with Facebook</strong> ที่หน้าแรก</div></div>
+      <div class="step"><div class="step-n">2</div><div>อนุญาตสิทธิ์: จัดการเพจ, อ่านข้อมูลเพจ, โพสเนื้อหา</div></div>
+      <div class="step"><div class="step-n">3</div><div>ระบบจะดึงรายชื่อเพจที่คุณดูแล — เลือกเพจที่ต้องการ</div></div>
+      <div class="step"><div class="step-n">4</div><div>Logout: กดรูปโปรไฟล์มุมขวาบน > Logout</div></div>
+    </div>
+    <p>Token จะถูกเก็บอย่างปลอดภัยในระบบ ไม่ส่งให้บุคคลที่สาม</p>
+
+    <h2 id="compose">เขียนโพส</h2>
+    <h3>โพสข้อความ</h3>
+    <p>เขียนข้อความในช่อง แล้วกด <code>โพสเลย</code> — โพสลงเพจที่เลือกทันที</p>
+    <h3>โพสรูป</h3>
+    <p>คลิกพื้นที่ upload หรือลากรูปมาวาง รองรับหลายรูปพร้อมกัน (multi-photo post)</p>
+    <h3>AI Writer</h3>
+    <p>เลือก tone (สนุก/จริงจัง/ขายของ/ให้ความรู้) แล้วกด <code>AI เขียนให้</code> — AI จะเขียนข้อความพร้อม hashtag</p>
+    <h3>แม่แบบ</h3>
+    <p>เลือกแม่แบบจาก dropdown — ข้อความจะใส่ใน textarea ให้แก้ไขก่อนโพส</p>
+
+    <h2 id="history">ประวัติโพส</h2>
+    <div class="card">
+      <h3>Filter ตามเพจ</h3>
+      <p>เลือกเพจจาก dropdown ด้านบน — แสดงเฉพาะโพสของเพจนั้น</p>
+      <h3>Engagement Data</h3>
+      <p>แต่ละโพสแสดง likes, comments, shares ดึงจาก Facebook Graph API จริง</p>
+      <h3>Comments</h3>
+      <p>กด <code>comments</code> เพื่อดูและตอบคอมเมนต์จากหน้า dashboard</p>
+    </div>
+
+    <h2 id="schedule">ตั้งเวลา / Bulk Schedule</h2>
+    <h3>ตั้งเวลาโพสเดี่ยว</h3>
+    <div class="card">
+      <div class="step"><div class="step-n">1</div><div>เขียนข้อความ</div></div>
+      <div class="step"><div class="step-n">2</div><div>เลือกวันที่ + เวลา</div></div>
+      <div class="step"><div class="step-n">3</div><div>กด <code>ตั้งเวลาโพส</code></div></div>
+    </div>
+    <p>ระบบ Cron ตรวจทุก 5 นาที — ถึงเวลาโพสอัตโนมัติ</p>
+    <h3>Bulk Schedule</h3>
+    <p>เลือกฉบับร่างหลายชิ้น > เลือกเวลาเริ่ม + ช่วงห่าง (1/2/3/6/12/24 ชม.) > ตั้งเวลาทั้งหมดพร้อมกัน</p>
+
+    <h2 id="drafts">ฉบับร่าง</h2>
+    <ul>
+      <li><strong>บันทึก</strong> — กด Save Draft ที่หน้าเขียนโพส</li>
+      <li><strong>แก้ไข</strong> — กดปุ่มแก้ไข โหลดข้อความกลับ textarea</li>
+      <li><strong>โพสเลย</strong> — กดปุ่มโพส draft ลงเพจทันที</li>
+      <li><strong>ลบ</strong> — กดปุ่มลบ</li>
+    </ul>
+
+    <h2 id="insights">Insights สถิติเพจ</h2>
+    <div class="card">
+      <h3>Post Performance</h3>
+      <p>Top posts / Worst posts ranked by engagement (likes+comments+shares)</p>
+      <h3>Best Time to Post</h3>
+      <p>วิเคราะห์จากโพสที่ผ่านมา — แนะนำวันและเวลาที่ได้ engagement สูงสุด</p>
+      <h3>Refresh</h3>
+      <p>กด Refresh เพื่อดึง engagement ล่าสุดจาก Facebook (20 โพสล่าสุด)</p>
+    </div>
+
+    <h2 id="tickets">แจ้งบัค / ขอฟีเจอร์</h2>
+    <div class="card">
+      <div class="step"><div class="step-n">1</div><div>เลือกประเภท: Bug / Feature / Question</div></div>
+      <div class="step"><div class="step-n">2</div><div>ใส่หัวข้อ + รายละเอียด</div></div>
+      <div class="step"><div class="step-n">3</div><div>แนบ URL รูปประกอบ (optional)</div></div>
+      <div class="step"><div class="step-n">4</div><div>กด <code>ส่ง Ticket</code></div></div>
+    </div>
+    <p>ติดตามสถานะ ticket ได้ที่รายการด้านล่าง (open / in_progress / closed)</p>
+
+    <h2 id="rss">RSS Auto-post</h2>
+    <div class="card">
+      <div class="step"><div class="step-n">1</div><div>เพิ่ม RSS URL (เช่น workpointtoday.com/feed/)</div></div>
+      <div class="step"><div class="step-n">2</div><div>กด Fetch — ดึงข่าวล่าสุด</div></div>
+      <div class="step"><div class="step-n">3</div><div>ระบบสร้าง Draft อัตโนมัติจากข่าวใหม่ล่าสุด</div></div>
+    </div>
+    <p>Auto-draft: เมื่อมีข่าวใหม่ที่ยังไม่เคยดึง ระบบสร้าง draft ให้ตรวจสอบก่อนโพส</p>
+
+    <h2 id="affiliate">Affiliate Mode</h2>
+    <p>เปิด toggle Affiliate ที่หน้าเขียนโพส — เพิ่ม #ad อัตโนมัติ + แนะนำใส่ link ใน comment แรก</p>
+    <p>อ่านคู่มือละเอียด: <a href="/howto-affiliate" style="color:var(--warn)">คู่มือ Affiliate</a></p>
+
+    <h2 id="ai">AI Writer</h2>
+    <div class="card">
+      <h3>Provider</h3>
+      <p>รองรับ Anthropic (Claude), OpenAI (GPT), Google (Gemini), Custom (OpenAI-compatible)</p>
+      <h3>ตั้งค่า</h3>
+      <p>ไปที่ AI Settings > เลือก provider > ใส่ API key > เลือก model > Test</p>
+      <h3>ใช้งาน</h3>
+      <p>เลือก tone ที่ต้องการ > กด AI เขียนให้ > AI สร้างข้อความ + hashtag</p>
+    </div>
+
+    <div style="margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+      <p style="font-size:0.78rem;color:var(--text-muted)">Facebook Toolkit Docs &copy; 2026 fb.makeloops.xyz</p>
+    </div>
+  </main>
+</div>
+</body>
+</html>

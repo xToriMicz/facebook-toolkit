@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — Facebook Toolkit</title>
+  <style>
+    :root { --bg: #0a0a0f; --bg-card: #12121a; --text: #e8e8ed; --text-muted: #888; --accent: #3b82f6; --border: rgba(255,255,255,0.08); --green: #4caf50; --warn: #f59e0b; --red: #ef4444; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.6rem; color: var(--accent); margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 32px; }
+    .version { margin-bottom: 32px; }
+    .version-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .version-tag { background: var(--accent); color: #fff; padding: 3px 12px; border-radius: 6px; font-weight: 700; font-size: 0.9rem; }
+    .version-date { color: var(--text-muted); font-size: 0.8rem; }
+    .version-title { color: var(--text); font-size: 0.9rem; font-weight: 600; }
+    .changes { list-style: none; padding: 0; }
+    .changes li { padding: 6px 0 6px 20px; position: relative; font-size: 0.85rem; color: var(--text-muted); border-left: 2px solid var(--border); margin-left: 8px; }
+    .changes li::before { content: ''; position: absolute; left: -5px; top: 12px; width: 8px; height: 8px; border-radius: 50%; }
+    .feat::before { background: var(--green); }
+    .fix::before { background: var(--warn); }
+    .break::before { background: var(--red); }
+    .chore::before { background: var(--text-muted); }
+    .tag { font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 3px; margin-right: 4px; }
+    .tag-feat { background: rgba(76,175,80,0.15); color: var(--green); }
+    .tag-fix { background: rgba(245,158,11,0.15); color: var(--warn); }
+    .tag-break { background: rgba(239,68,68,0.15); color: var(--red); }
+    .back { display: inline-block; margin-bottom: 16px; color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+    .back:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a href="/" class="back">&larr; กลับ Dashboard</a>
+  <h1>Changelog</h1>
+  <p class="subtitle">ประวัติการอัพเดต Facebook Toolkit</p>
+
+  <div class="version">
+    <div class="version-header">
+      <span class="version-tag">v1.4</span>
+      <span class="version-date">22 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Team Features + Polish</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Ticket System — แจ้งบัค/ขอฟีเจอร์จากใน app</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Post History แยกเพจ — filter dropdown + page name badge</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Bulk Schedule — เลือก drafts หลายชิ้น ตั้งเวลาพร้อมกัน</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Affiliate Howto page — คู่มือใช้ affiliate link</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Documentation page — คู่มือทุกฟีเจอร์</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Changelog page</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Multi-photo post — frontend ส่ง array + backend bracket encoding</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> favicon.ico 204 — ป้องกัน __STATIC_CONTENT_MANIFEST error</li>
+      <li class="chore"><span class="tag">refactor</span> worker.ts แยก 7 route modules</li>
+    </ul>
+  </div>
+
+  <div class="version">
+    <div class="version-header">
+      <span class="version-tag">v1.3</span>
+      <span class="version-date">22 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Content + Analytics</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Post Performance Analytics — top/worst posts by engagement</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Best Time Analysis — วิเคราะห์เวลาที่ดีที่สุด + recommendation</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Affiliate Mode — toggle + auto #ad + reach warning</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Algorithm Tips — หมุนเปลี่ยน 7 tips ทุก 8 วินาที</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Post Type selector — ข้อความ / รูป / Link</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Templates field names — title/template_text (ไม่ใช่ name/message)</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Templates ย้ายเข้า compose — dropdown selector</li>
+    </ul>
+  </div>
+
+  <div class="version">
+    <div class="version-header">
+      <span class="version-tag">v1.2</span>
+      <span class="version-date">22 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Media + AI</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Reels posting — 3-step flow (init/upload/publish)</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Stories posting — photo + video stories</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> AI Multi-provider — Anthropic, OpenAI, Gemini, Custom</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> RSS Auto-post — fetch feeds + auto-create drafts</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Draft system — save/edit/publish/delete</li>
+    </ul>
+  </div>
+
+  <div class="version">
+    <div class="version-header">
+      <span class="version-tag">v1.1</span>
+      <span class="version-date">22 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Schedule + Templates</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Scheduled Posts + Cron trigger ทุก 5 นาที</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Schedule UI — date/time picker</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Content Templates — 7 pre-built templates</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Data Deletion callback — Facebook compliance</li>
+    </ul>
+  </div>
+
+  <div class="version">
+    <div class="version-header">
+      <span class="version-tag">v1.0</span>
+      <span class="version-date">21 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Initial Release</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Facebook OAuth Login</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Post to Page (text + photo)</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Multi-photo upload to R2</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Post history</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Settings (token management)</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Privacy Policy + Terms of Service</li>
+    </ul>
+  </div>
+
+  <div style="margin-top:40px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
+    <p style="font-size:0.78rem;color:var(--text-muted)">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </div>
+</div>
+</body>
+</html>
