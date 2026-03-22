@@ -248,7 +248,6 @@
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
           <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 แม่แบบ</button>
-          <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
         </div>
@@ -283,8 +282,26 @@
           <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
           <div id="imagePreview"></div>
           <div class="actions">
-            <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสลงเพจ</button>
+            <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
+            <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
           </div>
+
+          <!-- Schedule Picker (hidden by default) -->
+          <div id="schedulePicker" style="display:none;margin-top:14px;padding:16px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+              <div class="field" style="flex:1;min-width:140px;margin-bottom:0">
+                <label>📅 วันที่</label>
+                <input type="date" id="schedDate" style="width:100%;padding:10px 12px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem">
+              </div>
+              <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
+                <label>⏰ เวลา</label>
+                <input type="time" id="schedTime" style="width:100%;padding:10px 12px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem">
+              </div>
+              <button class="btn btn-accent" onclick="submitScheduled()" style="padding:10px 20px;font-size:0.9rem;white-space:nowrap">✅ ยืนยันตั้งเวลา</button>
+            </div>
+            <div id="scheduledList" style="margin-top:12px"></div>
+          </div>
+
           <div class="toast" id="status"></div>
         </div>
       </div>
@@ -570,6 +587,51 @@
       ['tabCompose','tabHistory','tabTemplates','tabTrends','tabAiSettings'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
       document.getElementById('tabCompose').classList.remove('hidden');
       document.getElementById('message').focus();
+    }
+
+    // Schedule
+    function toggleSchedule() {
+      const el = document.getElementById('schedulePicker');
+      const show = el.style.display === 'none';
+      el.style.display = show ? '' : 'none';
+      if (show) {
+        // Default: tomorrow 9:00
+        const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+        document.getElementById('schedDate').value = tmr.toISOString().split('T')[0];
+        document.getElementById('schedTime').value = '09:00';
+        loadScheduled();
+      }
+    }
+
+    async function submitScheduled() {
+      const msg = document.getElementById('message').value.trim();
+      if (!msg && !uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+      if (!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
+      const date = document.getElementById('schedDate').value;
+      const time = document.getElementById('schedTime').value;
+      if (!date || !time) { toast('err','กรุณาเลือกวันและเวลา'); return; }
+      const scheduledAt = new Date(date + 'T' + time + ':00').toISOString();
+      try {
+        const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ message:msg, image_url:uploadedImageUrl, page_id:selectedPage.id, scheduled_at:scheduledAt }) });
+        const d = await r.json();
+        if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; loadScheduled(); }
+        else toast('err', d.error || 'ตั้งเวลาไม่สำเร็จ');
+      } catch(e) { toast('err','เกิดข้อผิดพลาด'); }
+    }
+
+    async function loadScheduled() {
+      const el = document.getElementById('scheduledList');
+      try {
+        const r = await fetch('/api/posts/scheduled', { credentials:'same-origin' });
+        const d = await r.json();
+        const items = d.posts || [];
+        if (!items.length) { el.innerHTML = ''; return; }
+        el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">📅 โพสที่ตั้งเวลาไว้</div>' +
+          items.map(p => {
+            const dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:0.8rem"><span style="color:var(--warning)">⏰ '+dt+'</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((p.message||'').substring(0,50))+'</span></div>';
+          }).join('');
+      } catch { el.innerHTML = ''; }
     }
 
     // AI Settings
