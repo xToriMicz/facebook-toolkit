@@ -1,0 +1,71 @@
+{
+  "styles": {
+    "fun": {
+      "label": "สนุก",
+      "icon": "🎉",
+      "length": { "min": 40, "ideal": 80, "max": 150 },
+      "tips": "ใช้ emoji 1-3 ตัว, จบด้วยคำถาม, 1-2 ประโยค",
+      "prompt": "เขียนโพส Facebook สนุกสนาน น่าสนใจ ภาษาไทย ใช้ emoji ไม่เกิน 3 ตัว จบด้วยคำถามกระตุ้น comment ความยาว 40-80 ตัวอักษร",
+      "template": "[Emoji + คำถาม/statement สั้นๆ]\n\n[1 ประโยคขยาย]\n\n[CTA: ตอบในคอมเมนต์]"
+    },
+    "sales": {
+      "label": "ขายของ",
+      "icon": "💰",
+      "length": { "min": 80, "ideal": 150, "max": 250 },
+      "tips": "Hook→Benefit→CTA→Link, แสดงราคา+ส่วนลด, urgency",
+      "prompt": "เขียนโพส Facebook ขายสินค้า ภาษาไทย โครงสร้าง: hook ดึงดูด → benefit 2-3 ข้อ → CTA ชัดเจน ใช้ emoji เน้นจุดสำคัญ สร้าง urgency",
+      "template": "😩 เบื่อไหม [ปัญหา]?\n\n[ชื่อสินค้า] แก้ได้!\n✅ [benefit 1]\n✅ [benefit 2]\n\n🔥 ลดพิเศษวันนี้!\n👉 สั่งเลย: [link]"
+    },
+    "affiliate": {
+      "label": "Affiliate",
+      "icon": "🤝",
+      "length": { "min": 150, "ideal": 200, "max": 280 },
+      "tips": "PAS (Problem-Agitate-Solution), เปิดเผยว่าเป็น affiliate, เน้นรีวิวจริง",
+      "prompt": "เขียนโพส Facebook แบบ affiliate review ภาษาไทย ใช้ PAS framework: บอกปัญหา→ขยายความ→แนะนำสินค้าเป็นทางแก้ เน้นประสบการณ์จริง ต้องบอกว่าเป็นลิงก์ affiliate",
+      "template": "ใช้ [สินค้า] มา [ระยะเวลา] แล้ว\n\nสิ่งที่ชอบ:\n• [จุดเด่น 1]\n• [จุดเด่น 2]\n\nใครสนใจลองดู → [link]\n(ป.ล. เป็นลิงก์ affiliate 🙏)"
+    },
+    "professional": {
+      "label": "จริงจัง",
+      "icon": "📋",
+      "length": { "min": 80, "ideal": 150, "max": 200 },
+      "tips": "Fact→Insight→Takeaway, ใช้ตัวเลข/สถิติ, ให้ความรู้",
+      "prompt": "เขียนโพส Facebook ให้ความรู้ จริงจัง ภาษาไทย โครงสร้าง: เริ่มด้วย fact/สถิติ → ให้ insight ว่าทำไมสำคัญ → จบด้วย takeaway ที่นำไปใช้ได้",
+      "template": "📊 [Fact/สถิติ]\n\n[ทำไมสำคัญ]\n\n💡 สิ่งที่ควรทำ: [Takeaway]"
+    },
+    "story": {
+      "label": "เล่าเรื่อง",
+      "icon": "📖",
+      "length": { "min": 150, "ideal": 250, "max": 400 },
+      "tips": "Hook→Tension→Turning point→Lesson, เล่าเรื่องจริง, จบด้วยคำถาม",
+      "prompt": "เขียนโพส Facebook แบบ storytelling ภาษาไทย เริ่มด้วย hook ดึงดูด เล่าเรื่องมี tension แล้ว turning point จบด้วยบทเรียนและถามผู้อ่าน",
+      "template": "[Hook: เหตุการณ์ดึงดูด]\n\n[เล่าลำดับเวลา 3-5 ประโยค]\n\n[Turning point]\n\n[บทเรียน]\n\nคุณเคยเจอแบบนี้ไหม?"
+    },
+    "poll": {
+      "label": "ถามคำถาม",
+      "icon": "❓",
+      "length": { "min": 30, "ideal": 60, "max": 100 },
+      "tips": "คำถาม 2 ตัวเลือก, ใช้ emoji เป็นตัวเลือก, สั้นมาก",
+      "prompt": "เขียนโพส Facebook แบบ poll/คำถาม ภาษาไทย คำถามสั้น 1 ประโยค ให้เลือก 2 ตัวเลือกด้วย emoji (👍/❤️) จบด้วยบอกให้เหตุผลในคอมเมนต์",
+      "template": "🗳️ [คำถาม]?\n\n👍 = [ตัวเลือก A]\n❤️ = [ตัวเลือก B]\n\nบอกเหตุผลในคอมเมนต์!"
+    },
+    "testimonial": {
+      "label": "รีวิว",
+      "icon": "⭐",
+      "length": { "min": 60, "ideal": 120, "max": 200 },
+      "tips": "quote ลูกค้า + ชื่อ, ใช้ดาว, ขอบคุณ",
+      "prompt": "เขียนโพส Facebook แบบ testimonial/รีวิวจากลูกค้า ภาษาไทย ใส่ quote ลูกค้า ชื่อ ตำแหน่ง ดาว 5 ดาว จบด้วยขอบคุณ",
+      "template": "⭐⭐⭐⭐⭐\n\n\"[คำพูดลูกค้า]\"\n— [ชื่อ]\n\nขอบคุณที่ไว้วางใจ 🙏"
+    }
+  },
+  "general": {
+    "optimal_length": "40-80 ตัวอักษร",
+    "max_before_truncate": 125,
+    "image_size": "1200x630 หรือ 1080x1080",
+    "posting_frequency": "3-5 ครั้ง/สัปดาห์",
+    "content_ratio": "80% value / 20% promotion",
+    "best_time_th": "07-09 และ 18-20 น.",
+    "best_day": "พุธ-พฤหัส",
+    "emoji_count": "1-3 ตัว",
+    "cta_per_post": 1
+  }
+}

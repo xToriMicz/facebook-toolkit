@@ -350,14 +350,21 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
-            <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <select id="aiTone" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
-                <option value="สนุก">สนุก</option><option value="จริงจัง">จริงจัง</option><option value="ขายของ" selected>ขายของ</option><option value="ให้ความรู้">ให้ความรู้</option>
+            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">ตัวอักษร</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select id="aiTone" onchange="onStyleChange()" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
+                <option value="fun">🎉 สนุก</option>
+                <option value="sales" selected>💰 ขายของ</option>
+                <option value="affiliate">🤝 Affiliate</option>
+                <option value="professional">📋 จริงจัง</option>
+                <option value="story">📖 เล่าเรื่อง</option>
+                <option value="poll">❓ ถามคำถาม</option>
+                <option value="testimonial">⭐ รีวิว</option>
               </select>
               <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
             </div>
           </div>
+          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: 80-150 ตัวอักษร, Hook→Benefit→CTA</div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง (เลือกหลายรูปได้)
           </div>
@@ -639,7 +646,7 @@
     }
 
     // Compose
-    document.getElementById('message').addEventListener('input', e => document.getElementById('charCount').textContent=e.target.value.length);
+    document.getElementById('message').addEventListener('input', e => updateCharColor());
     const dz = document.getElementById('dropZone');
     dz.addEventListener('dragover', e=>{e.preventDefault();dz.style.borderColor='var(--accent)';});
     dz.addEventListener('dragleave', ()=>{dz.style.borderColor='';});
@@ -827,6 +834,37 @@
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:0.8rem"><span style="color:var(--warning)">⏰ '+dt+'</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((p.message||'').substring(0,50))+'</span></div>';
           }).join('');
       } catch { el.innerHTML = ''; }
+    }
+
+    // Content Style Guidelines
+    const STYLE_GUIDE = {
+      fun: { min:40, ideal:80, max:150, tips:'💡 แนะนำ: 40-80 ตัวอักษร, ใช้ emoji, จบด้วยคำถาม', prompt:'เขียนโพส Facebook สนุกสนาน ภาษาไทย ใช้ emoji ไม่เกิน 3 ตัว จบด้วยคำถาม 40-80 ตัวอักษร' },
+      sales: { min:80, ideal:150, max:250, tips:'💡 แนะนำ: 80-150 ตัวอักษร, Hook→Benefit→CTA→Link', prompt:'เขียนโพส Facebook ขายสินค้า ภาษาไทย hook ดึงดูด benefit 2-3 ข้อ CTA ชัดเจน urgency' },
+      affiliate: { min:150, ideal:200, max:280, tips:'💡 แนะนำ: 150-200 ตัวอักษร, PAS framework, เปิดเผย affiliate', prompt:'เขียนโพส Facebook affiliate review ภาษาไทย PAS framework ประสบการณ์จริง บอกว่าเป็น affiliate' },
+      professional: { min:80, ideal:150, max:200, tips:'💡 แนะนำ: 80-150 ตัวอักษร, Fact→Insight→Takeaway', prompt:'เขียนโพส Facebook ให้ความรู้ ภาษาไทย เริ่ม fact/สถิติ insight takeaway ปฏิบัติได้' },
+      story: { min:150, ideal:250, max:400, tips:'💡 แนะนำ: 150-250 ตัวอักษร, Hook→Tension→Turning→Lesson', prompt:'เขียนโพส Facebook storytelling ภาษาไทย hook tension turning point บทเรียน ถามผู้อ่าน' },
+      poll: { min:30, ideal:60, max:100, tips:'💡 แนะนำ: 30-60 ตัวอักษร, คำถามสั้น + 2 ตัวเลือก emoji', prompt:'เขียนโพส Facebook poll ภาษาไทย คำถามสั้น 2 ตัวเลือก emoji บอกให้เหตุผลในคอมเมนต์' },
+      testimonial: { min:60, ideal:120, max:200, tips:'💡 แนะนำ: 60-120 ตัวอักษร, quote ลูกค้า + ดาว + ขอบคุณ', prompt:'เขียนโพส Facebook testimonial ภาษาไทย quote ลูกค้า ชื่อ ดาว 5 ดาว ขอบคุณ' },
+    };
+
+    function onStyleChange() {
+      const style = document.getElementById('aiTone').value;
+      const guide = STYLE_GUIDE[style];
+      if (guide) document.getElementById('styleHint').textContent = guide.tips;
+      updateCharColor();
+    }
+
+    function updateCharColor() {
+      const len = document.getElementById('message').value.length;
+      const style = document.getElementById('aiTone').value;
+      const guide = STYLE_GUIDE[style] || STYLE_GUIDE.sales;
+      const countEl = document.getElementById('charCount');
+      const hintEl = document.getElementById('charHint');
+      countEl.textContent = len;
+      if (len === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
+      else if (len <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
+      else if (len <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
+      else { countEl.style.color = '#ef4444'; hintEl.textContent = '✗ ยาวเกิน'; hintEl.style.color = '#ef4444'; }
     }
 
     // Inline Drafts (in compose)
@@ -1084,7 +1122,7 @@
       try {
         const r = await fetch('/api/ai-write', {
           method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin',
-          body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: 'ปานกลาง' })
+          body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: 'ปานกลาง', style_prompt: (STYLE_GUIDE[document.getElementById('aiTone').value]||{}).prompt })
         });
         const d = await r.json();
         if (d.error) { toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI เขียนให้'; return; }
