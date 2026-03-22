@@ -322,6 +322,33 @@
       <div id="tabCompose">
         <div class="card">
           <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?" aria-label="เขียนโพส"></textarea>
+
+          <!-- Post Type + Affiliate Mode -->
+          <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
+            <select id="postType" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
+              <option value="text">📝 ข้อความ</option>
+              <option value="image">🖼️ รูป+ข้อความ</option>
+              <option value="link">🔗 Link preview</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer">
+              <input type="checkbox" id="affiliateMode" onchange="toggleAffiliate()"> 🏷️ Affiliate
+            </label>
+          </div>
+
+          <!-- Affiliate Link (hidden by default) -->
+          <div id="affiliateSection" style="display:none;margin:6px 0">
+            <input type="text" id="affiliateLink" placeholder="🔗 ลิงค์สินค้า affiliate" style="width:100%;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit;margin-bottom:4px">
+            <div style="font-size:0.7rem;color:#f59e0b;line-height:1.5">
+              ⚠️ Facebook อาจลด reach โพสที่มี link ภายนอก<br>
+              💡 แนะนำ: ใส่ link ใน comment แรกแทน เพื่อ reach สูงขึ้น
+            </div>
+          </div>
+
+          <!-- Algorithm Tips -->
+          <div style="font-size:0.68rem;color:var(--text-muted);margin:4px 0;line-height:1.6" id="algoTips">
+            💡 <span id="tipText">Reels ได้ reach สูงกว่า image 2-3 เท่า (algorithm boost 50%)</span>
+          </div>
+
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
             <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
             <div style="display:flex;gap:6px;align-items:center">
@@ -1177,6 +1204,35 @@
       await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'same-origin'});
       loadDrafts();
     }
+
+    // Affiliate mode
+    function toggleAffiliate() {
+      const on = document.getElementById('affiliateMode').checked;
+      document.getElementById('affiliateSection').style.display = on ? 'block' : 'none';
+      if (on) {
+        const ta = document.getElementById('message');
+        if (!ta.value.includes('#ad')) ta.value = ta.value.trim() + '\n\n#ad #affiliate';
+        document.getElementById('charCount').textContent = ta.value.length;
+      }
+    }
+
+    // Algorithm tips rotation
+    const algoTips = [
+      'Reels < 90 วินาที ได้ algorithm boost 50% (อัพเดต 2025)',
+      'โพสที่ได้ comment ภายใน 1 ชม. จะถูก boost อย่างมาก',
+      '98% ของโพสที่ได้ reach สูง ไม่มี external link',
+      'โพส 2-5 ครั้ง/สัปดาห์ ได้ engagement 5 เท่า',
+      'ตอบ comment ภายใน 24 ชม. = algorithm ให้คะแนนสูง',
+      'รูปภาพได้ engagement 0.12% vs ค่าเฉลี่ย 0.07%',
+      'ห้าม engagement bait เช่น "กดไลค์ถ้าเห็นด้วย" → ถูก demote',
+    ];
+    let tipIdx = 0;
+    setInterval(() => {
+      tipIdx = (tipIdx + 1) % algoTips.length;
+      const el = document.getElementById('tipText');
+      if (el) el.textContent = algoTips[tipIdx];
+    }, 8000);
+
   </script>
 </body>
 </html>
