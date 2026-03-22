@@ -453,15 +453,30 @@
       </div>
 
       <div id="tabActivityLog" class="hidden">
+        <!-- Stats Cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--accent)" id="logStatTotal">—</div><div style="font-size:0.68rem;color:var(--sec)">ทั้งหมด</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--success)" id="logStatPosts">—</div><div style="font-size:0.68rem;color:var(--sec)">📝 โพส</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:#a78bfa" id="logStatAI">—</div><div style="font-size:0.68rem;color:var(--sec)">🤖 AI</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--warning)" id="logStatSchedule">—</div><div style="font-size:0.68rem;color:var(--sec)">⏰ ตั้งเวลา</div></div>
+        </div>
+
         <div class="card">
           <div class="card-title"><span class="card-title-icon">📋</span> Activity Log</div>
+
+          <!-- Search + Date -->
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <input type="text" id="logSearch" oninput="filterLogs(currentLogFilter,null)" placeholder="🔍 ค้นหา..." style="flex:1;min-width:120px;padding:8px 12px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+            <input type="date" id="logDate" onchange="filterLogs(currentLogFilter,null)" style="padding:8px 10px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+          </div>
+
           <div class="log-filter" id="logFilter">
             <button class="log-filter-btn active" onclick="filterLogs('all',this)">ทั้งหมด</button>
-            <button class="log-filter-btn" onclick="filterLogs('login',this)">เข้าสู่ระบบ</button>
-            <button class="log-filter-btn" onclick="filterLogs('post_created',this)">โพส</button>
-            <button class="log-filter-btn" onclick="filterLogs('post_scheduled',this)">ตั้งเวลา</button>
-            <button class="log-filter-btn" onclick="filterLogs('ai_write',this)">AI</button>
-            <button class="log-filter-btn" onclick="filterLogs('settings_changed',this)">ตั้งค่า</button>
+            <button class="log-filter-btn" onclick="filterLogs('login',this)">🔑 เข้าสู่ระบบ</button>
+            <button class="log-filter-btn" onclick="filterLogs('post_created',this)">📝 โพส</button>
+            <button class="log-filter-btn" onclick="filterLogs('post_scheduled',this)">⏰ ตั้งเวลา</button>
+            <button class="log-filter-btn" onclick="filterLogs('ai_write',this)">🤖 AI</button>
+            <button class="log-filter-btn" onclick="filterLogs('settings_changed',this)">⚙️ ตั้งค่า</button>
           </div>
           <div id="logList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
@@ -1075,7 +1090,8 @@
     // Load drafts when compose tab shows
     // Activity Logs
     let allLogs = [];
-    const LOG_ICONS = { login:'🟢', logout:'🔴', post_created:'📤', post_scheduled:'📅', draft_saved:'💾', ai_write:'✨', page_switched:'📄', settings_changed:'⚙️' };
+    let currentLogFilter = 'all';
+    const LOG_ICONS = { login:'🔑', logout:'🔴', post_created:'📝', post_scheduled:'⏰', draft_saved:'💾', ai_write:'🤖', page_switched:'📄', settings_changed:'⚙️' };
     const LOG_LABELS = { login:'เข้าสู่ระบบ', logout:'ออกจากระบบ', post_created:'โพสลงเพจ', post_scheduled:'ตั้งเวลาโพส', draft_saved:'บันทึกแบบร่าง', ai_write:'AI เขียน', page_switched:'เปลี่ยนเพจ', settings_changed:'เปลี่ยนการตั้งค่า' };
     const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_scheduled:'schedule', draft_saved:'settings', ai_write:'ai', page_switched:'settings', settings_changed:'settings' };
 
@@ -1085,19 +1101,31 @@
         const r = await fetch('/api/logs', { credentials:'same-origin' });
         const d = await r.json();
         allLogs = d.logs || [];
+        updateLogStats();
         renderLogs('all');
       } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
     }
 
     function filterLogs(type, btn) {
-      document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      renderLogs(type);
+      if (btn) { document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+      if (type !== null) currentLogFilter = type;
+      renderLogs(currentLogFilter);
+    }
+
+    function updateLogStats() {
+      document.getElementById('logStatTotal').textContent = allLogs.length;
+      document.getElementById('logStatPosts').textContent = allLogs.filter(l=>l.action==='post_created').length;
+      document.getElementById('logStatAI').textContent = allLogs.filter(l=>l.action==='ai_write').length;
+      document.getElementById('logStatSchedule').textContent = allLogs.filter(l=>l.action==='post_scheduled').length;
     }
 
     function renderLogs(type) {
       const el = document.getElementById('logList');
-      const logs = type === 'all' ? allLogs : allLogs.filter(l => l.action === type);
+      let logs = type === 'all' ? allLogs : allLogs.filter(l => l.action === type);
+      const search = (document.getElementById('logSearch')||{}).value||'';
+      if (search.length >= 2) { const q=search.toLowerCase(); logs=logs.filter(l=>(l.details||'').toLowerCase().includes(q)||(l.action||'').includes(q)); }
+      const dateVal = (document.getElementById('logDate')||{}).value||'';
+      if (dateVal) logs = logs.filter(l=>(l.created_at||'').startsWith(dateVal));
       if (!logs.length) { el.innerHTML = '<div class="empty-state">ไม่มีกิจกรรม</div>'; return; }
       el.innerHTML = logs.slice(0, 50).map(l => {
         const icon = LOG_ICONS[l.action] || '📌';
