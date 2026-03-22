@@ -96,7 +96,7 @@ app.post("/api/post", async (c) => {
     return c.json({ error: "Rate limit: max 50 posts/hour" }, 429);
   }
 
-  const { message, image_url, page_id } = await c.req.json();
+  const { message, image_url, page_id, affiliate_link } = await c.req.json();
   if (!message && !image_url) return c.json({ error: "message or image_url required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
@@ -135,11 +135,25 @@ app.post("/api/post", async (c) => {
       return c.json({ error: result.error.message, fb_error: result.error }, 400);
     }
 
+    const fbPostId = result.id || result.post_id || null;
     await c.env.DB.prepare(
       "INSERT INTO posts (message, image_url, fb_post_id, status, created_at) VALUES (?, ?, ?, 'posted', ?)"
-    ).bind(message || "", image_url || null, result.id || result.post_id || null, new Date().toISOString()).run();
+    ).bind(message || "", image_url || null, fbPostId, new Date().toISOString()).run();
 
-    return c.json({ ok: true, result, page_name: page.page_name });
+    // Auto-comment affiliate link (keeps link out of caption for better reach)
+    let commentResult = null;
+    if (affiliate_link && fbPostId) {
+      try {
+        const commentRes = await fetch(`https://graph.facebook.com/v25.0/${fbPostId}/comments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: affiliate_link, access_token: page.page_token }),
+        });
+        commentResult = await commentRes.json();
+      } catch {}
+    }
+
+    return c.json({ ok: true, result, page_name: page.page_name, auto_comment: commentResult });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
@@ -300,6 +314,80 @@ app.post("/api/posts/:postId/reply", async (c) => {
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
+});
+
+// --- Auto-comment on post ---
+app.post("/api/posts/:postId/auto-comment", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const postId = c.req.param("postId");
+  const { message } = await c.req.json() as { message: string };
+  if (!message) return c.json({ error: "message required" }, 400);
+
+  const token = await c.env.KV.get("fb_page_token");
+  if (!token) return c.json({ error: "No page token" }, 400);
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${postId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, access_token: token }),
+    });
+    const data = await res.json() as any;
+    if (data.error) return c.json({ error: data.error.message }, 400);
+
+    await c.env.DB.prepare(
+      "INSERT INTO activity_logs (user_fb_id, action, detail, post_id) VALUES (?, 'auto_comment', ?, ?)"
+    ).bind(session.fb_id, message.substring(0, 200), postId).run();
+
+    return c.json({ ok: true, id: data.id });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// --- Activity logs / notifications ---
+app.get("/api/activity", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM activity_logs WHERE user_fb_id = ? ORDER BY created_at DESC LIMIT 20"
+  ).bind(session.fb_id).all();
+  return c.json({ activities: results, total: results.length });
+});
+
+// --- Webhook for Facebook (comment notifications) ---
+app.get("/webhook", (c) => {
+  const mode = c.req.query("hub.mode");
+  const token = c.req.query("hub.verify_token");
+  const challenge = c.req.query("hub.challenge");
+  if (mode === "subscribe" && token === "fb_toolkit_verify_2026") {
+    return c.text(challenge || "", 200);
+  }
+  return c.text("Forbidden", 403);
+});
+
+app.post("/webhook", async (c) => {
+  try {
+    const body = await c.req.json() as any;
+    if (body.object === "page" && body.entry) {
+      for (const entry of body.entry) {
+        for (const change of entry.changes || []) {
+          if (change.field === "feed" && change.value?.item === "comment") {
+            await c.env.DB.prepare(
+              "INSERT INTO activity_logs (user_fb_id, action, detail, post_id) VALUES (?, 'new_comment', ?, ?)"
+            ).bind(
+              entry.id,
+              `${change.value.from?.name || "Someone"}: ${(change.value.message || "").substring(0, 200)}`,
+              change.value.post_id || null
+            ).run();
+          }
+        }
+      }
+    }
+  } catch {}
+  return c.text("EVENT_RECEIVED", 200);
 });
 
 // --- AI Settings ---
