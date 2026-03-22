@@ -553,7 +553,11 @@
       // New IP notification
       if(u.new_ip){showNotify('⚠️ เข้าสู่ระบบจาก IP ใหม่: '+u.ip);} }
     function loginFacebook() { window.location.href='/auth/facebook'; }
-    function logout() { fetch('/auth/logout',{method:'POST'}).then(()=>showLogin()).catch(()=>showLogin()); }
+    function logout() { fetch('/auth/logout',{method:'POST'}).then(()=>{history.replaceState(null,'','/');showLogin();}).catch(()=>showLogin()); }
+    // Clean URL params after login
+    if (window.location.search || window.location.hash) {
+      history.replaceState(null, '', '/');
+    }
     checkAuth();
 
     // Page Selector (dropdown)

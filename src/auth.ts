@@ -14,8 +14,15 @@ const SESSION_TTL = 60 * 60 * 24 * 30; // 30 days
 
 const auth = new Hono<{ Bindings: Env }>();
 
-// GET /auth/facebook — redirect to Facebook OAuth dialog
-auth.get("/facebook", (c) => {
+// GET /auth/facebook — redirect to Facebook OAuth dialog (rate limited)
+auth.get("/facebook", async (c) => {
+  const ip = c.req.header("cf-connecting-ip") || "unknown";
+  const hour = new Date().toISOString().slice(0, 16); // per minute
+  const k = `rl:auth:${ip}:${hour}`;
+  const count = parseInt(await c.env.KV.get(k) || "0");
+  if (count >= 10) return c.text("Too many login attempts. Try again later.", 429);
+  await c.env.KV.put(k, String(count + 1), { expirationTtl: 60 });
+
   const state = crypto.randomUUID();
 
   const params = new URLSearchParams({

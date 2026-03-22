@@ -39,6 +39,35 @@ async function kvCache<T>(kv: KVNamespace, key: string, ttl: number, fetcher: ()
   return data;
 }
 
+// Rate limiter per hour: returns true if over limit
+async function rateLimit(kv: KVNamespace, key: string, maxPerHour: number): Promise<boolean> {
+  const hour = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const k = `rl:${key}:${hour}`;
+  const count = parseInt(await kv.get(k) || "0");
+  if (count >= maxPerHour) return true;
+  await kv.put(k, String(count + 1), { expirationTtl: 3600 });
+  return false;
+}
+
+// Sanitize input: strip script tags and event handlers
+function sanitize(input: string): string {
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, "")
+    .replace(/<\/?script[^>]*>/gi, "");
+}
+
+// CSRF: verify Origin for mutation requests
+app.use("/api/*", async (c, next) => {
+  if (c.req.method === "POST" || c.req.method === "DELETE") {
+    const origin = c.req.header("origin") || c.req.header("referer") || "";
+    if (origin && !origin.startsWith("https://fb.makeloops.xyz")) {
+      return c.json({ error: "Invalid origin" }, 403);
+    }
+  }
+  await next();
+});
+
 app.use("/api/*", cors({
   origin: "https://fb.makeloops.xyz",
   credentials: true,
@@ -63,9 +92,13 @@ app.get("/api/health", (c) => c.json({ ok: true, service: "facebook-toolkit" }))
 app.post("/api/post", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
+  if (await rateLimit(c.env.KV, `post:${session.fb_id}`, 50)) {
+    return c.json({ error: "Rate limit: max 50 posts/hour" }, 429);
+  }
 
   const { message, image_url, page_id } = await c.req.json();
   if (!message && !image_url) return c.json({ error: "message or image_url required" }, 400);
+  if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
   // Use selected page or provided page_id
   const targetPageId = page_id || await c.env.KV.get("fb_page_id");
@@ -112,13 +145,18 @@ app.post("/api/post", async (c) => {
   }
 });
 
-// --- Upload image to R2 ---
+// --- Upload image to R2 (image/* only, max 10MB) ---
 app.post("/api/upload", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
   const formData = await c.req.formData();
   const file = formData.get("file") as File;
   if (!file) return c.json({ error: "No file" }, 400);
+  if (!file.type.startsWith("image/")) return c.json({ error: "Only image files allowed" }, 400);
+  if (file.size > 10 * 1024 * 1024) return c.json({ error: "File too large (max 10MB)" }, 400);
 
-  const key = `uploads/${Date.now()}-${file.name}`;
+  const key = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
   await c.env.ASSETS.put(key, await file.arrayBuffer(), {
     httpMetadata: { contentType: file.type },
   });
@@ -138,8 +176,10 @@ app.get("/img/*", async (c) => {
   return new Response(obj.body, { headers });
 });
 
-// --- Post history (filter by user + page) ---
+// --- Post history (auth required) ---
 app.get("/api/posts", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const limit = Math.min(50, +(c.req.query("limit") || "20"));
   const withEngagement = c.req.query("engagement") === "1";
 
@@ -318,9 +358,13 @@ app.post("/api/ai-settings", async (c) => {
 app.post("/api/ai-write", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
+  if (await rateLimit(c.env.KV, `ai:${session.fb_id}`, 100)) {
+    return c.json({ error: "Rate limit: max 100 AI writes/hour" }, 429);
+  }
 
   const { topic, tone, format } = await c.req.json() as { topic?: string; tone?: string; format?: string };
   if (!topic) return c.json({ error: "topic required" }, 400);
+  if (topic.length > 2000) return c.json({ error: "topic too long (max 2000)" }, 400);
 
   const toneMap: Record<string, string> = {
     "สนุก": "สนุกสนาน ใช้อีโมจิ เป็นกันเอง",
@@ -425,12 +469,14 @@ app.get("/api/templates", async (c) => {
 });
 
 app.post("/api/templates", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { title, template_text, category } = await c.req.json();
   if (!title || !template_text) return c.json({ error: "title and template_text required" }, 400);
-  const cat = category || "ทั่วไป";
+  const cat = sanitize(category || "ทั่วไป");
   const { meta } = await c.env.DB.prepare(
     "INSERT INTO content_templates (title, template_text, category) VALUES (?, ?, ?)"
-  ).bind(title, template_text, cat).run();
+  ).bind(sanitize(title), sanitize(template_text), cat).run();
   await c.env.KV.delete("tpl:all"); await c.env.KV.delete(`tpl:${cat}`);
   return c.json({ ok: true, id: meta.last_row_id }, 201);
 });
