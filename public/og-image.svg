@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c0c14"/>
+      <stop offset="50%" style="stop-color:#141420"/>
+      <stop offset="100%" style="stop-color:#0c0c14"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1877F2"/>
+      <stop offset="100%" style="stop-color:#4f6ef7"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:transparent"/>
+      <stop offset="50%" style="stop-color:#4f6ef7"/>
+      <stop offset="100%" style="stop-color:transparent"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Top accent line -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#gold)" opacity="0.6"/>
+
+  <!-- Logo icon -->
+  <rect x="510" y="120" width="80" height="80" rx="18" fill="url(#accent)"/>
+  <text x="550" y="178" text-anchor="middle" fill="white" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="800">f</text>
+
+  <!-- Title -->
+  <text x="600" y="270" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="56" font-weight="800" fill="#e8eaed" filter="url(#glow)">Facebook Toolkit</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="320" text-anchor="middle" font-family="Inter,Noto Sans Thai,sans-serif" font-size="24" fill="#8b8fa3">โพสรูปและข้อความลงเพจ จัดการเพจจากที่เดียว</text>
+
+  <!-- Decorative line -->
+  <line x1="420" y1="360" x2="780" y2="360" stroke="#4f6ef7" stroke-width="1" opacity="0.3"/>
+
+  <!-- Features -->
+  <text x="600" y="410" text-anchor="middle" font-family="Inter,sans-serif" font-size="18" fill="#6b7280">
+    AI เขียนให้ · ตั้งเวลาโพส · เทรนด์ไทย · หลายเพจ
+  </text>
+
+  <!-- URL -->
+  <text x="600" y="530" text-anchor="middle" font-family="Inter,sans-serif" font-size="20" fill="#4f6ef7" opacity="0.8">fb.makeloops.xyz</text>
+
+  <!-- Bottom accent -->
+  <rect x="0" y="627" width="1200" height="3" fill="url(#gold)" opacity="0.4"/>
+</svg>
