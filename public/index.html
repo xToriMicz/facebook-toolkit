@@ -247,8 +247,9 @@
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
-          <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 Templates</button>
-          <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">📅 ตั้งเวลา</button>
+          <button class="sidebar-nav-item" onclick="switchTab('templates',this)">📑 แม่แบบ</button>
+          <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา</button>
+          <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
         </div>
       </div>
 
@@ -256,32 +257,32 @@
       <div class="main-content">
       <!-- Tabs (hidden, controlled by sidebar) -->
       <div class="tabs" style="display:none">
-        <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> Compose</button>
-        <button class="tab" onclick="switchTab('history',this)"><span>📋</span> History</button>
-        <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> Templates</button>
-        <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> Trends</button>
+        <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> เขียนโพส</button>
+        <button class="tab" onclick="switchTab('history',this)"><span>📋</span> ประวัติ</button>
+        <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> แม่แบบ</button>
+        <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> เทรนด์</button>
       </div>
 
       <!-- Compose -->
       <div id="tabCompose">
         <div class="card">
-          <textarea class="compose-area" id="message" placeholder="What's on your mind?"></textarea>
+          <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
-            <div class="char-count"><span id="charCount">0</span> characters</div>
+            <div class="char-count"><span id="charCount">0</span> ตัวอักษร</div>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="aiTone" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
-                <option value="สนุก">Fun</option><option value="จริงจัง">Formal</option><option value="ขายของ" selected>Sales</option><option value="ให้ความรู้">Edu</option>
+                <option value="สนุก">สนุก</option><option value="จริงจัง">จริงจัง</option><option value="ขายของ" selected>ขายของ</option><option value="ให้ความรู้">ให้ความรู้</option>
               </select>
-              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI Write</button>
+              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
             </div>
           </div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            📷 Click to upload image or drag & drop
+            📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง
           </div>
           <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
           <div id="imagePreview"></div>
           <div class="actions">
-            <button class="btn btn-accent" id="postBtn" onclick="submitPost()">📤 Post to Page</button>
+            <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสลงเพจ</button>
           </div>
           <div class="toast" id="status"></div>
         </div>
@@ -301,7 +302,7 @@
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🔥</span> Trending in Thailand</div>
             <button class="trend-refresh" onclick="loadTrends()">↻ Refresh</button>
           </div>
-          <div id="trendList" style="margin-top:12px"><div class="empty-state">Loading trends...</div></div>
+          <div id="trendList" style="margin-top:12px"><div class="empty-state">กำลังโหลดเทรนด์...</div></div>
         </div>
       </div>
 
@@ -309,6 +310,22 @@
       <div id="tabTemplates" class="hidden">
         <div class="card">
           <div class="tpl-list" id="templateList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div id="tabSchedule" class="hidden">
+        <div class="card">
+          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📅 ตั้งเวลาโพส</h3>
+          <textarea id="scheduleMsg" class="compose-area" placeholder="เขียนข้อความที่ต้องการโพส..." style="min-height:80px"></textarea>
+          <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
+            <input type="date" id="scheduleDate" style="flex:1;min-width:140px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem">
+            <input type="time" id="scheduleTime" style="flex:1;min-width:120px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem">
+          </div>
+          <button class="btn btn-accent" onclick="createSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาโพส</button>
+          <div class="toast" id="scheduleStatus"></div>
+          <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">รายการที่ตั้งเวลาไว้</h4>
+          <div id="scheduleList"><div class="empty-state">Loading...</div></div>
         </div>
       </div>
     </div><!-- end right column -->
@@ -406,7 +423,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabSchedule'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -415,6 +432,7 @@
       if(tab==='history') loadHistory();
       if(tab==='templates') loadTemplates();
       if(tab==='trends') loadTrends();
+      if(tab==='schedule') loadSchedule();
     }
 
     // Compose
@@ -430,21 +448,21 @@
       reader.onload = e => { uploadedImageData=e.target.result; document.getElementById('imagePreview').innerHTML=`<img src="${e.target.result}" class="preview-img">`; dz.classList.add('has-file'); dz.textContent='✅ '+file.name; };
       reader.readAsDataURL(file);
       const form = new FormData(); form.append('file',file);
-      try { const r=await fetch('/api/upload',{method:'POST',body:form}); const d=await r.json(); if(d.ok) uploadedImageUrl=d.url; } catch { toast('err','Upload failed'); }
+      try { const r=await fetch('/api/upload',{method:'POST',body:form}); const d=await r.json(); if(d.ok) uploadedImageUrl=d.url; } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
     }
 
     async function submitPost() {
       const msg = document.getElementById('message').value.trim();
       if(!msg && !uploadedImageUrl) { toast('err','Write something or upload an image'); return; }
-      if(!selectedPage) { toast('err','Select a page first'); return; }
-      const btn=document.getElementById('postBtn'); btn.disabled=true; btn.innerHTML='⏳ Posting...';
+      if(!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
+      const btn=document.getElementById('postBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
       try {
         const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({message:msg,image_url:uploadedImageUrl,page_id:selectedPage.id})});
         const d=await r.json();
-        if(d.ok) { toast('ok','Posted successfully!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 Click to upload image or drag & drop'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
-        else toast('err',d.error||'Post failed');
+        if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
+        else toast('err',d.error||'โพสไม่สำเร็จ');
       } catch(e) { toast('err','Error: '+e.message); }
-      btn.disabled=false; btn.innerHTML='📤 Post to Page';
+      btn.disabled=false; btn.innerHTML='📤 โพสลงเพจ';
     }
 
     function toast(type,msg) { const el=document.getElementById('status'); el.className='toast '+type; el.textContent=msg; setTimeout(()=>{el.className='toast';},5000); }
@@ -467,14 +485,14 @@
       const el=document.getElementById('historyList');
       try {
         const r=await fetch('/api/posts',{credentials:'same-origin'}); const d=await r.json(); const posts=d.posts||[];
-        if(!posts.length){el.innerHTML='<div class="empty-state">No posts yet</div>';return;}
+        if(!posts.length){el.innerHTML='<div class="empty-state">ยังไม่มีประวัติการโพส</div>';return;}
         el.innerHTML=posts.map(p=>{
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='success'?'<span class="hist-badge ok">Success</span>':'<span class="hist-badge wait">Pending</span>';
           const thumb=p.image_url?`<img class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
           return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div><div class="hist-meta">${dt} ${badge}</div></div></div>`;
         }).join('');
-      } catch{el.innerHTML='<div class="empty-state">Failed to load</div>';}
+      } catch{el.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ</div>';}
     }
 
     // Templates
@@ -482,9 +500,9 @@
       const el=document.getElementById('templateList');
       try {
         const r=await fetch('/api/templates',{credentials:'same-origin'}); const d=await r.json(); const tpls=d.templates||[];
-        if(!tpls.length){el.innerHTML='<div class="empty-state">No templates yet</div>';return;}
+        if(!tpls.length){el.innerHTML='<div class="empty-state">ยังไม่มีแม่แบบ</div>';return;}
         el.innerHTML=tpls.map(t=>`<div class="tpl-item" onclick="useTemplate(this)" data-msg="${(t.message||'').replace(/"/g,'&quot;')}"><div class="tpl-name">${t.name||'Template'}</div><div class="tpl-preview">${(t.message||'').replace(/</g,'&lt;')}</div><span class="tpl-use">Use this template →</span></div>`).join('');
-      } catch{el.innerHTML='<div class="empty-state">Failed to load</div>';}
+      } catch{el.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ</div>';}
     }
     function useTemplate(el) {
       const msg=el.dataset.msg; document.getElementById('message').value=msg; document.getElementById('charCount').textContent=msg.length;
@@ -496,17 +514,17 @@
     // Trends
     async function loadTrends() {
       const el = document.getElementById('trendList');
-      el.innerHTML = '<div class="empty-state">Loading trends...</div>';
+      el.innerHTML = '<div class="empty-state">กำลังโหลดเทรนด์...</div>';
       try {
         const r = await fetch('/api/trends', { credentials: 'same-origin' });
         const d = await r.json();
         const trends = d.trends || [];
-        if (!trends.length) { el.innerHTML = '<div class="empty-state">No trends available</div>'; return; }
+        if (!trends.length) { el.innerHTML = '<div class="empty-state">ไม่มีเทรนด์</div>'; return; }
         el.innerHTML = trends.map((t, i) => {
           const isHot = i < 3 ? ' hot' : '';
           return `<div class="trend-item"><div class="trend-rank${isHot}">${i+1}</div><div class="trend-body"><div class="trend-title">${t.title}</div><div class="trend-vol">${t.traffic||''}</div></div><button class="trend-btn" onclick="useTrend(this)" data-topic="${(t.title||'').replace(/"/g,'&quot;')}">เขียนโพส →</button></div>`;
         }).join('');
-      } catch { el.innerHTML = '<div class="empty-state">Failed to load trends</div>'; }
+      } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ trends</div>'; }
     }
     function useTrend(el) {
       const topic = el.dataset.topic;
@@ -517,6 +535,16 @@
       ['tabCompose','tabHistory','tabTemplates','tabTrends'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add('hidden');});
       document.getElementById('tabCompose').classList.remove('hidden');
       document.getElementById('message').focus();
+    }
+
+    // Slide-in notification (top-right)
+    function showNotify(msg) {
+      const el = document.createElement("div");
+      el.textContent = "✅ " + msg;
+      Object.assign(el.style, {position:"fixed",top:"16px",right:"16px",zIndex:"200",padding:"14px 20px",borderRadius:"12px",fontSize:"0.9rem",fontWeight:"600",background:"rgba(34,197,94,0.15)",color:"#22c55e",border:"1px solid rgba(34,197,94,0.25)",backdropFilter:"blur(8px)",boxShadow:"0 8px 24px rgba(0,0,0,0.3)",transform:"translateX(120%)",transition:"transform 0.3s ease",fontFamily:"Inter,sans-serif"});
+      document.body.appendChild(el);
+      requestAnimationFrame(function(){el.style.transform="translateX(0)";});
+      setTimeout(function(){el.style.transform="translateX(120%)";setTimeout(function(){el.remove();},400);},3000);
     }
 
     // Settings
@@ -536,13 +564,13 @@
           body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: 'ปานกลาง' })
         });
         const d = await r.json();
-        if (d.error) { toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI Write'; return; }
+        if (d.error) { toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI เขียนให้'; return; }
         const text = d.text || '';
         const tags = (d.hashtags || []).join(' ');
         ta.value = text + (tags ? '\n\n' + tags : '');
         document.getElementById('charCount').textContent = ta.value.length;
       } catch(e) { toast('err', 'AI error: ' + e.message); }
-      btn.disabled = false; btn.textContent = '✨ AI Write';
+      btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
     }
   </script>
 </body>
