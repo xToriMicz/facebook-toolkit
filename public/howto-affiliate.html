@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือ Affiliate Link — Facebook Toolkit</title>
+  <style>
+    :root { --bg: #0a0a0f; --bg-card: #12121a; --text: #e8e8ed; --text-muted: #888; --accent: #f59e0b; --border: rgba(255,255,255,0.08); --green: #4caf50; --red: #ef4444; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, 'Sarabun', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.8; }
+    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 1.8rem; color: var(--accent); margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 32px; }
+    h2 { font-size: 1.2rem; color: var(--accent); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; color: var(--text); margin: 20px 0 8px; }
+    p { margin-bottom: 12px; color: var(--text-muted); }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 16px 0; }
+    .step { display: flex; gap: 12px; margin-bottom: 16px; }
+    .step-num { width: 28px; height: 28px; background: var(--accent); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .step-content { flex: 1; }
+    .step-content strong { color: var(--text); }
+    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--accent); }
+    .tip { background: rgba(245,158,11,0.08); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+    .tip-title { font-weight: 600; color: var(--accent); font-size: 0.85rem; margin-bottom: 4px; }
+    .warn { background: rgba(239,68,68,0.08); border-left: 3px solid var(--red); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
+    .warn-title { font-weight: 600; color: var(--red); font-size: 0.85rem; margin-bottom: 4px; }
+    .example { background: rgba(76,175,80,0.06); border: 1px solid rgba(76,175,80,0.15); border-radius: 8px; padding: 16px; margin: 12px 0; font-size: 0.9rem; white-space: pre-wrap; }
+    .back { display: inline-block; margin-bottom: 20px; color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+    .back:hover { text-decoration: underline; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    li { margin-bottom: 6px; color: var(--text-muted); }
+    @media (max-width: 480px) { h1 { font-size: 1.4rem; } .container { padding: 20px 16px; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">&larr; กลับหน้าหลัก</a>
+    <h1>คู่มือ Affiliate Link</h1>
+    <p class="subtitle">วิธีใช้ฟีเจอร์ Affiliate Link ใน Facebook Toolkit อย่างถูกต้องและได้ผล</p>
+
+    <h2>1. Affiliate Mode คืออะไร?</h2>
+    <p>Affiliate Mode ช่วยให้คุณโพสเนื้อหาพร้อม affiliate link ได้อย่างถูกกฎหมายและไม่ถูก Facebook ลด reach โดยระบบจะ:</p>
+    <ul>
+      <li>เพิ่ม <code>#ad #affiliate</code> อัตโนมัติ ตามกฎ FTC/Facebook</li>
+      <li>แนะนำให้ใส่ link ใน comment แรกแทนใส่ในโพส</li>
+      <li>แสดง warning เรื่อง reach ที่อาจลดลง</li>
+    </ul>
+
+    <h2>2. วิธีใช้งาน</h2>
+    <div class="card">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content"><strong>เปิด Affiliate Mode</strong> — ติ๊กเครื่องหมาย 🏷️ Affiliate ที่หน้าเขียนโพส</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content"><strong>เขียนเนื้อหา</strong> — เขียนรีวิว/แนะนำสินค้าอย่างจริงใจ ระบบจะเพิ่ม #ad #affiliate ท้ายโพสอัตโนมัติ</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content"><strong>ใส่ affiliate link</strong> — กรอก URL ในช่อง "ลิงค์สินค้า affiliate"</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content"><strong>โพส</strong> — ระบบจะโพสเนื้อหา และใส่ link ใน comment แรกให้อัตโนมัติ (ถ้าเปิดตัวเลือกนี้)</div>
+      </div>
+    </div>
+
+    <h2>3. เทคนิคเพิ่ม Reach</h2>
+    <div class="tip">
+      <div class="tip-title">Link ใน Comment แรก</div>
+      <p>98% ของโพสที่ได้ reach สูงบน Facebook ไม่มี external link ในตัวโพส ใส่ link ใน comment แรกแทนเพื่อไม่ถูกลด reach</p>
+    </div>
+    <div class="tip">
+      <div class="tip-title">เขียนแบบ PAS (Problem-Agitate-Solution)</div>
+      <p>เริ่มด้วยปัญหาที่คนเจอ → กระตุ้นให้รู้สึก → แนะนำทางออก (สินค้า)</p>
+    </div>
+    <div class="tip">
+      <div class="tip-title">ใช้รูปภาพจริง</div>
+      <p>รูปถ่ายสินค้าจริง ได้ engagement สูงกว่ารูป stock 3-5 เท่า</p>
+    </div>
+
+    <h2>4. ตัวอย่างโพส Affiliate ที่ดี</h2>
+    <div class="example">ลองใช้ [ชื่อสินค้า] มา 2 เดือน — ผลลัพธ์เกินคาด!
+
+ก่อนหน้านี้มีปัญหา [ปัญหา] มาตลอด ลองหลายวิธีแล้วไม่ได้ผล จนเพื่อนแนะนำให้ลอง [สินค้า]
+
+สิ่งที่ชอบ:
+- [จุดเด่น 1]
+- [จุดเด่น 2]
+- [จุดเด่น 3]
+
+ใครสนใจดูรายละเอียดในคอมเมนต์แรกนะ
+
+#รีวิว #ad #affiliate</div>
+
+    <h2>5. สิ่งที่ต้องระวัง</h2>
+    <div class="warn">
+      <div class="warn-title">ข้อห้าม Facebook</div>
+      <ul>
+        <li>ห้ามโพส affiliate link เกิน 5 ครั้ง/วัน → อาจถูก restrict</li>
+        <li>ห้ามใช้ engagement bait เช่น "กดไลค์ถ้าเห็นด้วย"</li>
+        <li>ห้ามโพสเนื้อหาหลอกลวง/เกินจริง</li>
+        <li>ต้อง disclose (#ad) ทุกครั้งที่ได้ค่าคอมมิชชัน</li>
+      </ul>
+    </div>
+    <div class="warn">
+      <div class="warn-title">Reach ที่อาจลดลง</div>
+      <p>Facebook algorithm ลด reach โพสที่มี external link ถ้าต้องใส่ link ในโพส ให้เขียนเนื้อหาที่มีคุณค่าก่อน อย่าขายของตรงๆ</p>
+    </div>
+
+    <h2>6. Content Formula แนะนำ</h2>
+    <h3>PAS (Problem-Agitate-Solution)</h3>
+    <div class="card">
+      <p><strong>P:</strong> "เคยมีปัญหา [X] ไหม?"</p>
+      <p><strong>A:</strong> "ยิ่งปล่อยไว้ยิ่ง [ผลเสีย]..."</p>
+      <p><strong>S:</strong> "ลอง [สินค้า] แล้วชีวิตเปลี่ยน"</p>
+    </div>
+    <h3>BAB (Before-After-Bridge)</h3>
+    <div class="card">
+      <p><strong>Before:</strong> "ก่อนหน้านี้ [สถานะเดิม]"</p>
+      <p><strong>After:</strong> "ตอนนี้ [ผลลัพธ์ที่ดีขึ้น]"</p>
+      <p><strong>Bridge:</strong> "[สินค้า] คือตัวเปลี่ยน"</p>
+    </div>
+
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);text-align:center">
+      <p style="font-size:0.8rem">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+    </div>
+  </div>
+</body>
+</html>
