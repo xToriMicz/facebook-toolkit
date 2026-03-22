@@ -354,6 +354,8 @@
         <div class="sidebar-nav">
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
+          <button class="sidebar-nav-item" onclick="switchTab('reels',this)">🎬 Reels</button>
+          <button class="sidebar-nav-item" onclick="switchTab('stories',this)">📱 Stories</button>
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
                     <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
           <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา/Bulk</button>
@@ -458,6 +460,65 @@
         </div>
       </div>
 
+      <!-- Reels Tab -->
+      <div id="tabReels" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">🎬</span> โพส Reels</div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:6px;display:block">วิดีโอ (MP4, สูงสุด 100MB)</label>
+            <div id="reelDropZone" onclick="document.getElementById('reelFileInput').click()" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:32px 16px;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:all 0.2s">
+              🎬 คลิกเพื่อเลือกวิดีโอ หรือลากไฟล์มาวาง
+            </div>
+            <input type="file" id="reelFileInput" accept="video/mp4,video/*" style="display:none" onchange="handleReelFile(this.files[0])">
+            <div id="reelPreview" style="margin-top:8px"></div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:6px;display:block">Caption</label>
+            <textarea id="reelCaption" placeholder="เขียน caption สำหรับ Reel..." style="width:100%;min-height:80px;padding:12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:0.9rem;resize:vertical"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-accent" id="reelPostBtn" onclick="submitReel()" style="padding:14px 28px;font-size:1rem">🎬 โพส Reel</button>
+            <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5">
+              💡 Reels ได้ reach สูงกว่า image 2-3x<br>วิดีโอ 15-90 วินาที ได้ boost จาก algorithm
+            </div>
+          </div>
+          <div class="toast" id="reelStatus"></div>
+        </div>
+      </div>
+
+      <!-- Stories Tab -->
+      <div id="tabStories" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📱</span> โพส Stories</div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <button id="storyTypePhoto" onclick="setStoryType('photo')" class="btn" style="padding:8px 16px;font-size:0.82rem;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer">🖼️ รูปภาพ</button>
+              <button id="storyTypeVideo" onclick="setStoryType('video')" class="btn" style="padding:8px 16px;font-size:0.82rem;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:8px;cursor:pointer">🎬 วิดีโอ</button>
+            </div>
+            <div id="storyPhotoUpload">
+              <div id="storyDropZone" onclick="document.getElementById('storyFileInput').click()" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:32px 16px;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:all 0.2s">
+                🖼️ คลิกเพื่อเลือกรูปภาพ หรือลากไฟล์มาวาง
+              </div>
+              <input type="file" id="storyFileInput" accept="image/*" style="display:none" onchange="handleStoryFile(this.files[0],'photo')">
+            </div>
+            <div id="storyVideoUpload" style="display:none">
+              <div id="storyVideoDropZone" onclick="document.getElementById('storyVideoFileInput').click()" style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:32px 16px;text-align:center;cursor:pointer;color:var(--text-secondary);font-size:0.85rem;transition:all 0.2s">
+                🎬 คลิกเพื่อเลือกวิดีโอ หรือลากไฟล์มาวาง
+              </div>
+              <input type="file" id="storyVideoFileInput" accept="video/mp4,video/*" style="display:none" onchange="handleStoryFile(this.files[0],'video')">
+            </div>
+            <div id="storyPreview" style="margin-top:8px"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-accent" id="storyPostBtn" onclick="submitStory()" style="padding:14px 28px;font-size:1rem">📱 โพส Story</button>
+            <div style="font-size:0.72rem;color:var(--text-muted);line-height:1.5">
+              💡 Stories หายหลัง 24 ชม.<br>เหมาะสำหรับ behind-the-scenes, โปรโมชั่นด่วน
+            </div>
+          </div>
+          <div class="toast" id="storyStatus"></div>
+        </div>
+      </div>
+
       <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px;flex-wrap:wrap;gap:8px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><select id="historyPageFilter" onchange="loadHistory()" class="page-select" style="width:auto;min-width:120px;padding:6px 28px 6px 10px;font-size:0.78rem"><option value="">ทุกเพจ</option></select><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
         <div class="card" style="margin-bottom:12px">
           <div class="card-title"><span class="card-title-icon">📊</span> Engagement สัปดาห์นี้</div>
@@ -506,14 +567,24 @@
       <div id="tabCalendar" class="hidden">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-            <select id="calPageFilter" onchange="renderCalendar()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select>
+            <select id="calPageFilter" onchange="renderCalView()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select>
+            <div class="cal-view-toggle">
+              <button class="cal-view-btn active" onclick="setCalView('month')" id="calViewMonth">เดือน</button>
+              <button class="cal-view-btn" onclick="setCalView('week')" id="calViewWeek">สัปดาห์</button>
+            </div>
           </div>
           <div class="cal-header">
             <button onclick="calNav(-1)">◀</button>
             <span class="cal-month" id="calMonth"></span>
             <button onclick="calNav(1)">▶</button>
           </div>
-          <div class="cal-grid" id="calGrid"></div>
+          <div id="calMonthView">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+          <div id="calWeekView" class="cal-week">
+            <div class="cal-week-header" id="calWeekHeader"></div>
+            <div class="cal-week-body" id="calWeekBody"></div>
+          </div>
           <div id="calDetail"></div>
         </div>
       </div>
@@ -536,6 +607,8 @@
             <button onclick="filterTrends('sports')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">กีฬา</button>
             <button onclick="filterTrends('entertainment')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">บันเทิง</button>
             <button onclick="filterTrends('news')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">ข่าว</button>
+            <button onclick="filterTrends('tech')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">เทคโนโลยี</button>
+            <button onclick="filterTrends('finance')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">การเงิน</button>
             <button onclick="filterTrends('general')" class="trend-filter" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--bg-input);color:var(--text-secondary);cursor:pointer">ทั่วไป</button>
           </div>
           <div style="display:none">
@@ -783,7 +856,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabTickets'].forEach(id => {
+      ['tabCompose','tabReels','tabStories','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabTickets'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -793,7 +866,7 @@
       if(tab==='templates') loadTemplates();
       if(tab==='compose') loadComposeTemplates();
       if(tab==='trends') loadTrends();
-      if(tab==='calendar') renderCalendar();
+      if(tab==='calendar') renderCalView();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
       if(tab==='tickets') loadTickets();
@@ -939,12 +1012,14 @@
         el.innerHTML=posts.map(p=>{
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
-          const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
+          const typeIcon=p.post_type==='reel'?'🎬':p.post_type==='story'?'📱':'';
+          const typeBadge=typeIcon?`<span style="font-size:0.68rem;padding:1px 6px;border-radius:4px;background:${p.post_type==='reel'?'rgba(168,85,247,0.12)':'rgba(59,130,246,0.12)'};color:${p.post_type==='reel'?'#a855f7':'#3b82f6'};margin-right:4px">${typeIcon} ${p.post_type==='reel'?'Reel':'Story'}</span>`:'';
+          const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:`<div class="hist-thumb">${typeIcon||'📝'}</div>`;
           const pageImg = p.page_picture ? '<img loading="lazy" src="'+p.page_picture+'" style="width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-right:3px">' : '';
           const pageName=`<span style="font-size:0.7rem;color:${p.page_name?'var(--accent)':'var(--text-muted)'};margin-right:4px;display:inline-flex;align-items:center;gap:3px">${pageImg}${p.page_name||'ไม่ระบุเพจ'}</span>`;
           const eng=p.engagement?`<div style="display:flex;gap:10px;margin-top:4px;font-size:0.72rem;color:var(--text-secondary)"><span>❤️ ${p.engagement.likes}</span><span>💬 ${p.engagement.comments}</span><span>🔄 ${p.engagement.shares}</span></div>`:'';
           const cmtBtn=p.fb_post_id?` <button onclick="showComments('${p.fb_post_id}')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">💬 comments</button>`:'';
-          return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
+          return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${typeBadge}${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
         }).join('');
       } catch{el.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ</div>';}
     }
@@ -1250,7 +1325,7 @@
       if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
       const si={posted:'✅',pending:'⏳',failed:'❌'};
       let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-      posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
+      posts.forEach(p=>{const icon=si[p.status]||'📤';const ti=p.post_type==='reel'?'🎬 ':p.post_type==='story'?'📱 ':'';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+ti+pn+(p.message||'').substring(0,50)+'</div>';});
       scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
       html+=addBtn+'</div>';
       el.innerHTML=html;
