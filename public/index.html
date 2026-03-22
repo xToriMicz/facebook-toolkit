@@ -734,12 +734,12 @@
         const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
         const d=await r.json();
         if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
-        else toast('err',d.error||handleApiError(r.status,'โพสไม่สำเร็จ'));
+        else { const detail = d.photo_errors ? ' ('+d.photo_errors.join(', ')+')' : ''; toast('err',(d.error||'โพสไม่สำเร็จ')+detail); console.error('Post error:', d); }
       } catch(e) { toast('err','Error: '+e.message); }
       btn.disabled=false; btn.innerHTML='📤 โพสลงเพจ';
     }
 
-    function toast(type,msg) { const el=document.getElementById('status'); el.className='toast '+type; el.textContent=msg; setTimeout(()=>{el.className='toast';},5000); }
+    function toast(type,msg) { const el=document.getElementById('status'); el.className='toast '+type; el.textContent=msg; const dur=type==='err'?15000:5000; setTimeout(()=>{el.className='toast';},dur); }
 
     // Thai error messages for common HTTP errors
     function handleApiError(status, fallback) {

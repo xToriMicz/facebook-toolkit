@@ -114,20 +114,29 @@ app.post("/api/post", async (c) => {
   try {
     let result: any;
     const urls = image_urls || (image_url ? [image_url] : []);
+    console.log("[post] urls:", urls.length, "page:", targetPageId);
 
     if (urls.length > 1) {
       // Multi-photo: upload each unpublished, then create feed post
-      const photoIds = await Promise.all(urls.map(async (url: string) => {
+      const photoResults = await Promise.all(urls.map(async (url: string, idx: number) => {
         const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url, published: false, access_token: page.page_token }),
         });
         const data = await res.json() as any;
-        return data.id;
+        console.log(`[post] photo ${idx}: id=${data.id}, error=${data.error?.message || 'none'}`);
+        return data;
       }));
 
-      const validIds = photoIds.filter(Boolean);
+      const validIds = photoResults.filter((d: any) => d.id).map((d: any) => d.id);
+      const errors = photoResults.filter((d: any) => d.error);
+      console.log("[post] validIds:", validIds.length, "errors:", errors.length);
+
+      if (validIds.length < 2) {
+        const errMsg = errors[0]?.error?.message || "Failed to upload photos";
+        return c.json({ error: `Multi-photo upload failed: ${errMsg}`, photo_errors: errors.map((e: any) => e.error?.message) }, 400);
+      }
 
       // Build form body manually — URLSearchParams encodes brackets wrong
       const parts = [`message=${encodeURIComponent(message || "")}`, `access_token=${encodeURIComponent(page.page_token)}`];
@@ -135,12 +144,16 @@ app.post("/api/post", async (c) => {
         parts.push(`attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`);
       });
 
+      const feedBody = parts.join("&");
+      console.log("[post] feed body length:", feedBody.length, "media count:", validIds.length);
+
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: parts.join("&"),
+        body: feedBody,
       });
       result = await res.json();
+      console.log("[post] feed result:", JSON.stringify(result).substring(0, 200));
     } else if (urls.length === 1) {
       // Single photo post (direct to Facebook, skip R2 for speed)
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
