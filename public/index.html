@@ -78,19 +78,16 @@
     .sidebar-nav-item.active { background: var(--accent); color: white; }
     .main-content { padding: 20px; overflow-y: auto; }
 
-    /* === Page Cards (sidebar, compact) === */
-    .page-grid { display: flex; flex-direction: column; gap: 8px; }
-    @media (max-width: 768px) { .page-grid { flex-direction: row; overflow-x: auto; } }
-    .pg-card { background: var(--bg-input); border: 2px solid transparent; border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; gap: 10px; position: relative; }
-    .pg-card:hover { background: var(--bg-card-hover); border-color: rgba(79,110,247,0.2); }
-    .pg-card.active { border-color: var(--accent); background: rgba(79,110,247,0.05); }
-    .pg-card img { width: 36px; height: 36px; border-radius: 8px; border: 2px solid var(--border); transition: border-color 0.2s; flex-shrink: 0; }
-    .pg-card.active img { border-color: var(--accent); }
-    .pg-card-name { font-size: 0.8rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .pg-card-meta { font-size: 0.68rem; color: var(--text-muted); }
-    .pg-card-badge { display: none; position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; font-size: 0.55rem; color: white; align-items: center; justify-content: center; }
-    .pg-card.active .pg-card-badge { display: flex; }
-    @media (max-width: 768px) { .pg-card { min-width: 160px; flex-shrink: 0; } }
+    /* === Page Selector (dropdown + info) === */
+    .page-selector-row { display: flex; align-items: center; gap: 12px; }
+    .page-select { flex: 1; padding: 12px 36px 12px 14px; background: var(--bg-input); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; font-family: inherit; cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; transition: border-color 0.2s; }
+    .page-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    @media (max-width: 480px) { .page-select { font-size: 16px; } }
+    .page-selected-info { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 12px; background: rgba(79,110,247,0.04); border: 1px solid rgba(79,110,247,0.1); border-radius: var(--radius-sm); }
+    .page-selected-info.hidden { display: none; }
+    .page-selected-info img { width: 38px; height: 38px; border-radius: 10px; border: 2px solid var(--accent); flex-shrink: 0; }
+    .page-selected-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+    .page-selected-meta { font-size: 0.72rem; color: var(--text-muted); }
 
     /* === Tabs === */
     .tabs { display: flex; gap: 4px; padding: 4px; background: var(--bg-card); border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--border); }
@@ -233,7 +230,18 @@
       <!-- Sidebar -->
       <div class="sidebar">
         <div class="sidebar-title">เพจของคุณ</div>
-        <div class="page-grid" id="pageGrid"></div>
+        <div class="page-selector-row">
+          <select class="page-select" id="pageSelect" onchange="selectPage(this.value)">
+            <option value="">-- เลือกเพจ --</option>
+          </select>
+        </div>
+        <div class="page-selected-info hidden" id="pageInfo">
+          <img id="pageInfoPic" src="" alt="">
+          <div>
+            <div class="page-selected-name" id="pageInfoName"></div>
+            <div class="page-selected-meta" id="pageInfoMeta"></div>
+          </div>
+        </div>
 
         <div class="sidebar-nav">
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
@@ -303,6 +311,46 @@
     </div><!-- end right column -->
     </div><!-- end dashboard-grid -->
     </div><!-- end appScreen -->
+  </div>
+
+  <!-- AI Writer Modal -->
+  <div class="modal" id="aiModal" onclick="if(event.target===this)closeAiModal()">
+    <div class="modal-card" style="max-width:460px;padding:28px">
+      <h2 style="margin-bottom:16px">✨ AI Content Writer</h2>
+      <div class="field">
+        <label>Topic</label>
+        <input id="aiTopic" placeholder="e.g. โปรโมชั่นบ้านใหม่ ลด 30%">
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div class="field" style="flex:1;margin-bottom:0">
+          <label>Tone</label>
+          <select id="aiTone" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
+            <option value="สนุก">Fun 🎉</option>
+            <option value="จริงจัง">Formal 📋</option>
+            <option value="ขายของ" selected>Sales 💰</option>
+            <option value="ให้ความรู้">Educational 📚</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;margin-bottom:0">
+          <label>Length</label>
+          <select id="aiFormat" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
+            <option value="สั้น">Short</option>
+            <option value="ปานกลาง" selected>Medium</option>
+            <option value="ยาว">Long</option>
+          </select>
+        </div>
+      </div>
+      <div id="aiResult" style="display:none;margin-bottom:14px">
+        <label style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;display:block">Result</label>
+        <div id="aiText" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;color:var(--text);max-height:200px;overflow-y:auto"></div>
+        <div id="aiHashtags" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-accent" id="aiGenBtn" onclick="generateAI()">✨ Generate</button>
+        <button class="btn" id="aiUseBtn" onclick="useAiText()" style="display:none;background:var(--success);color:#fff">✅ Use This</button>
+        <button class="btn btn-ghost" onclick="closeAiModal()">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -502,6 +550,43 @@
     function openSettings(){document.getElementById('settingsModal').classList.add('open');fetch('/api/settings').then(r=>r.json()).then(d=>{if(d.page_id)document.getElementById('pageId').value=d.page_id;if(d.page_name)document.getElementById('pageName').value=d.page_name;}).catch(()=>{});}
     function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
     async function saveSettings(){const body={page_id:document.getElementById('pageId').value,page_name:document.getElementById('pageName').value,page_token:document.getElementById('pageToken').value||undefined};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();const el=document.getElementById('settingsStatus');el.className='toast '+(d.ok?'ok':'err');el.textContent=d.ok?'Saved!':'Failed';setTimeout(()=>{el.className='toast';},3000);}
+
+    // AI Writer
+    let aiGeneratedText = '';
+    function openAiModal() { document.getElementById('aiModal').classList.add('open'); document.getElementById('aiTopic').focus(); }
+    function closeAiModal() { document.getElementById('aiModal').classList.remove('open'); }
+    async function generateAI() {
+      const topic = document.getElementById('aiTopic').value.trim();
+      if (!topic) { toast('err', 'Please enter a topic'); return; }
+      const btn = document.getElementById('aiGenBtn');
+      btn.disabled = true; btn.textContent = '⏳ Generating...';
+      try {
+        const r = await fetch('/api/ai-write', {
+          method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin',
+          body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: document.getElementById('aiFormat').value })
+        });
+        const d = await r.json();
+        if (d.error) { toast('err', d.error); return; }
+        aiGeneratedText = d.text || '';
+        document.getElementById('aiText').textContent = aiGeneratedText;
+        const tags = d.hashtags || [];
+        document.getElementById('aiHashtags').innerHTML = tags.map(t => `<span style="background:rgba(99,102,241,0.15);color:#818cf8;padding:3px 10px;border-radius:12px;font-size:0.75rem;cursor:pointer" onclick="addHashtag('${t}')">${t}</span>`).join('');
+        document.getElementById('aiResult').style.display = 'block';
+        document.getElementById('aiUseBtn').style.display = 'block';
+      } catch(e) { toast('err', 'AI error: ' + e.message); }
+      btn.disabled = false; btn.textContent = '✨ Generate';
+    }
+    function useAiText() {
+      const ta = document.getElementById('message');
+      const hashtags = document.getElementById('aiHashtags').textContent;
+      ta.value = aiGeneratedText + (hashtags ? '\n\n' + hashtags : '');
+      document.getElementById('charCount').textContent = ta.value.length;
+      closeAiModal();
+    }
+    function addHashtag(tag) {
+      const ta = document.getElementById('message');
+      if (!ta.value.includes(tag)) { ta.value += (ta.value ? ' ' : '') + tag; document.getElementById('charCount').textContent = ta.value.length; }
+    }
   </script>
 </body>
 </html>
