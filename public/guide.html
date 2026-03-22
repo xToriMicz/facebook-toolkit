@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือใช้งาน — Facebook Toolkit</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <style>
+    :root { --bg:#0c0c14; --card:#141420; --input:#0e0e18; --border:rgba(255,255,255,0.06); --text:#e8eaed; --sec:#8b8fa3; --muted:#555; --accent:#4f6ef7; --glow:rgba(79,110,247,0.15); --success:#22c55e; --warning:#f59e0b; --fb:#1877f2; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Inter','Noto Sans Thai',-apple-system,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+    .nav { background:rgba(20,20,32,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:0 20px; height:56px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
+    .nav a { text-decoration:none; display:flex; align-items:center; gap:8px; }
+    .nav img { width:28px; height:28px; border-radius:6px; }
+    .nav span { font-size:0.9rem; font-weight:700; color:var(--text); }
+    .nav-back { font-size:0.8rem; color:var(--accent); margin-left:auto; text-decoration:none; }
+    .hero { text-align:center; padding:48px 20px 32px; max-width:640px; margin:0 auto; }
+    .hero-icon { width:64px; height:64px; background:linear-gradient(135deg,var(--fb),var(--accent)); border-radius:16px; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:16px; box-shadow:0 8px 32px var(--glow); }
+    .hero h1 { font-size:1.6rem; font-weight:800; margin-bottom:8px; }
+    .hero p { color:var(--sec); font-size:0.95rem; line-height:1.6; }
+    .container { max-width:700px; margin:0 auto; padding:0 20px 48px; }
+    @media(max-width:480px){ .hero{padding:32px 16px 24px} .hero h1{font-size:1.3rem} .container{padding:0 14px 40px} }
+    .toc { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px 24px; margin-bottom:32px; }
+    .toc-title { font-size:0.8rem; font-weight:600; color:var(--sec); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+    .toc a { display:flex; align-items:center; gap:10px; padding:8px 0; color:var(--accent); text-decoration:none; font-size:0.9rem; font-weight:500; }
+    .toc a:hover { color:#6380ff; }
+    .toc-num { width:24px; height:24px; border-radius:6px; background:var(--glow); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; flex-shrink:0; }
+    .section { margin-bottom:40px; scroll-margin-top:72px; }
+    .section-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    .section-num { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--fb),var(--accent)); color:white; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:800; flex-shrink:0; }
+    .section-title { font-size:1.15rem; font-weight:700; }
+    .content { font-size:0.92rem; line-height:1.8; color:#ccc; }
+    .content p { margin-bottom:14px; }
+    .content strong { color:var(--text); }
+    .steps { display:flex; flex-direction:column; gap:12px; margin:16px 0; }
+    .step { display:flex; gap:12px; padding:14px 16px; background:var(--card); border:1px solid var(--border); border-radius:12px; }
+    .step:hover { border-color:rgba(79,110,247,0.2); }
+    .step-num { width:28px; height:28px; border-radius:8px; background:var(--glow); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; flex-shrink:0; margin-top:2px; }
+    .step-body { flex:1; }
+    .step-title { font-size:0.88rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .step-desc { font-size:0.82rem; color:var(--sec); line-height:1.5; }
+    .tip { display:flex; gap:10px; padding:14px 16px; border-radius:10px; margin:14px 0; font-size:0.85rem; line-height:1.5; }
+    .tip.info { background:rgba(79,110,247,0.06); border:1px solid rgba(79,110,247,0.12); color:#a0b4ff; }
+    .tip.success { background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.12); color:#6ee7a0; }
+    .screenshot { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:40px 20px; text-align:center; margin:16px 0; color:var(--muted); font-size:0.82rem; }
+    .divider { height:1px; background:var(--border); margin:32px 0; }
+    .foot { background:rgba(10,10,16,0.8); border-top:1px solid var(--border); padding:20px; text-align:center; margin-top:48px; }
+    .foot a { color:var(--accent); text-decoration:none; font-size:0.85rem; }
+    .foot p { color:#333; font-size:0.7rem; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/"><img src="/favicon.svg" alt=""><span>FB Toolkit</span></a>
+    <a href="/" class="nav-back">← กลับหน้าหลัก</a>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-icon">📖</div>
+    <h1>คู่มือใช้งาน</h1>
+    <p>ทุกฟีเจอร์ของ Facebook Toolkit อธิบายขั้นตอนเข้าใจง่าย</p>
+  </div>
+
+  <div class="container">
+    <div class="toc">
+      <div class="toc-title">สารบัญ</div>
+      <a href="#calendar"><span class="toc-num">1</span> ปฏิทิน (Content Calendar)</a>
+      <a href="#trends"><span class="toc-num">2</span> เทรนด์ไทย (Trends)</a>
+      <a href="#activity"><span class="toc-num">3</span> Activity Log</a>
+      <a href="#pages"><span class="toc-num">4</span> ตั้งค่าเพจ</a>
+      <a href="#affiliate"><span class="toc-num">5</span> Affiliate Link + Auto-Comment</a>
+      <a href="#ai"><span class="toc-num">6</span> ตั้งค่า AI</a>
+      <a href="#compose"><span class="toc-num">7</span> Compose Post</a>
+      <a href="#multi-photo"><span class="toc-num">8</span> Multi-Photo Post</a>
+      <a href="#schedule"><span class="toc-num">9</span> Schedule Post</a>
+      <a href="#bulk"><span class="toc-num">10</span> Bulk Schedule</a>
+      <a href="#drafts"><span class="toc-num">11</span> Drafts</a>
+      <a href="#comments"><span class="toc-num">12</span> Comments Management</a>
+    </div>
+
+    <!-- 1. Calendar -->
+    <div class="section" id="calendar">
+      <div class="section-header"><div class="section-num">1</div><div class="section-title">ปฏิทิน (Content Calendar)</div></div>
+      <div class="content">
+        <p>ดูภาพรวมโพสทั้งเดือนในมุมมองปฏิทิน</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เปิดเมนู 📅 ปฏิทิน</div><div class="step-desc">กดที่ sidebar เมนู "📅 ปฏิทิน"</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">ดูโพสแต่ละวัน</div><div class="step-desc">จุดสีน้ำเงิน = โพสแล้ว, จุดสีเหลือง = ตั้งเวลาไว้ กดที่วันเพื่อดูรายละเอียด</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">เลื่อนเดือน</div><div class="step-desc">กดปุ่ม ◀ ▶ เพื่อดูเดือนก่อน/หลัง</div></div></div>
+        </div>
+        <div class="tip info"><span>💡</span><span>แนะนำโพส 3-5 ครั้ง/สัปดาห์ วันพุธ-พฤหัสบดีได้ engagement สูงสุด</span></div>
+      </div>
+    </div>
+
+    <!-- 2. Trends -->
+    <div class="section" id="trends">
+      <div class="section-header"><div class="section-num">2</div><div class="section-title">เทรนด์ไทย (Trends)</div></div>
+      <div class="content">
+        <p>ดูหัวข้อที่กำลัง trending ในประเทศไทยจาก Google Trends</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เปิดเมนู 🔥 เทรนด์</div><div class="step-desc">ระบบจะโหลดเทรนด์ล่าสุดจาก Google Trends Thailand</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">เลือกหัวข้อ</div><div class="step-desc">กด "เขียนโพส →" ข้างหัวข้อที่สนใจ ระบบจะใส่หัวข้อลง textarea อัตโนมัติ</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">เขียนโพสจากเทรนด์</div><div class="step-desc">เพิ่มเนื้อหา ใส่ความคิดเห็น หรือใช้ AI เขียนให้</div></div></div>
+        </div>
+        <div class="tip success"><span>✅</span><span>โพสเรื่อง trending ได้ reach สูงกว่าปกติ 2-5 เท่า เพราะคนกำลังค้นหาหัวข้อนี้</span></div>
+      </div>
+    </div>
+
+    <!-- 3. Activity Log -->
+    <div class="section" id="activity">
+      <div class="section-header"><div class="section-num">3</div><div class="section-title">Activity Log</div></div>
+      <div class="content">
+        <p>ดูประวัติกิจกรรมทั้งหมดของคุณในระบบ</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เปิดเมนู 📋 Activity Log</div><div class="step-desc">แสดงรายการ: เข้าสู่ระบบ, โพส, ตั้งเวลา, AI เขียน, เปลี่ยนตั้งค่า</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">กรองตามประเภท</div><div class="step-desc">กดปุ่ม filter: ทั้งหมด / เข้าสู่ระบบ / โพส / ตั้งเวลา / AI / ตั้งค่า</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Pages -->
+    <div class="section" id="pages">
+      <div class="section-header"><div class="section-num">4</div><div class="section-title">ตั้งค่าเพจ</div></div>
+      <div class="content">
+        <p>เลือกและจัดการเพจ Facebook ที่ต้องการโพส</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เลือกเพจจาก dropdown</div><div class="step-desc">กด dropdown "เลือกเพจ" ด้านบน → เลือกเพจที่ต้องการ ระบบจำเพจที่เลือกไว้</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">ดูข้อมูลเพจ</div><div class="step-desc">แสดงรูปเพจ + ชื่อ + หมวดหมู่ ใต้ dropdown</div></div></div>
+        </div>
+        <div class="tip info"><span>💡</span><span>ถ้ามีหลายเพจ สลับเพจได้ตลอด ระบบจะส่งโพสไปเพจที่เลือก</span></div>
+      </div>
+    </div>
+
+    <!-- 5. Affiliate -->
+    <div class="section" id="affiliate">
+      <div class="section-header"><div class="section-num">5</div><div class="section-title">Affiliate Link + Auto-Comment</div></div>
+      <div class="content">
+        <p>ใส่ลิงก์ affiliate ในโพสและตั้ง auto-comment ตอบอัตโนมัติ</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เลือก Style "🤝 Affiliate"</div><div class="step-desc">จาก dropdown AI → ระบบแนะนำโครงสร้าง PAS (Problem-Agitate-Solution)</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">ใส่ affiliate link</div><div class="step-desc">ใส่ลิงก์ในโพสหรือตั้ง auto-comment ส่งลิงก์เมื่อคน comment "สนใจ"</div></div></div>
+        </div>
+        <p>📖 <a href="/howto.html" style="color:var(--accent)">อ่านคู่มือ Affiliate ฉบับเต็ม →</a></p>
+      </div>
+    </div>
+
+    <!-- 6. AI Settings -->
+    <div class="section" id="ai">
+      <div class="section-header"><div class="section-num">6</div><div class="section-title">ตั้งค่า AI</div></div>
+      <div class="content">
+        <p>เลือก AI provider และ model สำหรับ "AI เขียนให้"</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">เปิด ⚙️ ตั้งค่า AI</div><div class="step-desc">เลือก Provider: Anthropic / OpenAI / Google / Custom หรือใช้ค่าเริ่มต้น (ฟรี)</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">เลือก Model</div><div class="step-desc">แต่ละ provider มี model ให้เลือก เช่น Claude Haiku, GPT-4o, Gemini Flash</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">ใส่ API Key (ถ้าใช้ key ตัวเอง)</div><div class="step-desc">กดทดสอบ → ถ้าผ่าน → กดบันทึก</div></div></div>
+        </div>
+        <div class="tip info"><span>💡</span><span>ไม่ต้องตั้งค่าก็ใช้ได้ — ระบบมี AI ฟรีให้ใช้อยู่แล้ว ตั้งค่าเฉพาะถ้าต้องการ model ที่ดีกว่า</span></div>
+      </div>
+    </div>
+
+    <!-- 7. Compose Post -->
+    <div class="section" id="compose">
+      <div class="section-header"><div class="section-num">7</div><div class="section-title">Compose Post</div></div>
+      <div class="content">
+        <p>Write and publish a post to your Facebook Page instantly.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Select Page</div><div class="step-desc">Choose your Facebook Page from the dropdown at the top. All connected pages appear after login.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Write Message</div><div class="step-desc">Type in the textarea. Character count shows below. Facebook recommends 40-80 characters for best engagement.</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Add Image (Optional)</div><div class="step-desc">Click upload area or drag & drop. Images auto-compressed (max 2048px, quality 80%).</div></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Post</div><div class="step-desc">Click "Post to Page". Published immediately on your Facebook Page.</div></div></div>
+        </div>
+        <div class="tip success"><span>Tip:</span><span>Use Preview to see how your post looks before publishing.</span></div>
+      </div>
+    </div>
+
+    <!-- 8. Multi-Photo -->
+    <div class="section" id="multi-photo">
+      <div class="section-header"><div class="section-num">8</div><div class="section-title">Multi-Photo Post</div></div>
+      <div class="content">
+        <p>Post up to 10 photos in a single album/carousel post.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Upload Multiple Images</div><div class="step-desc">Select multiple files or drag & drop several images. Each shows as a thumbnail preview.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Remove Unwanted</div><div class="step-desc">Click X on any thumbnail to remove it.</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Post</div><div class="step-desc">With 2+ images, the system uses Facebook's multi-photo flow: uploads each unpublished, then creates an album post.</div></div></div>
+        </div>
+        <div class="tip info"><span>Note:</span><span>Minimum 2 photos for multi-photo. 1 photo = single photo post.</span></div>
+      </div>
+    </div>
+
+    <!-- 9. Schedule -->
+    <div class="section" id="schedule">
+      <div class="section-header"><div class="section-num">9</div><div class="section-title">Schedule Post</div></div>
+      <div class="content">
+        <p>Schedule a post to publish at a specific date and time.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Write Your Post</div><div class="step-desc">Compose your message and add images as usual.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Click Schedule Toggle</div><div class="step-desc">Click the Schedule button below the Post button.</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Set Date & Time</div><div class="step-desc">Pick date and time. Must be in the future.</div></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Confirm</div><div class="step-desc">Click "Confirm Schedule". Published automatically by cron (every 5 minutes).</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. Bulk Schedule -->
+    <div class="section" id="bulk">
+      <div class="section-header"><div class="section-num">10</div><div class="section-title">Bulk Schedule</div></div>
+      <div class="content">
+        <p>Schedule multiple drafts at once with automatic intervals.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Prepare Drafts</div><div class="step-desc">Save several posts as drafts first.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Go to Schedule/Bulk</div><div class="step-desc">Click "Schedule/Bulk" in the sidebar.</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Select Drafts</div><div class="step-desc">Check drafts to schedule (up to 20).</div></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Set Start Time & Interval</div><div class="step-desc">Pick start date/time and interval (30min/1hr/2hr/4hr/8hr/24hr).</div></div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-body"><div class="step-title">Schedule All</div><div class="step-desc">Click "Schedule Selected". All checked drafts become scheduled posts.</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 11. Drafts -->
+    <div class="section" id="drafts">
+      <div class="section-header"><div class="section-num">11</div><div class="section-title">Drafts</div></div>
+      <div class="content">
+        <p>Save posts as drafts to edit and publish later.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Save Draft</div><div class="step-desc">Click "Save Draft" instead of posting. Saved to your account.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">View Drafts</div><div class="step-desc">Recent drafts appear below compose area. All drafts in sidebar Drafts tab.</div></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Edit & Publish</div><div class="step-desc">Click a draft to load into compose. Edit if needed, then post or schedule.</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 12. Comments -->
+    <div class="section" id="comments">
+      <div class="section-header"><div class="section-num">12</div><div class="section-title">Comments Management</div></div>
+      <div class="content">
+        <p>Read and reply to comments on your posts.</p>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">View Comments</div><div class="step-desc">In Post History, click "comments" on any post to open the panel.</div></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Reply</div><div class="step-desc">Click "Reply" on a comment, type response, click Send.</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="text-align:center;padding:20px 0">
+      <a href="/" style="display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:var(--accent);color:white;text-decoration:none;border-radius:12px;font-weight:600;box-shadow:0 4px 16px var(--glow)">Start Using</a>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <a href="/">หน้าหลัก</a> · <a href="/howto.html">Affiliate</a> · <a href="/changelog.html">Changelog</a> · <a href="/privacy.html">Privacy</a>
+    <p>Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </footer>
+</body>
+</html>
