@@ -274,6 +274,8 @@ app.get("/api/posts", async (c) => {
 
 // --- Settings (token management) ---
 app.get("/api/settings", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const [pageId, pageToken, pageName] = await Promise.all([
     c.env.KV.get("fb_page_id"),
     c.env.KV.get("fb_page_token"),
@@ -283,6 +285,8 @@ app.get("/api/settings", async (c) => {
 });
 
 app.post("/api/settings", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { page_id, page_token, page_name } = await c.req.json();
   if (page_id) await c.env.KV.put("fb_page_id", page_id);
   if (page_token) await c.env.KV.put("fb_page_token", page_token);
@@ -589,6 +593,8 @@ app.post("/api/ai-write", async (c) => {
 
 // --- Content Templates ---
 app.get("/api/templates", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const category = c.req.query("category") || "all";
   const cacheKey = `tpl:${category}`;
   const data = await kvCache(c.env.KV, cacheKey, 600, async () => {
@@ -616,6 +622,8 @@ app.post("/api/templates", async (c) => {
 });
 
 app.delete("/api/templates/:id", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
   await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(id).run();
   await c.env.KV.delete("tpl:all");
@@ -934,6 +942,81 @@ app.post("/api/analytics/refresh", async (c) => {
   }
 
   return c.json({ ok: true, updated, total: posts.length });
+});
+
+// --- RSS Auto-post ---
+app.post("/api/rss-feeds", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { url, title } = await c.req.json();
+  if (!url) return c.json({ error: "url required" }, 400);
+  const { meta } = await c.env.DB.prepare(
+    "INSERT INTO rss_feeds (user_fb_id, url, title) VALUES (?, ?, ?)"
+  ).bind(session.fb_id, url, title || null).run();
+  return c.json({ ok: true, id: meta.last_row_id }, 201);
+});
+
+app.get("/api/rss-feeds", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { results } = await c.env.DB.prepare(
+    "SELECT * FROM rss_feeds WHERE user_fb_id = ? ORDER BY created_at DESC"
+  ).bind(session.fb_id).all();
+  return c.json({ feeds: results, total: results.length });
+});
+
+app.delete("/api/rss-feeds/:id", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  await c.env.DB.prepare("DELETE FROM rss_feeds WHERE id = ? AND user_fb_id = ?").bind(c.req.param("id"), session.fb_id).run();
+  return c.json({ ok: true });
+});
+
+app.post("/api/rss-feeds/:id/fetch", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const id = c.req.param("id");
+  const feed = await c.env.DB.prepare(
+    "SELECT * FROM rss_feeds WHERE id = ? AND user_fb_id = ?"
+  ).bind(id, session.fb_id).first<any>();
+  if (!feed) return c.json({ error: "Feed not found" }, 404);
+
+  try {
+    const res = await fetch(feed.url);
+    const xml = await res.text();
+    const items: any[] = [];
+    const itemRegex = /<item[\s\S]*?<\/item>/gi;
+    let match;
+    while ((match = itemRegex.exec(xml)) !== null && items.length < 5) {
+      const item = match[0];
+      const getTag = (tag: string) => {
+        const m = item.match(new RegExp("<" + tag + "[^>]*>([\s\S]*?)<\/" + tag + ">"));
+        return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim() : "";
+      };
+      items.push({ title: getTag("title"), link: getTag("link"), description: getTag("description").slice(0, 200), pubDate: getTag("pubDate") });
+    }
+
+    await c.env.DB.prepare("UPDATE rss_feeds SET last_fetched_at = datetime('now') WHERE id = ?").bind(id).run();
+
+    if (feed.auto_draft && items.length > 0) {
+      const newest = items[0];
+      if (newest.title !== feed.last_item_id) {
+        const msg = newest.title + "
+
+" + newest.description + "
+
+" + "อ่านเพิ่มเติม: " + newest.link;
+        await c.env.DB.prepare(
+          "INSERT INTO drafts (user_fb_id, message, image_url) VALUES (?, ?, NULL)"
+        ).bind(session.fb_id, msg).run();
+        await c.env.DB.prepare("UPDATE rss_feeds SET last_item_id = ? WHERE id = ?").bind(newest.title, id).run();
+      }
+    }
+
+    return c.json({ ok: true, items, feed_title: feed.title });
+  } catch (e: any) {
+    return c.json({ error: "Fetch failed: " + e.message }, 500);
+  }
 });
 
 // --- Data Deletion Callback (Facebook requirement) ---
