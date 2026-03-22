@@ -1219,15 +1219,18 @@
       grid.innerHTML=html;
       document.getElementById('calDetail').innerHTML='';
     }
+    function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
     function showCalDay(dateStr) {
       const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
-      const scheds=calScheduled.filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+      const scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
       const el=document.getElementById('calDetail');
-      if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div></div>';return;}
+      const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:8px;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
+      if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
+      const si={posted:'✅',pending:'⏳',failed:'❌'};
       let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-      posts.forEach(p=>{const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">📄 '+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">📤 '+pn+(p.message||'').substring(0,50)+'</div>';});
-      scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});html+='<div class="cal-detail-item">⏰ '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
-      html+='</div>';
+      posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
+      scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
+      html+=addBtn+'</div>';
       el.innerHTML=html;
     }
 
