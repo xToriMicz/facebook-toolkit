@@ -1499,7 +1499,7 @@
         body.model = provider === 'custom' ? document.getElementById('aiCustomModel').value : document.getElementById('aiModel').value;
       }
       try {
-        const r = await fetch('/api/ai/settings', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
+        const r = await fetch('/api/ai-settings', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
         const d = await r.json();
         if (d.ok) { aiToast('ok','บันทึกแล้ว!'); showNotify('บันทึกการตั้งค่า AI สำเร็จ!'); }
         else aiToast('err','บันทึกไม่สำเร็จ');
@@ -1510,7 +1510,7 @@
 
     // Load AI settings on tab open
     function loadAiSettings() {
-      fetch('/api/ai/settings',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+      fetch('/api/ai-settings',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
         if(d.provider && d.provider !== 'default') {
           document.getElementById('aiProvider').value = d.provider;
           onProviderChange();
