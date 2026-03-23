@@ -9,6 +9,9 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "scripts": {
+    "deploy": "BRANCH=$(git branch --show-current); if [ \"$BRANCH\" != 'feat/insights-dashboard' ]; then echo '❌ deploy ต้องจาก feat/insights-dashboard เท่านั้น (ตอนนี้อยู่ '$BRANCH')'; exit 1; fi; git pull origin feat/insights-dashboard && npx wrangler deploy"
+  },
   "dependencies": {
     "hono": "^4.12.8"
   }
