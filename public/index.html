@@ -665,9 +665,11 @@
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
             <div style="display:flex;gap:6px;align-items:center">
               <select id="insPageSelect" onchange="loadInsights()" style="padding:5px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">เลือกเพจ...</option></select>
-              <button onclick="loadInsights(true)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
+              <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
             </div>
           </div>
+          <div id="insError" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:0.8rem;background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.15)"></div>
+          <div id="insTimestamp" style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;text-align:right"></div>
           <div id="insContent">
             <div class="ins-stats" id="insStats">
               <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Impressions</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
@@ -1743,20 +1745,36 @@
       document.getElementById('insTopPosts').innerHTML = '<div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div>';
     }
 
+    function insShowError(msg) {
+      var el = document.getElementById('insError');
+      if (msg) { el.textContent = msg; el.style.display = ''; }
+      else { el.style.display = 'none'; }
+    }
+    function insShowTimestamp(ts) {
+      var el = document.getElementById('insTimestamp');
+      if (ts) { el.textContent = 'อัพเดตล่าสุด: ' + new Date(ts).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }); }
+      else { el.textContent = ''; }
+    }
+    function insRenderAll() {
+      renderInsStats();
+      setTimeout(renderInsChart, 0);
+      setTimeout(renderInsTopPosts, 0);
+      setTimeout(renderInsHeatmap, 10);
+    }
+
     async function loadInsights(force) {
       var sel = document.getElementById('insPageSelect');
       var pageId = sel ? sel.value : '';
       if (!pageId) return;
+      insShowError(null);
       var cacheKey = 'ins:' + pageId;
       if (!force) {
         try {
           var cached = sessionStorage.getItem(cacheKey);
           if (cached) {
             insData = JSON.parse(cached);
-            renderInsStats();
-            setTimeout(renderInsChart, 0);
-            setTimeout(renderInsTopPosts, 0);
-            setTimeout(renderInsHeatmap, 10);
+            insShowTimestamp(insData.ts);
+            insRenderAll();
             return;
           }
         } catch(e) { /* ignore */ }
@@ -1764,18 +1782,40 @@
       showInsSkeleton();
       try {
         var r = await fetch('/api/insights-bundle/' + pageId, { credentials: 'same-origin' });
-        insData = await r.json();
-        try { sessionStorage.setItem(cacheKey, JSON.stringify(insData)); } catch(e) { /* ignore */ }
-        renderInsStats();
-        setTimeout(renderInsChart, 0);
-        setTimeout(renderInsTopPosts, 0);
-        setTimeout(renderInsHeatmap, 10);
+        var d = await r.json();
+        if (d.error) {
+          var msg = d.error === 'token_expired' ? 'Token หมดอายุ — กรุณา login ใหม่' :
+                    d.error === 'fb_api_error' ? 'Facebook API error: ' + (d.detail || 'ลองใหม่อีกครั้ง') :
+                    d.error === 'Page not found' ? 'ไม่พบเพจนี้' : d.error;
+          insShowError(msg);
+          ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
+          return;
+        }
+        insData = d;
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch(e) { /* ignore */ }
+        insShowTimestamp(d.ts);
+        insRenderAll();
       } catch(e) {
-        document.getElementById('insImpressions').textContent = '—';
-        document.getElementById('insEngaged').textContent = '—';
-        document.getElementById('insFanAdds').textContent = '—';
-        document.getElementById('insPostsToday').textContent = '—';
+        insShowError('โหลดข้อมูลไม่สำเร็จ — ลองกด ↻ อีกครั้ง');
+        ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
       }
+    }
+
+    async function insRefreshAndLoad() {
+      var sel = document.getElementById('insPageSelect');
+      var pageId = sel ? sel.value : '';
+      if (!pageId) return;
+      var btn = document.getElementById('insRefreshBtn');
+      btn.textContent = '⏳';
+      btn.disabled = true;
+      insShowError(null);
+      try {
+        await fetch('/api/analytics/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId }) });
+      } catch(e) { /* ignore, still reload */ }
+      try { sessionStorage.removeItem('ins:' + pageId); } catch(e) { /* ignore */ }
+      await loadInsights(true);
+      btn.textContent = '↻';
+      btn.disabled = false;
     }
 
     function insFmtNum(n) {
