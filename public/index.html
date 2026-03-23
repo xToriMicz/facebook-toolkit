@@ -2161,9 +2161,21 @@
           templates = d1.prompts || d1.templates || [];
         } catch(e) { /* snapmingle not ready */ }
         if (!templates.length) {
-          var r2 = await fetch('/api/ai-image/templates', { credentials: 'same-origin' });
-          var d2 = await r2.json();
-          templates = d2.templates || [];
+          try {
+            var r2 = await fetch('/api/ai-image/templates', { credentials: 'same-origin' });
+            var d2 = await r2.json();
+            templates = d2.templates || [];
+          } catch(e) { /* fallback */ }
+        }
+        if (!templates.length) {
+          templates = [
+            {id:'cinematic',name:'Cinematic Poster'},
+            {id:'morning',name:'สวัสดีตอนเช้า'},
+            {id:'quote',name:'Quote Card'},
+            {id:'product',name:'Product Showcase'},
+            {id:'food',name:'Food Photography'},
+            {id:'nature',name:'Nature & Landscape'}
+          ];
         }
         templates.forEach(function(t) {
           var o = document.createElement('option');
