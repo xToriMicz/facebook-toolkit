@@ -582,4 +582,45 @@ async function fetchUnsplashImage(query: string): Promise<string | null> {
   return `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=630&nologo=true`;
 }
 
+// GET /api/ai-image/snapmingle — fetch SnapMingle prompts, cached 24h
+analytics.get("/ai-image/snapmingle", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const page = +(c.req.query("page") || "1");
+  const perPage = 10;
+
+  try {
+    const cacheKey = `snapmingle:prompts:p${page}`;
+    const data = await kvCache(c.env.KV, cacheKey, 86400, async () => {
+      const start = (page - 1) * perPage + 1;
+      const ids = Array.from({ length: perPage }, (_, i) => start + i).filter(i => i <= 140);
+      const prompts: { id: string; title: string; prompt: string }[] = [];
+
+      const results = await Promise.all(ids.map(async (id) => {
+        const padded = String(id).padStart(3, "0");
+        try {
+          const res = await fetch(`https://snapmingle.online/ai-prompt-gallery/Prompt-${padded}`, {
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; FBToolkit/1.0)" },
+          });
+          if (!res.ok) return null;
+          const html = await res.text();
+          const titleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) || html.match(/<title>([^<]+)<\/title>/i);
+          const descMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i) || html.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
+          const title = titleMatch?.[1]?.replace(/ - SnapMingle.*$/, "").trim() || `Prompt ${padded}`;
+          const prompt = descMatch?.[1]?.trim() || "";
+          if (prompt) return { id: `Prompt-${padded}`, title, prompt };
+        } catch {}
+        return null;
+      }));
+
+      results.forEach(r => { if (r) prompts.push(r); });
+      return { prompts, page, total: 140, pages: Math.ceil(140 / perPage) };
+    });
+
+    return c.json(data);
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 export default analytics;
