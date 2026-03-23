@@ -960,10 +960,11 @@
         const form = new FormData();
         form.append('file', new File([blob], file.name, { type: 'image/jpeg' }));
         try {
-          const r = await fetch('/api/upload', { method:'POST', body:form });
+          const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
           const d = await r.json();
           if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;uploadedImageUrl=d.url;} }
-        } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+          else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
+        } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ: '+(e.message||'')); }
       }
       dz.textContent = '✅ '+uploadedImages.length+' รูป';
     }
@@ -1403,10 +1404,11 @@
       if(!file) return;
       const form = new FormData(); form.append('file', file);
       try {
-        const r = await fetch('/api/upload', { method:'POST', body:form });
+        const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
         const d = await r.json();
         if(d.ok) { document.getElementById('ticketImage').value = d.url; showNotify('แนบรูปสำเร็จ!'); }
-      } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+        else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
+      } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
     }
 
     async function loadTickets() {
