@@ -235,22 +235,6 @@
     .cal-dot.scheduled { background:var(--warning); }
     .cal-dot.failed { background:var(--danger); }
     .cal-dots { display:flex; justify-content:center; gap:2px; margin-top:3px; }
-    .cal-popup { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center; padding:16px; }
-    .cal-popup.open { display:flex; }
-    .cal-popup-card { background:var(--card); border:1px solid var(--border); border-radius:16px; max-width:480px; width:100%; max-height:80vh; overflow-y:auto; }
-    .cal-popup-hdr { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
-    .cal-popup-hdr h3 { font-size:0.92rem; font-weight:700; }
-    .cal-popup-x { background:none; border:none; color:var(--sec); font-size:1.2rem; cursor:pointer; padding:4px; }
-    .cal-popup-body { padding:0; }
-    .cal-post { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.03); }
-    .cal-post:last-child { border-bottom:none; }
-    .cal-post-msg { font-size:0.85rem; color:#ccc; line-height:1.6; white-space:pre-wrap; margin-bottom:8px; }
-    .cal-post-img { max-width:100%; border-radius:8px; margin-bottom:8px; }
-    .cal-post-eng { display:flex; gap:10px; font-size:0.75rem; color:var(--sec); margin-bottom:6px; }
-    .cal-post-badge { font-size:0.65rem; padding:2px 8px; border-radius:5px; font-weight:600; }
-    .cal-post-badge.posted { background:rgba(34,197,94,0.1); color:var(--success); }
-    .cal-post-badge.scheduled { background:rgba(245,158,11,0.1); color:var(--warning); }
-    .cal-post-badge.failed { background:rgba(239,68,68,0.1); color:var(--danger); }
     .cal-day-detail { margin-top:12px; padding:12px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border); }
     .cal-day-detail-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
     .cal-detail-item { font-size:0.78rem; color:var(--text-secondary); padding:6px 0; border-top:1px solid rgba(255,255,255,0.03); }
@@ -542,14 +526,6 @@
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div id="calDetail"></div>
-        </div>
-      </div>
-
-      <!-- Calendar Post Popup -->
-      <div class="cal-popup" id="calPopup" onclick="if(event.target===this)closeCalPopup()">
-        <div class="cal-popup-card">
-          <div class="cal-popup-hdr"><h3 id="calPopupTitle">—</h3><button class="cal-popup-x" onclick="closeCalPopup()">&times;</button></div>
-          <div class="cal-popup-body" id="calPopupBody"></div>
         </div>
       </div>
 
@@ -1299,7 +1275,6 @@
       document.getElementById('calDetail').innerHTML='';
     }
     function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();renderCalendar();}
-    function closeCalPopup(){document.getElementById('calPopup').classList.remove('open');}
     function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
     function showCalDay(dateStr) {
       const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
