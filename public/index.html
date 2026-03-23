@@ -2200,8 +2200,13 @@
         if (d.ok && d.image_url) {
           uploadedImages.push(d.image_url);
           var prev = document.getElementById('imagePreview');
-          prev.innerHTML += '<div class="multi-thumb"><img src="' + insEsc(d.image_url) + '"><button class="multi-thumb-remove" onclick="removeImage(' + (uploadedImages.length - 1) + ')">×</button></div>';
-          showNotify('สร้างรูป AI สำเร็จ!');
+          var idx = uploadedImages.length - 1;
+          prev.innerHTML += '<div class="multi-thumb" id="aiThumb' + idx + '"><div class="ins-skel" style="width:80px;height:80px;border-radius:8px"></div><button class="multi-thumb-remove" onclick="removeImage(' + idx + ')">×</button></div>';
+          var img = new Image();
+          img.onload = function() { var el = document.getElementById('aiThumb' + idx); if (el) el.innerHTML = '<img src="' + insEsc(d.image_url) + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"><button class="multi-thumb-remove" onclick="removeImage(' + idx + ')">×</button>'; };
+          img.onerror = function() { var el = document.getElementById('aiThumb' + idx); if (el) el.innerHTML = '<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:var(--bg-input);border-radius:8px;font-size:0.6rem;color:var(--danger)">❌ ล้มเหลว</div>'; };
+          img.src = d.image_url;
+          showNotify('กำลังสร้างรูป... รอสักครู่');
         } else if (!d.image_url) { toast('err', d.error || 'สร้างรูปไม่สำเร็จ'); }
       } catch(e) { toast('err', 'เกิดข้อผิดพลาด'); }
       btn.disabled = false;
