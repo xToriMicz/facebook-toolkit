@@ -403,11 +403,9 @@ const DEFAULT_TEMPLATES = [
   { id: "nature", name: "ธรรมชาติ", desc: "วิวธรรมชาติ สวย สงบ", prompt: "Beautiful nature landscape, serene peaceful atmosphere, {keyword}, golden hour lighting, wide angle" },
 ];
 
-// GET /api/ai-image/templates — list available prompt templates
+// GET /api/ai-image/templates — list available prompt templates (public)
 analytics.get("/ai-image/templates", async (c) => {
-  const session = await getSessionFromReq(c);
-  if (!session) return c.json({ error: "Not authenticated" }, 401);
-  // Check for custom templates in KV
+  // Public endpoint — no auth required (static data, no user info)
   const custom = await c.env.KV.get("ai_image_templates");
   const customTemplates = custom ? JSON.parse(custom) : [];
   return c.json({ templates: [...DEFAULT_TEMPLATES, ...customTemplates] });
@@ -582,10 +580,9 @@ async function fetchUnsplashImage(query: string): Promise<string | null> {
   return `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=630&nologo=true`;
 }
 
-// GET /api/ai-image/snapmingle — fetch SnapMingle prompts, cached 24h
+// GET /api/ai-image/snapmingle — fetch SnapMingle prompts, cached 24h (public)
 analytics.get("/ai-image/snapmingle", async (c) => {
-  const session = await getSessionFromReq(c);
-  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  // Public endpoint — prompt gallery is not user-specific
   const page = +(c.req.query("page") || "1");
   const perPage = 10;
 
