@@ -1721,6 +1721,7 @@
 
 
     // === Insights Dashboard ===
+    function insEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     var insData = {};
 
     async function loadInsightsPages() {
@@ -1937,8 +1938,8 @@
         return ((b.likes || 0) + (b.comments || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.comments || 0) + (a.shares || 0));
       }).slice(0, 5);
       el.innerHTML = sorted.map(function(p, i) {
-        var msg = (p.message || '').substring(0, 60).replace(/</g, '&lt;') || '(ไม่มีข้อความ)';
-        var date = (p.created_at || '').slice(0, 10);
+        var msg = insEsc((p.message || '').substring(0, 60)) || '(ไม่มีข้อความ)';
+        var date = insEsc((p.created_at || '').slice(0, 10));
         return '<div class="ins-post"><div class="ins-post-rank">' + (i + 1) + '</div><div class="ins-post-body"><div class="ins-post-msg">' + msg + '</div><div class="ins-post-meta">' + (p.likes || 0) + ' likes · ' + (p.comments || 0) + ' comments · ' + (p.shares || 0) + ' shares — ' + date + '</div></div></div>';
       }).join('');
     }
@@ -1972,7 +1973,7 @@
           html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + Math.round(v) + '"></div>';
         }
       }
-      if (bt.tip) html += '<div style="grid-column:1/-1;text-align:center;font-size:0.72rem;color:var(--accent);margin-top:8px">' + bt.tip + '</div>';
+      if (bt.tip) html += '<div style="grid-column:1/-1;text-align:center;font-size:0.72rem;color:var(--accent);margin-top:8px">' + insEsc(bt.tip) + '</div>';
       el.innerHTML = html;
     }
 
