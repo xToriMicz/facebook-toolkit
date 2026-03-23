@@ -260,27 +260,27 @@
     @keyframes insShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
     /* === Insights Dashboard === */
     .ins-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-    .ins-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
+    .ins-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; }
     @media(min-width:640px){ .ins-stats { grid-template-columns:repeat(4,1fr); } }
-    .ins-stat { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; }
-    .ins-stat-val { font-size:1.4rem; font-weight:700; color:var(--text); }
-    .ins-stat-label { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
-    .ins-stat-delta { font-size:0.65rem; margin-top:4px; }
-    .ins-stat-delta.up { color:var(--success); }
-    .ins-stat-delta.down { color:var(--danger); }
-    .ins-chart-wrap { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:16px; }
+    .ins-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; text-align:center; }
+    .ins-stat-val { font-size:1.5rem; font-weight:800; color:var(--accent); }
+    .ins-stat-label { font-size:0.72rem; color:var(--text-secondary); margin-top:4px; }
+    .ins-stat-delta { font-size:0.62rem; font-weight:600; padding:2px 6px; border-radius:4px; margin-top:6px; display:inline-block; }
+    .ins-stat-delta.up { color:var(--success); background:rgba(34,197,94,0.1); }
+    .ins-stat-delta.down { color:var(--danger); background:rgba(239,68,68,0.1); }
+    .ins-chart-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
     .ins-chart-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
     .ins-top-posts { margin-bottom:16px; }
     .ins-post { display:flex; gap:10px; padding:10px; border-bottom:1px solid rgba(255,255,255,0.03); align-items:flex-start; }
     .ins-post:last-child { border-bottom:none; }
-    .ins-post-rank { width:24px; height:24px; border-radius:6px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; color:var(--text-muted); flex-shrink:0; }
+    .ins-post-rank { width:28px; height:28px; border-radius:8px; background:var(--accent-glow); display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; color:var(--accent); flex-shrink:0; }
     .ins-post-body { flex:1; min-width:0; }
-    .ins-post-msg { font-size:0.78rem; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .ins-post-meta { font-size:0.65rem; color:var(--text-muted); margin-top:2px; }
-    .ins-heatmap-wrap { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; }
+    .ins-post-msg { font-size:0.8rem; color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4; }
+    .ins-post-meta { font-size:0.68rem; color:var(--text-secondary); margin-top:4px; }
+    .ins-heatmap-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
     .ins-heatmap { display:grid; grid-template-columns:40px repeat(24,1fr); gap:1px; }
     .ins-hm-label { font-size:0.55rem; color:var(--text-muted); display:flex; align-items:center; justify-content:flex-end; padding-right:4px; }
-    .ins-hm-cell { aspect-ratio:1; border-radius:2px; min-width:0; }
+    .ins-hm-cell { aspect-ratio:1; border-radius:3px; min-width:0; }
     .ins-hm-hr { font-size:0.5rem; color:var(--text-muted); text-align:center; }
 
     /* === Multi-image === */
@@ -1895,7 +1895,7 @@
         for (var h = 0; h < 24; h++) {
           var val = data ? ((data[d] && data[d][h]) || 0) : 0;
           var intensity = data ? val / maxHeat : 0;
-          var bg = intensity === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
+          var bg = intensity === 0 ? 'rgba(79,110,247,0.03)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
           html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + val + '"></div>';
         }
       }
