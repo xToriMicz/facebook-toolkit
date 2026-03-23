@@ -32,8 +32,8 @@ analytics.get("/insights/:pageId", async (c) => {
   ).bind(session.fb_id, pageId).first<{ page_token: string }>();
   if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
   try {
-    const metrics = "page_impressions,page_engaged_users,page_post_engagements,page_fan_adds";
-    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${page.page_token}`);
+    const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
+    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${page.page_token}`);
     const data = await res.json() as any;
     if (data.error) return c.json({ error: data.error.message }, 400);
     return c.json({ ok: true, insights: data.data || [] });
@@ -168,7 +168,7 @@ analytics.post("/analytics/refresh", async (c) => {
   let updated = 0;
   for (const post of posts as any[]) {
     try {
-      const res = await fetch(`https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${page.page_token}`);
+      const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${page.page_token}`);
       const data: any = await res.json();
       if (!data.error) {
         await c.env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
@@ -192,7 +192,7 @@ analytics.get("/insights-bundle/:pageId", async (c) => {
   if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `insights:${pageId}:v2`, 300, async () => {
+    const data = await kvCache(c.env.KV, `insights:${pageId}:v3`, 180, async () => {
       const [insights, performance, bestTime, stats] = await Promise.all([
         fetchInsights(pageId, page.page_token),
         fetchPerformance(c.env.DB, pageId),
@@ -209,12 +209,12 @@ analytics.get("/insights-bundle/:pageId", async (c) => {
 
 async function fetchInsights(pageId: string, token: string) {
   try {
-    const metrics = "page_impressions,page_engaged_users,page_post_engagements,page_fan_adds";
-    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${token}`);
+    const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
+    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${token}`);
     const data: any = await res.json();
-    if (data.error) return null;
+    if (data.error) return { error: data.error.message, code: data.error.code };
     return (data.data || []).map((m: any) => ({ name: m.name, values: m.values?.slice(-7) }));
-  } catch { return null; }
+  } catch (e: any) { return { error: e.message }; }
 }
 
 async function fetchPerformance(db: D1Database, pageId: string) {
@@ -247,6 +247,31 @@ async function fetchStats(db: D1Database, fbId: string, pageId: string) {
     db.prepare("SELECT COUNT(*) as c FROM drafts WHERE user_fb_id=?").bind(fbId).first<{c:number}>(),
   ]);
   return { posts: posts?.c || 0, ai: ai?.c || 0, sched: sched?.c || 0, drafts: drafts?.c || 0 };
+}
+
+// Cron: auto-refresh engagement for all pages
+export async function refreshAllEngagement(env: Env) {
+  const { results: pages } = await env.DB.prepare(
+    "SELECT page_id, page_token FROM user_pages WHERE page_token IS NOT NULL"
+  ).all();
+  let total = 0;
+  for (const pg of pages as any[]) {
+    const { results: posts } = await env.DB.prepare(
+      "SELECT id, fb_post_id FROM posts WHERE fb_post_id IS NOT NULL AND page_id = ? AND status = 'posted' ORDER BY created_at DESC LIMIT 10"
+    ).bind(pg.page_id).all();
+    for (const post of posts as any[]) {
+      try {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pg.page_token}`);
+        const data: any = await res.json();
+        if (!data.error) {
+          await env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
+            .bind(data.likes?.summary?.total_count || 0, data.comments?.summary?.total_count || 0, data.shares?.count || 0, post.id).run();
+          total++;
+        }
+      } catch {}
+    }
+  }
+  console.log(`[cron] refreshed engagement for ${total} posts`);
 }
 
 export default analytics;

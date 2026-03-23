@@ -7,7 +7,7 @@ import post from "./routes/post";
 import schedule, { processScheduledPosts } from "./routes/schedule";
 import drafts from "./routes/drafts";
 import ai from "./routes/ai";
-import analytics from "./routes/analytics";
+import analytics, { refreshAllEngagement } from "./routes/analytics";
 import media from "./routes/media";
 import rss from "./routes/rss";
 import tickets from "./routes/tickets";
@@ -183,5 +183,13 @@ export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(processScheduledPosts(env));
+    // Refresh engagement every ~30 min (check KV throttle)
+    const lastRefresh = await env.KV.get("cron:engagement:last");
+    const now = Date.now();
+    if (!lastRefresh || now - parseInt(lastRefresh) > 1800000) {
+      ctx.waitUntil(
+        refreshAllEngagement(env).then(() => env.KV.put("cron:engagement:last", String(now), { expirationTtl: 3600 }))
+      );
+    }
   },
 };
