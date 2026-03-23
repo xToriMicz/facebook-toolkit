@@ -393,6 +393,27 @@ async function fetchChallengeMetrics(pageId: string, token: string, since: strin
   return result;
 }
 
+// POST /api/ai-image — generate AI image URL from prompt
+analytics.post("/ai-image", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { prompt, style } = await c.req.json() as { prompt: string; style?: string };
+  if (!prompt) return c.json({ error: "prompt required" }, 400);
+  if (prompt.length > 500) return c.json({ error: "prompt too long (max 500)" }, 400);
+
+  const styleMap: Record<string, string> = {
+    "realistic": "photorealistic, high quality, professional",
+    "cartoon": "cute cartoon illustration, colorful",
+    "minimal": "minimalist, clean, modern design",
+    "thai": "Thai style, traditional Thai art, warm colors",
+  };
+  const styleDesc = styleMap[style || "realistic"] || styleMap["realistic"];
+  const fullPrompt = encodeURIComponent(`${prompt}, ${styleDesc}, social media post`);
+  const imageUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=1200&height=630&nologo=true`;
+
+  return c.json({ ok: true, image_url: imageUrl, provider: "pollinations", note: "รูปจะถูกสร้างเมื่อ URL ถูกเรียก (ครั้งแรกอาจช้า 5-10 วิ)" });
+});
+
 // GET /api/challenges/:pageId/suggestions — tips per challenge
 analytics.get("/challenges/:pageId/suggestions", async (c) => {
   const session = await getSessionFromReq(c);
@@ -514,11 +535,10 @@ async function callAI(settings: any, apiKey: string, prompt: string): Promise<st
 }
 
 async function fetchUnsplashImage(query: string): Promise<string | null> {
-  try {
-    const res = await fetch(`https://source.unsplash.com/1200x630/?${encodeURIComponent(query)}`);
-    if (res.ok && res.url && !res.url.includes("source.unsplash.com")) return res.url;
-  } catch {}
-  return null;
+  // Pollinations.ai — free AI image generation, URL-based
+  // FB will fetch the image from this URL when posting
+  const prompt = encodeURIComponent(query + ", social media post, vibrant, high quality");
+  return `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=630&nologo=true`;
 }
 
 export default analytics;
