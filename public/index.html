@@ -2054,9 +2054,10 @@
       for (d = 0; d < 7; d++) { grid[d] = []; for (h = 0; h < 24; h++) grid[d][h] = 0; }
       for (var i = 0; i < raw.length; i++) {
         var r = raw[i];
-        if (r.d >= 0 && r.d < 7 && r.h >= 0 && r.h < 24) {
-          grid[r.d][r.h] = r.eng || 0;
-          if (grid[r.d][r.h] > maxHeat) maxHeat = grid[r.d][r.h];
+        var rd = parseInt(r.d), rh = parseInt(r.h);
+        if (rd >= 0 && rd < 7 && rh >= 0 && rh < 24 && grid[rd]) {
+          grid[rd][rh] = Number(r.eng) || 0;
+          if (grid[rd][rh] > maxHeat) maxHeat = grid[rd][rh];
         }
       }
       var html = '<div class="ins-hm-label"></div>';
