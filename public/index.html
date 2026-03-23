@@ -1729,8 +1729,8 @@
         var d = await r.json();
         (d.pages || []).forEach(function(pg) {
           var o = document.createElement('option');
-          o.value = pg.page_id;
-          o.textContent = pg.page_name || pg.page_id;
+          o.value = pg.id || pg.page_id;
+          o.textContent = pg.name || pg.page_name || pg.id || pg.page_id;
           sel.appendChild(o);
         });
       } catch(e) { /* ignore */ }
