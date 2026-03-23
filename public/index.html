@@ -396,6 +396,8 @@
         <div class="sidebar-nav">
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
+          <button class="sidebar-nav-item" onclick="switchTab('reels',this)">🎬 Reels</button>
+          <button class="sidebar-nav-item" onclick="switchTab('stories',this)">📸 Stories</button>
           <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
                     <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
           <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา/Bulk</button>
@@ -507,6 +509,65 @@
           </div>
 
           <div class="toast" id="status"></div>
+        </div>
+      </div>
+
+      <!-- Reels Tab -->
+      <div id="tabReels" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">🎬</span> โพส Reels</div>
+          <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.6">อัพโหลดวิดีโอสั้นลง Facebook Reels — รองรับ MP4, แนวตั้ง 9:16, ไม่เกิน 90 วินาที</p>
+          <textarea class="compose-area" id="reelCaption" placeholder="เขียน caption สำหรับ Reel..." style="min-height:80px" aria-label="Reel caption"></textarea>
+          <div class="drop-zone" id="reelDropZone" onclick="document.getElementById('reelFileInput').click()" style="margin:12px 0">
+            🎥 คลิกเพื่อเลือกวิดีโอ หรือลากไฟล์มาวาง (MP4, max 100MB)
+          </div>
+          <input type="file" id="reelFileInput" accept="video/mp4,video/*" onchange="handleReelFile(this.files[0])">
+          <div id="reelPreview" style="display:none;margin:10px 0">
+            <video id="reelVideo" controls style="width:100%;max-height:400px;border-radius:12px;background:#000"></video>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+              <span id="reelFileInfo" style="font-size:0.72rem;color:var(--text-muted)"></span>
+              <button onclick="clearReelVideo()" style="font-size:0.72rem;color:var(--danger);background:none;border:none;cursor:pointer">✕ ลบวิดีโอ</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-accent" id="reelPostBtn" onclick="submitReel()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">🎬 โพส Reel</button>
+          </div>
+          <div class="toast" id="reelStatus"></div>
+        </div>
+      </div>
+
+      <!-- Stories Tab -->
+      <div id="tabStories" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">📸</span> โพส Stories</div>
+          <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.6">อัพโหลดรูปหรือวิดีโอลง Facebook Stories — หายใน 24 ชั่วโมง</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button id="storyTypePhoto" class="btn btn-accent" onclick="setStoryType('photo')" style="padding:8px 16px;font-size:0.82rem">🖼️ รูปภาพ</button>
+            <button id="storyTypeVideo" class="btn btn-ghost" onclick="setStoryType('video')" style="padding:8px 16px;font-size:0.82rem">🎥 วิดีโอ</button>
+          </div>
+          <div id="storyPhotoSection">
+            <div class="drop-zone" id="storyDropZone" onclick="document.getElementById('storyFileInput').click()">
+              📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง
+            </div>
+            <input type="file" id="storyFileInput" accept="image/*" onchange="handleStoryFile(this.files[0])">
+          </div>
+          <div id="storyVideoSection" style="display:none">
+            <div class="drop-zone" id="storyVideoDropZone" onclick="document.getElementById('storyVideoInput').click()">
+              🎥 คลิกเพื่อเลือกวิดีโอ หรือลากไฟล์มาวาง (MP4, max 100MB)
+            </div>
+            <input type="file" id="storyVideoInput" accept="video/mp4,video/*" onchange="handleStoryVideoFile(this.files[0])">
+          </div>
+          <div id="storyPreview" style="display:none;margin:10px 0">
+            <img id="storyImg" style="width:100%;max-height:400px;object-fit:contain;border-radius:12px;display:none">
+            <video id="storyVid" controls style="width:100%;max-height:400px;border-radius:12px;background:#000;display:none"></video>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px">
+              <button onclick="clearStoryMedia()" style="font-size:0.72rem;color:var(--danger);background:none;border:none;cursor:pointer">✕ ลบ</button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-accent" id="storyPostBtn" onclick="submitStory()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📸 โพส Story</button>
+          </div>
+          <div class="toast" id="storyStatus"></div>
         </div>
       </div>
 
@@ -885,7 +946,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabChallenges','tabTickets'].forEach(id => {
+      ['tabCompose','tabReels','tabStories','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabChallenges','tabTickets'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -1001,6 +1062,138 @@
     }
 
     function toast(type,msg) { const el=document.getElementById('status'); el.className='toast '+type; el.textContent=msg; const dur=type==='err'?15000:5000; setTimeout(()=>{el.className='toast';},dur); }
+    function toastEl(elId,type,msg) { const el=document.getElementById(elId); el.className='toast '+type; el.textContent=msg; const dur=type==='err'?15000:5000; setTimeout(()=>{el.className='toast';},dur); }
+
+    // === Reels ===
+    let reelVideoUrl = null;
+    const reelDz = document.getElementById('reelDropZone');
+    if(reelDz) {
+      reelDz.addEventListener('dragover', e=>{e.preventDefault();reelDz.style.borderColor='var(--accent)';});
+      reelDz.addEventListener('dragleave', ()=>{reelDz.style.borderColor='';});
+      reelDz.addEventListener('drop', e=>{e.preventDefault();reelDz.style.borderColor='';if(e.dataTransfer.files.length)handleReelFile(e.dataTransfer.files[0]);});
+    }
+    async function handleReelFile(file) {
+      if(!file) return;
+      if(!file.type.startsWith('video/')) { toastEl('reelStatus','err','กรุณาเลือกไฟล์วิดีโอ (MP4)'); return; }
+      if(file.size > 100*1024*1024) { toastEl('reelStatus','err','ไฟล์ใหญ่เกินไป (max 100MB)'); return; }
+      const btn = document.getElementById('reelPostBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังอัพโหลด...';
+      try {
+        const form = new FormData(); form.append('file', file);
+        const r = await fetch('/api/upload-video', { method:'POST', body:form, credentials:'same-origin' });
+        const d = await r.json();
+        if(d.ok) {
+          reelVideoUrl = d.url;
+          document.getElementById('reelPreview').style.display='block';
+          document.getElementById('reelVideo').src = URL.createObjectURL(file);
+          document.getElementById('reelFileInfo').textContent = file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)';
+          document.getElementById('reelDropZone').style.display='none';
+          toastEl('reelStatus','ok','อัพโหลดวิดีโอสำเร็จ');
+        } else { toastEl('reelStatus','err', d.error || 'อัพโหลดไม่สำเร็จ'); }
+      } catch(e) { toastEl('reelStatus','err','Error: '+e.message); }
+      btn.disabled=false; btn.innerHTML='🎬 โพส Reel';
+    }
+    function clearReelVideo() {
+      reelVideoUrl = null;
+      document.getElementById('reelPreview').style.display='none';
+      document.getElementById('reelVideo').src='';
+      document.getElementById('reelDropZone').style.display='';
+    }
+    async function submitReel() {
+      if(!reelVideoUrl) { toastEl('reelStatus','err','กรุณาอัพโหลดวิดีโอก่อน'); return; }
+      if(!selectedPage) { toastEl('reelStatus','err','กรุณาเลือกเพจก่อน'); return; }
+      const btn = document.getElementById('reelPostBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
+      try {
+        const caption = document.getElementById('reelCaption').value.trim();
+        const r = await fetch('/api/reels', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin',
+          body: JSON.stringify({ video_url: reelVideoUrl, description: caption, page_id: selectedPage.id })
+        });
+        const d = await r.json();
+        if(d.ok) { toastEl('reelStatus','ok','โพส Reel สำเร็จ!'); showNotify('Reel โพสลงเพจเรียบร้อย!'); clearReelVideo(); document.getElementById('reelCaption').value=''; }
+        else { toastEl('reelStatus','err', (d.error||'โพสไม่สำเร็จ') + (d.step ? ' (step: '+d.step+')' : '')); }
+      } catch(e) { toastEl('reelStatus','err','Error: '+e.message); }
+      btn.disabled=false; btn.innerHTML='🎬 โพส Reel';
+    }
+
+    // === Stories ===
+    let storyMediaUrl = null;
+    let storyMediaType = 'photo';
+    function setStoryType(type) {
+      storyMediaType = type;
+      document.getElementById('storyTypePhoto').className = type==='photo' ? 'btn btn-accent' : 'btn btn-ghost';
+      document.getElementById('storyTypeVideo').className = type==='video' ? 'btn btn-accent' : 'btn btn-ghost';
+      document.getElementById('storyPhotoSection').style.display = type==='photo' ? '' : 'none';
+      document.getElementById('storyVideoSection').style.display = type==='video' ? '' : 'none';
+      clearStoryMedia();
+    }
+    const storyDz = document.getElementById('storyDropZone');
+    if(storyDz) {
+      storyDz.addEventListener('dragover', e=>{e.preventDefault();storyDz.style.borderColor='var(--accent)';});
+      storyDz.addEventListener('dragleave', ()=>{storyDz.style.borderColor='';});
+      storyDz.addEventListener('drop', e=>{e.preventDefault();storyDz.style.borderColor='';if(e.dataTransfer.files.length)handleStoryFile(e.dataTransfer.files[0]);});
+    }
+    const storyVdz = document.getElementById('storyVideoDropZone');
+    if(storyVdz) {
+      storyVdz.addEventListener('dragover', e=>{e.preventDefault();storyVdz.style.borderColor='var(--accent)';});
+      storyVdz.addEventListener('dragleave', ()=>{storyVdz.style.borderColor='';});
+      storyVdz.addEventListener('drop', e=>{e.preventDefault();storyVdz.style.borderColor='';if(e.dataTransfer.files.length)handleStoryVideoFile(e.dataTransfer.files[0]);});
+    }
+    async function handleStoryFile(file) {
+      if(!file || !file.type.startsWith('image/')) { toastEl('storyStatus','err','กรุณาเลือกไฟล์รูปภาพ'); return; }
+      if(file.size > 10*1024*1024) { toastEl('storyStatus','err','ไฟล์ใหญ่เกินไป (max 10MB)'); return; }
+      const btn = document.getElementById('storyPostBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังอัพโหลด...';
+      try {
+        const form = new FormData(); form.append('file', file);
+        const r = await fetch('/api/upload', { method:'POST', body:form, credentials:'same-origin' });
+        const d = await r.json();
+        if(d.ok) {
+          storyMediaUrl = d.url; storyMediaType = 'photo';
+          document.getElementById('storyPreview').style.display='block';
+          const img = document.getElementById('storyImg'); img.src=d.url; img.style.display='';
+          document.getElementById('storyVid').style.display='none';
+          toastEl('storyStatus','ok','อัพโหลดรูปสำเร็จ');
+        } else { toastEl('storyStatus','err', d.error || 'อัพโหลดไม่สำเร็จ'); }
+      } catch(e) { toastEl('storyStatus','err','Error: '+e.message); }
+      btn.disabled=false; btn.innerHTML='📸 โพส Story';
+    }
+    async function handleStoryVideoFile(file) {
+      if(!file || !file.type.startsWith('video/')) { toastEl('storyStatus','err','กรุณาเลือกไฟล์วิดีโอ'); return; }
+      if(file.size > 100*1024*1024) { toastEl('storyStatus','err','ไฟล์ใหญ่เกินไป (max 100MB)'); return; }
+      const btn = document.getElementById('storyPostBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังอัพโหลด...';
+      try {
+        const form = new FormData(); form.append('file', file);
+        const r = await fetch('/api/upload-video', { method:'POST', body:form, credentials:'same-origin' });
+        const d = await r.json();
+        if(d.ok) {
+          storyMediaUrl = d.url; storyMediaType = 'video';
+          document.getElementById('storyPreview').style.display='block';
+          document.getElementById('storyImg').style.display='none';
+          const vid = document.getElementById('storyVid'); vid.src=URL.createObjectURL(file); vid.style.display='';
+          toastEl('storyStatus','ok','อัพโหลดวิดีโอสำเร็จ');
+        } else { toastEl('storyStatus','err', d.error || 'อัพโหลดไม่สำเร็จ'); }
+      } catch(e) { toastEl('storyStatus','err','Error: '+e.message); }
+      btn.disabled=false; btn.innerHTML='📸 โพส Story';
+    }
+    function clearStoryMedia() {
+      storyMediaUrl = null;
+      document.getElementById('storyPreview').style.display='none';
+      document.getElementById('storyImg').src=''; document.getElementById('storyImg').style.display='none';
+      document.getElementById('storyVid').src=''; document.getElementById('storyVid').style.display='none';
+    }
+    async function submitStory() {
+      if(!storyMediaUrl) { toastEl('storyStatus','err','กรุณาอัพโหลดรูปหรือวิดีโอก่อน'); return; }
+      if(!selectedPage) { toastEl('storyStatus','err','กรุณาเลือกเพจก่อน'); return; }
+      const btn = document.getElementById('storyPostBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
+      try {
+        const body = storyMediaType === 'video'
+          ? { video_url: storyMediaUrl, page_id: selectedPage.id }
+          : { image_url: storyMediaUrl, page_id: selectedPage.id };
+        const r = await fetch('/api/stories', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(body) });
+        const d = await r.json();
+        if(d.ok) { toastEl('storyStatus','ok','โพส Story สำเร็จ!'); showNotify('Story โพสลงเพจเรียบร้อย!'); clearStoryMedia(); }
+        else { toastEl('storyStatus','err', d.error || 'โพสไม่สำเร็จ'); }
+      } catch(e) { toastEl('storyStatus','err','Error: '+e.message); }
+      btn.disabled=false; btn.innerHTML='📸 โพส Story';
+    }
 
     // Thai error messages for common HTTP errors
     function handleApiError(status, fallback) {
@@ -1043,12 +1236,14 @@
         el.innerHTML=posts.map(p=>{
           const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
-          const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
+          const typeIcon=p.post_type==='reel'?'🎬':p.post_type==='story'?'📸':'';
+          const typeBadge=typeIcon?`<span style="font-size:0.65rem;background:rgba(168,85,247,0.12);color:#a855f7;padding:1px 6px;border-radius:4px;margin-left:4px">${typeIcon} ${p.post_type}</span>`:'';
+          const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">'+(p.post_type==='reel'?'🎬':p.post_type==='story'?'📸':'📝')+'</div>';
           const pageImg = p.page_picture ? '<img loading="lazy" src="'+p.page_picture+'" style="width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-right:3px">' : '';
           const pageName=`<span style="font-size:0.7rem;color:${p.page_name?'var(--accent)':'var(--text-muted)'};margin-right:4px;display:inline-flex;align-items:center;gap:3px">${pageImg}${p.page_name||'ไม่ระบุเพจ'}</span>`;
           const eng=p.engagement?`<div style="display:flex;gap:10px;margin-top:4px;font-size:0.72rem;color:var(--text-secondary)"><span>❤️ ${p.engagement.likes}</span><span>💬 ${p.engagement.comments}</span><span>🔄 ${p.engagement.shares}</span></div>`:'';
           const cmtBtn=p.fb_post_id?` <button onclick="showComments('${p.fb_post_id}')" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">💬 comments</button>`:'';
-          return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
+          return `<div class="hist-row">${thumb}<div class="hist-body"><div class="hist-msg">${(p.message||'').replace(/</g,'&lt;')}${typeBadge}</div>${eng}<div class="hist-meta">${pageName}${dt} ${badge}${cmtBtn}</div></div></div>`;
         }).join('');
       } catch{el.innerHTML='<div class="empty-state">โหลดไม่สำเร็จ</div>';}
     }
@@ -1373,8 +1568,10 @@
         const hasFail=dayP.some(p=>p.status==='failed')||dayS.some(p=>p.status==='failed');
         const hasOk=dayP.some(p=>p.status==='posted');
         const hasPend=dayS.some(p=>p.status==='pending');
+        const hasReel=dayP.some(p=>p.post_type==='reel');
+        const hasStory=dayP.some(p=>p.post_type==='story');
         const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
-        var dots='';if(hasFail)dots+='<span class="cal-dot failed"></span>';if(hasOk)dots+='<span class="cal-dot posted"></span>';if(hasPend)dots+='<span class="cal-dot scheduled"></span>';
+        var dots='';if(hasFail)dots+='<span class="cal-dot failed"></span>';if(hasOk)dots+='<span class="cal-dot posted"></span>';if(hasPend)dots+='<span class="cal-dot scheduled"></span>';if(hasReel)dots+='<span style="font-size:0.5rem">🎬</span>';if(hasStory)dots+='<span style="font-size:0.5rem">📸</span>';
         var count=dayP.length+dayS.length;
         var countBadge=count>0?'<span style="font-size:0.6rem;color:var(--text-muted)">'+count+'</span>':'';
         html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="showCalDay(\''+dateStr+'\')">'+d+'<div class="cal-dots">'+dots+'</div>'+countBadge+'</div>';
@@ -1392,7 +1589,7 @@
       if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
       const si={posted:'✅',pending:'⏳',failed:'❌'};
       let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-      posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
+      posts.forEach(p=>{const icon=si[p.status]||'📤';const typeIcon=p.post_type==='reel'?'🎬 ':p.post_type==='story'?'📸 ':'';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+typeIcon+pn+(p.message||'').substring(0,50)+'</div>';});
       scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
       html+=addBtn+'</div>';
       el.innerHTML=html;

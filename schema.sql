@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS posts (
   message TEXT,
   image_url TEXT,
   fb_post_id TEXT,
+  page_id TEXT,
+  post_type TEXT DEFAULT 'post',
   status TEXT DEFAULT 'posted',
   created_at TEXT NOT NULL
 );

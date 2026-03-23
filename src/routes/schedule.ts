@@ -109,7 +109,7 @@ export async function processScheduledPosts(env: Env) {
         const fbPostId = result.id || result.post_id || null;
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
         await env.DB.prepare(
-          "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
+          "INSERT INTO posts (message, image_url, fb_post_id, page_id, post_type, status, created_at) VALUES (?, ?, ?, ?, 'post', 'posted', ?)"
         ).bind(post.message, post.image_url, fbPostId, post.page_id, new Date().toISOString()).run();
       }
     } catch {
