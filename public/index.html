@@ -283,6 +283,13 @@
     .ch-boost { margin-top:6px; margin-left:4px; padding:4px 10px; border:1px solid #a855f7; border-radius:6px; background:none; color:#a855f7; font-size:0.68rem; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
     .ch-boost:hover { background:#a855f7; color:#fff; }
     .ch-boost:disabled { opacity:0.5; cursor:not-allowed; }
+    .ch-card { cursor:pointer; }
+    .ch-detail { display:none; margin-top:8px; padding:8px 10px; background:var(--bg-input); border-radius:6px; font-size:0.72rem; color:var(--text-secondary); line-height:1.5; }
+    .ch-card.expanded .ch-detail { display:block; }
+    .ch-detail-item { padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .ch-detail-item:last-child { border-bottom:none; }
+    .ch-expand-icon { font-size:0.6rem; color:var(--text-muted); transition:transform 0.2s; }
+    .ch-card.expanded .ch-expand-icon { transform:rotate(180deg); }
 
     /* === Multi-image === */
     .multi-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
@@ -2044,6 +2051,14 @@
     // Trend category filter
     // === Challenge Dashboard ===
     var CH_COLORS = {follows:'#4f6ef7',posts:'#22c55e',reels:'#a855f7',engagements:'#f59e0b',views:'#ec4899'};
+    var CH_DETAILS = {
+      follows:['โพสเนื้อหาที่คนอยาก share ให้เพื่อน','ใช้ CTA เช่น "กด Follow เพื่อไม่พลาด"','โพสสม่ำเสมอ ให้คนเห็นบ่อย'],
+      posts:['โพสอย่างน้อยวันละ 1 โพส','ใช้รูปจริง ไม่ใช่ stock — engagement สูงกว่า 3x','โพสช่วง 18:00-20:00 ได้ reach สูงสุด'],
+      reels:['Reels สั้น 15-30 วิ ได้ views สูงกว่า','ใช้เพลงที่กำลัง trending','ถ่ายแนวตั้ง 9:16 เท่านั้น'],
+      engagements:['ตอบ comment ภายใน 1 ชม.','ถามคำถามท้ายโพส เพิ่ม comment','ใช้ poll/quiz ใน Stories'],
+      views:['แชร์โพสไป Group ที่เกี่ยวข้อง','ใช้ hashtag ไทยที่กำลัง trending','โพส video สั้นๆ ได้ views เยอะกว่ารูป']
+    };
+    function toggleChDetail(idx){var cards=document.querySelectorAll('.ch-card');if(cards[idx])cards[idx].classList.toggle('expanded');}
     var CH_BG = {follows:'rgba(79,110,247,0.1)',posts:'rgba(34,197,94,0.1)',reels:'rgba(168,85,247,0.1)',engagements:'rgba(245,158,11,0.1)',views:'rgba(236,72,153,0.1)'};
     var CH_ACTIONS = {
       follows:{tab:null,tip:'โพสเนื้อหาที่ได้ share เยอะ จะเพิ่มผู้ติดตาม'},
