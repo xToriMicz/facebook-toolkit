@@ -192,12 +192,12 @@ analytics.get("/insights-bundle/:pageId", async (c) => {
   if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `insights:${pageId}:v1`, 300, async () => {
+    const data = await kvCache(c.env.KV, `insights:${pageId}:v2`, 300, async () => {
       const [insights, performance, bestTime, stats] = await Promise.all([
         fetchInsights(pageId, page.page_token),
-        fetchPerformance(c.env.DB),
-        fetchBestTime(c.env.DB),
-        fetchStats(c.env.DB, session.fb_id),
+        fetchPerformance(c.env.DB, pageId),
+        fetchBestTime(c.env.DB, pageId),
+        fetchStats(c.env.DB, session.fb_id, pageId),
       ]);
       return { insights, performance, bestTime, stats, ts: new Date().toISOString() };
     });
@@ -217,18 +217,18 @@ async function fetchInsights(pageId: string, token: string) {
   } catch { return null; }
 }
 
-async function fetchPerformance(db: D1Database) {
+async function fetchPerformance(db: D1Database, pageId: string) {
   const [top, avg] = await Promise.all([
-    db.prepare("SELECT id, message, fb_post_id, page_id, (COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, likes, comments, shares, created_at FROM posts WHERE status='posted' ORDER BY eng DESC LIMIT 5").all(),
-    db.prepare("SELECT AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as avg_eng, COUNT(*) as total, SUM(COALESCE(likes,0)) as likes, SUM(COALESCE(comments,0)) as comments, SUM(COALESCE(shares,0)) as shares FROM posts WHERE status='posted'").first<any>(),
+    db.prepare("SELECT id, message, fb_post_id, page_id, (COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, likes, comments, shares, created_at FROM posts WHERE status='posted' AND page_id=? ORDER BY eng DESC LIMIT 5").bind(pageId).all(),
+    db.prepare("SELECT AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as avg_eng, COUNT(*) as total, SUM(COALESCE(likes,0)) as likes, SUM(COALESCE(comments,0)) as comments, SUM(COALESCE(shares,0)) as shares FROM posts WHERE status='posted' AND page_id=?").bind(pageId).first<any>(),
   ]);
   return { top: top.results, avg_eng: avg?.avg_eng || 0, total: avg?.total || 0, likes: avg?.likes || 0, comments: avg?.comments || 0, shares: avg?.shares || 0 };
 }
 
-async function fetchBestTime(db: D1Database) {
+async function fetchBestTime(db: D1Database, pageId: string) {
   const { results } = await db.prepare(
-    "SELECT CAST(strftime('%w',created_at) AS INTEGER) as d, CAST(strftime('%H',created_at) AS INTEGER) as h, AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, COUNT(*) as n FROM posts WHERE status='posted' GROUP BY d,h"
-  ).all();
+    "SELECT CAST(strftime('%w',created_at) AS INTEGER) as d, CAST(strftime('%H',created_at) AS INTEGER) as h, AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, COUNT(*) as n FROM posts WHERE status='posted' AND page_id=? GROUP BY d,h"
+  ).bind(pageId).all();
   const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
   const heatmap = results as any[];
   const bestSlot = heatmap.sort((a: any, b: any) => b.eng - a.eng)[0];
@@ -238,12 +238,12 @@ async function fetchBestTime(db: D1Database) {
   };
 }
 
-async function fetchStats(db: D1Database, fbId: string) {
+async function fetchStats(db: D1Database, fbId: string, pageId: string) {
   const today = new Date().toISOString().split("T")[0];
   const [posts, ai, sched, drafts] = await Promise.all([
-    db.prepare("SELECT COUNT(*) as c FROM posts WHERE created_at>=? AND (user_fb_id=? OR user_fb_id IS NULL)").bind(today, fbId).first<{c:number}>(),
+    db.prepare("SELECT COUNT(*) as c FROM posts WHERE created_at>=? AND page_id=?").bind(today, pageId).first<{c:number}>(),
     db.prepare("SELECT COUNT(*) as c FROM activity_logs WHERE action LIKE '%ai%' AND created_at>=? AND user_fb_id=?").bind(today, fbId).first<{c:number}>(),
-    db.prepare("SELECT COUNT(*) as c FROM scheduled_posts WHERE status='pending' AND user_fb_id=?").bind(fbId).first<{c:number}>(),
+    db.prepare("SELECT COUNT(*) as c FROM scheduled_posts WHERE status='pending' AND user_fb_id=? AND page_id=?").bind(fbId, pageId).first<{c:number}>(),
     db.prepare("SELECT COUNT(*) as c FROM drafts WHERE user_fb_id=?").bind(fbId).first<{c:number}>(),
   ]);
   return { posts: posts?.c || 0, ai: ai?.c || 0, sched: sched?.c || 0, drafts: drafts?.c || 0 };
