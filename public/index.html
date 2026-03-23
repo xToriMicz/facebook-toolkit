@@ -476,7 +476,7 @@
           <div style="margin-top:8px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
             <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">🎨 AI สร้างรูป</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-              <select id="aiImageTemplate" style="flex:1;min-width:120px;padding:5px 8px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit"><option value="">เลือกสไตล์...</option></select>
+              <select id="aiImageTemplate" style="flex:1;min-width:120px;padding:5px 8px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit"><option value="">เลือกสไตล์...</option><option value="cinematic">Cinematic Poster</option><option value="morning">สวัสดีตอนเช้า</option><option value="quote">Quote Card</option><option value="product">Product Showcase</option><option value="food">Food Photography</option><option value="nature">Nature & Landscape</option></select>
               <input id="aiImageKeyword" placeholder="keyword เช่น กาแฟ ร้านสวย" style="flex:2;min-width:100px;padding:5px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit">
               <button id="aiImageBtn" onclick="generateAiImage()" style="padding:5px 12px;border:1px solid #a855f7;border-radius:6px;background:none;color:#a855f7;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">สร้างรูป</button>
               <button onclick="copyAiPrompt()" style="padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit;white-space:nowrap">Copy prompt</button>
@@ -2153,7 +2153,8 @@
 
     async function loadAiImageTemplates() {
       var sel = document.getElementById('aiImageTemplate');
-      if (!sel || sel.options.length > 1) return;
+      if (!sel || sel.dataset.loaded === 'yes') return;
+      sel.dataset.loaded = 'yes';
       try {
         var templates = [];
         try {
@@ -2168,16 +2169,9 @@
             templates = d2.templates || [];
           } catch(e) { /* fallback */ }
         }
-        if (!templates.length) {
-          templates = [
-            {id:'cinematic',name:'Cinematic Poster'},
-            {id:'morning',name:'สวัสดีตอนเช้า'},
-            {id:'quote',name:'Quote Card'},
-            {id:'product',name:'Product Showcase'},
-            {id:'food',name:'Food Photography'},
-            {id:'nature',name:'Nature & Landscape'}
-          ];
-        }
+        if (templates.length) {
+          sel.innerHTML = '<option value="">เลือกสไตล์...</option>';
+        } else { return; }
         templates.forEach(function(t) {
           var o = document.createElement('option');
           o.value = t.id || t.slug || t.name;
