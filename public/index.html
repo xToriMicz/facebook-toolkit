@@ -538,6 +538,7 @@
             <button onclick="calNav(-1)">◀</button>
             <span class="cal-month" id="calMonth"></span>
             <button onclick="calNav(1)">▶</button>
+            <button onclick="calToday()" style="margin-left:8px;font-size:0.7rem">วันนี้</button>
           </div>
           <div class="cal-grid" id="calGrid"></div>
           <div id="calDetail"></div>
@@ -1289,12 +1290,15 @@
         const hasOk=dayP.some(p=>p.status==='posted');
         const hasPend=dayS.some(p=>p.status==='pending');
         const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
-        let dots='';if(hasFail)dots+='<span class="cal-dot" style="background:#ef4444"></span>';if(hasOk)dots+='<span class="cal-dot has-post"></span>';if(hasPend)dots+='<span class="cal-dot has-sched"></span>';
-        html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="showCalDay(\''+dateStr+'\')">'+d+dots+'</div>';
+        var dots='';if(hasFail)dots+='<span class="cal-dot failed"></span>';if(hasOk)dots+='<span class="cal-dot posted"></span>';if(hasPend)dots+='<span class="cal-dot scheduled"></span>';
+        var count=dayP.length+dayS.length;
+        var countBadge=count>0?'<span style="font-size:0.6rem;color:var(--text-muted)">'+count+'</span>':'';
+        html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="showCalDay(\''+dateStr+'\')">'+d+'<div class="cal-dots">'+dots+'</div>'+countBadge+'</div>';
       }
       grid.innerHTML=html;
       document.getElementById('calDetail').innerHTML='';
     }
+    function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();renderCalendar();}
     function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
     function showCalDay(dateStr) {
       const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
