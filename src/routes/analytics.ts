@@ -180,6 +180,44 @@ analytics.post("/analytics/refresh", async (c) => {
   return c.json({ ok: true, updated, total: posts.length });
 });
 
+// POST /api/analytics/sync-posts — import posts from Facebook into DB + refresh engagement
+analytics.post("/analytics/sync-posts", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { page_id } = await c.req.json();
+  if (!page_id) return c.json({ error: "page_id required" }, 400);
+  const page = await c.env.DB.prepare(
+    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, page_id).first<{ page_token: string }>();
+  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=50&access_token=${page.page_token}`);
+    const data: any = await res.json();
+    if (data.error) return c.json({ error: data.error.message }, 400);
+
+    let imported = 0, updated = 0;
+    for (const p of (data.data || [])) {
+      const fbId = p.id;
+      const existing = await c.env.DB.prepare("SELECT id FROM posts WHERE fb_post_id = ?").bind(fbId).first();
+      const likes = p.likes?.summary?.total_count || 0;
+      const comments = p.comments?.summary?.total_count || 0;
+      const shares = p.shares?.count || 0;
+      if (existing) {
+        await c.env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
+          .bind(likes, comments, shares, (existing as any).id).run();
+        updated++;
+      } else {
+        await c.env.DB.prepare(
+          "INSERT INTO posts (message, fb_post_id, page_id, user_fb_id, likes, comments, shares, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'posted', ?)"
+        ).bind(p.message || "", fbId, page_id, session.fb_id, likes, comments, shares, p.created_time || new Date().toISOString()).run();
+        imported++;
+      }
+    }
+    return c.json({ ok: true, imported, updated, total: (data.data || []).length });
+  } catch (e: any) { return c.json({ error: e.message }, 500); }
+});
+
 // GET /api/insights-bundle/:pageId — all dashboard data in 1 request, cached 5 min
 analytics.get("/insights-bundle/:pageId", async (c) => {
   const session = await getSessionFromReq(c);
@@ -252,26 +290,35 @@ async function fetchStats(db: D1Database, fbId: string, pageId: string) {
 // Cron: auto-refresh engagement for all pages
 export async function refreshAllEngagement(env: Env) {
   const { results: pages } = await env.DB.prepare(
-    "SELECT page_id, page_token FROM user_pages WHERE page_token IS NOT NULL"
+    "SELECT page_id, page_token, user_fb_id FROM user_pages WHERE page_token IS NOT NULL"
   ).all();
-  let total = 0;
+  let total = 0, synced = 0;
   for (const pg of pages as any[]) {
-    const { results: posts } = await env.DB.prepare(
-      "SELECT id, fb_post_id FROM posts WHERE fb_post_id IS NOT NULL AND page_id = ? AND status = 'posted' ORDER BY created_at DESC LIMIT 10"
-    ).bind(pg.page_id).all();
-    for (const post of posts as any[]) {
-      try {
-        const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pg.page_token}`);
-        const data: any = await res.json();
-        if (!data.error) {
-          await env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
-            .bind(data.likes?.summary?.total_count || 0, data.comments?.summary?.total_count || 0, data.shares?.count || 0, post.id).run();
+    // Sync posts from FB into DB
+    try {
+      const syncRes = await fetch(`https://graph.facebook.com/v21.0/${pg.page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=20&access_token=${pg.page_token}`);
+      const syncData: any = await syncRes.json();
+      if (!syncData.error) {
+        for (const p of (syncData.data || [])) {
+          const existing = await env.DB.prepare("SELECT id FROM posts WHERE fb_post_id = ?").bind(p.id).first();
+          const likes = p.likes?.summary?.total_count || 0;
+          const comments = p.comments?.summary?.total_count || 0;
+          const shares = p.shares?.count || 0;
+          if (existing) {
+            await env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
+              .bind(likes, comments, shares, (existing as any).id).run();
+          } else {
+            await env.DB.prepare(
+              "INSERT INTO posts (message, fb_post_id, page_id, user_fb_id, likes, comments, shares, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'posted', ?)"
+            ).bind(p.message || "", p.id, pg.page_id, pg.user_fb_id, likes, comments, shares, p.created_time || new Date().toISOString()).run();
+            synced++;
+          }
           total++;
         }
-      } catch {}
-    }
+      }
+    } catch {}
   }
-  console.log(`[cron] refreshed engagement for ${total} posts`);
+  console.log(`[cron] synced ${synced} new posts, refreshed ${total} total`);
 }
 
 export default analytics;
