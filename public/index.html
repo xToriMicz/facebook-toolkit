@@ -1149,9 +1149,14 @@
         const items = d.scheduled || d.posts || [];
         if (!items.length) { el.innerHTML = ''; return; }
         el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">📅 โพสที่ตั้งเวลาไว้</div>' +
-          items.map(p => {
-            const dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:0.8rem"><span style="color:var(--warning)">⏰ '+dt+'</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+((p.message||'').substring(0,50))+'</span></div>';
+          items.map(function(p) {
+            var dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+            var preview = insEsc((p.message || '').substring(0, 50));
+            var full = insEsc(p.message || '');
+            return '<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.sched-full\');f.style.display=f.style.display===\'block\'?\'none\':\'block\'">' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem"><span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
+              '<div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">' + full + '</div>' +
+            '</div>';
           }).join('');
       } catch { el.innerHTML = ''; }
     }
@@ -1525,15 +1530,23 @@
           list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
           return;
         }
-        list.innerHTML = data.scheduled.map(s => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.message.slice(0,60)}${s.message.length>60?'...':''}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ${new Date(s.scheduled_at).toLocaleString('th-TH')} · <span style="color:${s.status==='pending'?'var(--accent)':s.status==='posted'?'#4caf50':'#ef4444'}">${s.status==='pending'?'รอโพส':s.status==='posted'?'โพสแล้ว':'ล้มเหลว'}</span></div>
-            </div>
-            ${s.status==='pending'?'<button onclick="cancelSchedule('+s.id+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;margin-left:8px">ยกเลิก</button>':''}
-          </div>
-        `).join('');
+        list.innerHTML = data.scheduled.map(function(s) {
+          var msg = insEsc(s.message || '');
+          var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
+          var dt = new Date(s.scheduled_at).toLocaleString('th-TH');
+          var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : '#ef4444';
+          var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : 'ล้มเหลว';
+          var cancelBtn = s.status === 'pending' ? '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;margin-left:8px">ยกเลิก</button>' : '';
+          return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);cursor:pointer" onclick="this.querySelector(\'.sched-full\').style.display=this.querySelector(\'.sched-full\').style.display===\'block\'?\'none\':\'block\'">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">' +
+              '<div style="flex:1;min-width:0">' +
+                '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
+              '</div>' + cancelBtn +
+            '</div>' +
+            '<div class="sched-full" style="display:none;padding:0 12px 10px;font-size:0.78rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;border-top:1px solid var(--border);margin:0 12px;padding-top:8px">' + msg + '</div>' +
+          '</div>';
+        }).join('');
       } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
     }
 
