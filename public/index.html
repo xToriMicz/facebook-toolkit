@@ -1082,6 +1082,7 @@
       document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
       ['tabCompose','tabHistory','tabTemplates'].forEach(id=>document.getElementById(id).classList.add('hidden'));
       document.getElementById('tabCompose').classList.remove('hidden');
+      loadAiImageTemplates();
     }
 
     // Trends
