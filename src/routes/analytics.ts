@@ -115,14 +115,14 @@ analytics.get("/analytics/performance", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { results: topPosts } = await c.env.DB.prepare(
-    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' ORDER BY engagement DESC LIMIT 10"
-  ).all();
+    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) ORDER BY engagement DESC LIMIT 10"
+  ).bind(session.fb_id).all();
   const { results: worstPosts } = await c.env.DB.prepare(
-    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' ORDER BY engagement ASC LIMIT 5"
-  ).all();
+    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) ORDER BY engagement ASC LIMIT 5"
+  ).bind(session.fb_id).all();
   const avg = await c.env.DB.prepare(
-    "SELECT AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as total_posts, SUM(COALESCE(likes,0)) as total_likes, SUM(COALESCE(comments,0)) as total_comments, SUM(COALESCE(shares,0)) as total_shares FROM posts WHERE status = 'posted'"
-  ).first<any>();
+    "SELECT AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as total_posts, SUM(COALESCE(likes,0)) as total_likes, SUM(COALESCE(comments,0)) as total_comments, SUM(COALESCE(shares,0)) as total_shares FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL)"
+  ).bind(session.fb_id).first<any>();
   return c.json({ top: topPosts, worst: worstPosts, summary: avg });
 });
 

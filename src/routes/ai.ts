@@ -160,7 +160,7 @@ ai.post("/templates", async (c) => {
 ai.delete("/templates/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ?").bind(c.req.param("id")).run();
+  await c.env.DB.prepare("DELETE FROM content_templates WHERE id = ? AND (user_fb_id = ? OR user_fb_id IS NULL)").bind(c.req.param("id"), session.fb_id).run();
   await c.env.KV.delete("tpl:all");
   return c.json({ ok: true });
 });

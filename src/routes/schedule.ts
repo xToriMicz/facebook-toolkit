@@ -67,8 +67,10 @@ schedule.get("/schedule", async (c) => {
 
 // DELETE /api/schedule/:id
 schedule.delete("/schedule/:id", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status = 'pending'").bind(id).run();
+  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status = 'pending' AND user_fb_id = ?").bind(id, session.fb_id).run();
   return c.json({ ok: true });
 });
 
