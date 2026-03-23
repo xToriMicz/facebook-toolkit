@@ -663,10 +663,7 @@
         <div class="card">
           <div class="ins-header">
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <select id="insPageSelect" onchange="loadInsights()" style="padding:5px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">เลือกเพจ...</option></select>
-              <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
-            </div>
+            <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
           </div>
           <div id="insError" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:0.8rem;background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.15)"></div>
           <div id="insTimestamp" style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;text-align:right"></div>
@@ -824,6 +821,7 @@
         document.getElementById('pageInfoName').textContent = page.name;
         document.getElementById('pageInfoMeta').textContent = (page.category || 'Page') + (page.followers ? ' · ' + page.followers + ' followers' : '');
         info.classList.remove('hidden');
+        if (!document.getElementById('tabInsights').classList.contains('hidden')) loadInsights();
       } else {
         selectedPage = null;
         info.classList.add('hidden');
@@ -852,7 +850,7 @@
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
       if(tab==='tickets') loadTickets();
-      if(tab==='insights') loadInsightsPages();
+      if(tab==='insights') loadInsights();
     }
 
     // Compose
@@ -1724,20 +1722,7 @@
     function insEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
     var insData = {};
 
-    async function loadInsightsPages() {
-      var sel = document.getElementById('insPageSelect');
-      if (!sel || sel.options.length > 1) return;
-      try {
-        var r = await fetch('/api/pages', { credentials: 'same-origin' });
-        var d = await r.json();
-        (d.pages || []).forEach(function(pg) {
-          var o = document.createElement('option');
-          o.value = pg.id || pg.page_id;
-          o.textContent = pg.name || pg.page_name || pg.id || pg.page_id;
-          sel.appendChild(o);
-        });
-      } catch(e) { /* ignore */ }
-    }
+
 
     function showInsSkeleton() {
       ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) {
@@ -1764,9 +1749,8 @@
     }
 
     async function loadInsights(force) {
-      var sel = document.getElementById('insPageSelect');
-      var pageId = sel ? sel.value : '';
-      if (!pageId) return;
+      var pageId = selectedPage ? selectedPage.id : '';
+      if (!pageId) { insShowError('กรุณาเลือกเพจจาก sidebar ก่อน'); return; }
       insShowError(null);
       var cacheKey = 'ins:' + pageId;
       if (!force) {
@@ -1803,8 +1787,7 @@
     }
 
     async function insRefreshAndLoad() {
-      var sel = document.getElementById('insPageSelect');
-      var pageId = sel ? sel.value : '';
+      var pageId = selectedPage ? selectedPage.id : '';
       if (!pageId) return;
       var btn = document.getElementById('insRefreshBtn');
       btn.textContent = '⏳';
