@@ -393,25 +393,66 @@ async function fetchChallengeMetrics(pageId: string, token: string, since: strin
   return result;
 }
 
-// POST /api/ai-image — generate AI image URL from prompt
+// Default prompt templates
+const DEFAULT_TEMPLATES = [
+  { id: "cinematic", name: "SnapMingle Cinematic Poster", desc: "สไตล์หนัง cinematic มืดเข้ม ดราม่า", prompt: "Cinematic movie poster style, dramatic lighting, dark moody atmosphere, film grain, {keyword}, professional photography, 4K" },
+  { id: "morning", name: "สวัสดีตอนเช้า", desc: "รูปสวัสดีตอนเช้า สดใส อบอุ่น", prompt: "Good morning greeting card, warm golden sunrise, flowers, coffee cup, {keyword}, soft warm lighting, Thai style" },
+  { id: "quote", name: "Quote Card", desc: "การ์ดคำคม พื้นหลังสวย", prompt: "Inspirational quote card, beautiful gradient background, elegant typography space, {keyword}, minimalist modern design" },
+  { id: "product", name: "โชว์สินค้า", desc: "รูปสินค้า พื้นหลังสะอาด", prompt: "Product showcase, clean white background, studio lighting, professional product photography, {keyword}, e-commerce style" },
+  { id: "food", name: "อาหาร/คาเฟ่", desc: "รูปอาหาร น่ากิน สไตล์คาเฟ่", prompt: "Delicious food photography, cafe aesthetic, warm lighting, overhead shot, {keyword}, Instagram style, appetizing" },
+  { id: "nature", name: "ธรรมชาติ", desc: "วิวธรรมชาติ สวย สงบ", prompt: "Beautiful nature landscape, serene peaceful atmosphere, {keyword}, golden hour lighting, wide angle" },
+];
+
+// GET /api/ai-image/templates — list available prompt templates
+analytics.get("/ai-image/templates", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  // Check for custom templates in KV
+  const custom = await c.env.KV.get("ai_image_templates");
+  const customTemplates = custom ? JSON.parse(custom) : [];
+  return c.json({ templates: [...DEFAULT_TEMPLATES, ...customTemplates] });
+});
+
+// POST /api/ai-image — generate image or prompt from template
 analytics.post("/ai-image", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const { prompt, style } = await c.req.json() as { prompt: string; style?: string };
-  if (!prompt) return c.json({ error: "prompt required" }, 400);
-  if (prompt.length > 500) return c.json({ error: "prompt too long (max 500)" }, 400);
-
-  const styleMap: Record<string, string> = {
-    "realistic": "photorealistic, high quality, professional",
-    "cartoon": "cute cartoon illustration, colorful",
-    "minimal": "minimalist, clean, modern design",
-    "thai": "Thai style, traditional Thai art, warm colors",
+  const { prompt, style, template_id, keyword, generate } = await c.req.json() as {
+    prompt?: string; style?: string; template_id?: string; keyword?: string; generate?: boolean;
   };
-  const styleDesc = styleMap[style || "realistic"] || styleMap["realistic"];
-  const fullPrompt = encodeURIComponent(`${prompt}, ${styleDesc}, social media post`);
-  const imageUrl = `https://image.pollinations.ai/prompt/${fullPrompt}?width=1200&height=630&nologo=true`;
 
-  return c.json({ ok: true, image_url: imageUrl, provider: "pollinations", note: "รูปจะถูกสร้างเมื่อ URL ถูกเรียก (ครั้งแรกอาจช้า 5-10 วิ)" });
+  let finalPrompt = "";
+
+  if (template_id) {
+    const custom = await c.env.KV.get("ai_image_templates");
+    const all = [...DEFAULT_TEMPLATES, ...(custom ? JSON.parse(custom) : [])];
+    const tpl = all.find((t: any) => t.id === template_id);
+    if (!tpl) return c.json({ error: "Template not found" }, 404);
+    finalPrompt = tpl.prompt.replace(/\{keyword\}/g, keyword || "");
+  } else if (prompt) {
+    if (prompt.length > 2000) return c.json({ error: "prompt too long (max 2000)" }, 400);
+    const styleMap: Record<string, string> = {
+      "realistic": "photorealistic, high quality, professional",
+      "cartoon": "cute cartoon illustration, colorful",
+      "minimal": "minimalist, clean, modern design",
+      "thai": "Thai style, traditional Thai art, warm colors",
+    };
+    finalPrompt = `${prompt}, ${styleMap[style || "realistic"] || styleMap["realistic"]}, social media post`;
+  } else {
+    return c.json({ error: "prompt or template_id required" }, 400);
+  }
+
+  // Always return the full prompt for copy-to-clipboard (Nana Banana Pro)
+  const result: any = { ok: true, prompt: finalPrompt };
+
+  // Optionally generate with Pollinations
+  if (generate !== false) {
+    const encoded = encodeURIComponent(finalPrompt);
+    result.image_url = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
+    result.provider = "pollinations";
+  }
+
+  return c.json(result);
 });
 
 // GET /api/challenges/:pageId/suggestions — tips per challenge
