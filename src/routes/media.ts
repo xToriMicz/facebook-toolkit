@@ -74,17 +74,18 @@ media.post("/stories", async (c) => {
 media.get("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const [pageId, pageToken, pageName, apifyKey, geminiKey, falKey] = await Promise.all([
+  const [pageId, pageToken, pageName, apifyKey, geminiKey, falKey, imageProvider] = await Promise.all([
     c.env.KV.get("fb_page_id"), c.env.KV.get("fb_page_token"), c.env.KV.get("fb_page_name"),
     c.env.KV.get("apify_api_key"), c.env.KV.get("gemini_api_key"), c.env.KV.get("fal_api_key"),
+    c.env.KV.get("image_provider"),
   ]);
-  return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken, has_apify_key: !!apifyKey, has_gemini_key: !!geminiKey, has_fal_key: !!falKey });
+  return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken, has_apify_key: !!apifyKey, has_gemini_key: !!geminiKey, has_fal_key: !!falKey, image_provider: imageProvider || "pollinations" });
 });
 
 media.post("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const { page_id, page_token, page_name, apify_api_key, gemini_api_key, fal_api_key } = await c.req.json();
+  const { page_id, page_token, page_name, apify_api_key, gemini_api_key, fal_api_key, image_provider } = await c.req.json();
   if (page_id) await c.env.KV.put("fb_page_id", page_id);
   if (page_token) await c.env.KV.put("fb_page_token", page_token);
   if (page_name) await c.env.KV.put("fb_page_name", page_name);
@@ -103,6 +104,10 @@ media.post("/settings", async (c) => {
   if (fal_api_key !== undefined) {
     if (fal_api_key) await c.env.KV.put("fal_api_key", fal_api_key);
     else await c.env.KV.delete("fal_api_key");
+  }
+  // Image provider preference
+  if (image_provider && ["pollinations", "fal", "unsplash"].includes(image_provider)) {
+    await c.env.KV.put("image_provider", image_provider);
   }
   return c.json({ ok: true });
 });

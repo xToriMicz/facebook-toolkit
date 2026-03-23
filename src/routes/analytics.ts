@@ -443,28 +443,58 @@ analytics.post("/ai-image", async (c) => {
   // Always return the full prompt for copy-to-clipboard (Nana Banana Pro)
   const result: any = { ok: true, prompt: finalPrompt };
 
-  // Generate image: fetch from Pollinations → upload to R2 → return stable URL
+  // Generate image using configured provider → upload to R2
   if (generate !== false) {
+    const provider = await c.env.KV.get("image_provider") || "pollinations";
     try {
-      const encoded = encodeURIComponent(finalPrompt);
-      const polUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
-      const imgRes = await fetch(polUrl);
-      if (imgRes.ok && imgRes.headers.get("content-type")?.startsWith("image/")) {
-        const key = `ai-images/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-        await c.env.ASSETS.put(key, await imgRes.arrayBuffer(), {
-          httpMetadata: { contentType: imgRes.headers.get("content-type") || "image/jpeg" },
-        });
-        result.image_url = `https://fb.makeloops.xyz/img/${key}`;
-        result.provider = "pollinations+r2";
+      let imgUrl: string | null = null;
+
+      if (provider === "fal") {
+        const falKey = await c.env.KV.get("fal_api_key");
+        if (falKey) {
+          const falRes = await fetch("https://queue.fal.run/fal-ai/flux/schnell", {
+            method: "POST", headers: { Authorization: `Key ${falKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: finalPrompt, image_size: { width: 1200, height: 630 }, num_images: 1 }),
+          });
+          const falData: any = await falRes.json();
+          imgUrl = falData?.images?.[0]?.url || null;
+        }
+      } else if (provider === "unsplash") {
+        const query = finalPrompt.split(",")[0].trim().slice(0, 50);
+        const unsRes = await fetch(`https://source.unsplash.com/1200x630/?${encodeURIComponent(query)}`);
+        if (unsRes.ok && unsRes.url && !unsRes.url.includes("source.unsplash.com")) imgUrl = unsRes.url;
       } else {
-        result.image_url = polUrl;
-        result.provider = "pollinations";
-        result.note = "รูปกำลังสร้าง — รอ 5-10 วิแล้ว refresh";
+        const encoded = encodeURIComponent(finalPrompt);
+        const polRes = await fetch(`https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`);
+        if (polRes.ok && polRes.headers.get("content-type")?.startsWith("image/")) {
+          imgUrl = "pollinations-blob";
+          const key = `ai-images/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          await c.env.ASSETS.put(key, await polRes.arrayBuffer(), {
+            httpMetadata: { contentType: polRes.headers.get("content-type") || "image/jpeg" },
+          });
+          result.image_url = `https://fb.makeloops.xyz/img/${key}`;
+        }
       }
+
+      // Upload external URL image to R2 for stable hosting
+      if (imgUrl && imgUrl !== "pollinations-blob") {
+        const dlRes = await fetch(imgUrl);
+        if (dlRes.ok) {
+          const key = `ai-images/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          await c.env.ASSETS.put(key, await dlRes.arrayBuffer(), {
+            httpMetadata: { contentType: dlRes.headers.get("content-type") || "image/jpeg" },
+          });
+          result.image_url = `https://fb.makeloops.xyz/img/${key}`;
+        } else {
+          result.image_url = imgUrl;
+        }
+      }
+
+      result.provider = provider;
+      if (!result.image_url) result.note = "สร้างรูปไม่สำเร็จ — ลองเปลี่ยน provider ใน Settings";
     } catch {
-      const encoded = encodeURIComponent(finalPrompt);
-      result.image_url = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
-      result.provider = "pollinations";
+      result.provider = provider;
+      result.note = "สร้างรูปไม่สำเร็จ — ตรวจ API key ใน Settings";
     }
   }
 
