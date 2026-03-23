@@ -256,6 +256,32 @@
     .cal-detail-item { font-size:0.78rem; color:var(--text-secondary); padding:6px 0; border-top:1px solid rgba(255,255,255,0.03); }
     .cal-detail-item:first-child { border-top:none; }
 
+    /* === Insights === */
+    .ins-skel { background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.06) 50%,rgba(255,255,255,0.03) 75%); background-size:200% 100%; animation:insShimmer 1.5s infinite; border-radius:8px; }
+    @keyframes insShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .ins-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .ins-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
+    @media(min-width:640px){ .ins-stats { grid-template-columns:repeat(4,1fr); } }
+    .ins-stat { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; text-align:center; }
+    .ins-stat-val { font-size:1.4rem; font-weight:700; color:var(--text); }
+    .ins-stat-label { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
+    .ins-stat-delta { font-size:0.65rem; margin-top:4px; }
+    .ins-stat-delta.up { color:var(--success); }
+    .ins-stat-delta.down { color:var(--danger); }
+    .ins-chart-wrap { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:16px; }
+    .ins-chart-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
+    .ins-post { display:flex; gap:10px; padding:10px; border-bottom:1px solid rgba(255,255,255,0.03); }
+    .ins-post:last-child { border-bottom:none; }
+    .ins-post-rank { width:24px; height:24px; border-radius:6px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; font-size:0.72rem; font-weight:700; color:var(--text-muted); flex-shrink:0; }
+    .ins-post-body { flex:1; min-width:0; }
+    .ins-post-msg { font-size:0.78rem; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ins-post-meta { font-size:0.65rem; color:var(--text-muted); margin-top:2px; }
+    .ins-heatmap-wrap { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:12px; }
+    .ins-heatmap { display:grid; grid-template-columns:40px repeat(24,1fr); gap:1px; }
+    .ins-hm-label { font-size:0.55rem; color:var(--text-muted); display:flex; align-items:center; justify-content:flex-end; padding-right:4px; }
+    .ins-hm-cell { aspect-ratio:1; border-radius:2px; min-width:0; }
+    .ins-hm-hr { font-size:0.5rem; color:var(--text-muted); text-align:center; }
+
     /* === Multi-image === */
     .multi-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .multi-thumb { position:relative; }
@@ -635,9 +661,33 @@
       
       <div id="tabInsights" class="hidden">
         <div class="card">
-          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📊 Page Insights (7 วัน)</h3>
-          <div id="insightsContent"><div class="empty-state">เลือกเพจแล้วกดดู Insights</div></div>
-          <button class="btn btn-accent" onclick="loadInsights()" style="margin-top:12px">📊 โหลด Insights</button>
+          <div class="ins-header">
+            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="insPageSelect" onchange="loadInsights()" style="padding:5px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">เลือกเพจ...</option></select>
+              <button onclick="loadInsights(true)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
+            </div>
+          </div>
+          <div id="insContent">
+            <div class="ins-stats" id="insStats">
+              <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Impressions</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insEngaged">—</div><div class="ins-stat-label">Engaged Users</div><div class="ins-stat-delta" id="insDeltaEng"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insFanAdds">—</div><div class="ins-stat-label">Fan Adds</div><div class="ins-stat-delta" id="insDeltaFan"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insPostsToday">—</div><div class="ins-stat-label">โพสวันนี้</div></div>
+            </div>
+            <div class="ins-chart-wrap">
+              <div class="ins-chart-title">Impressions & Engagement (7 วัน)</div>
+              <canvas id="insChart" width="600" height="200" style="width:100%;height:auto"></canvas>
+            </div>
+            <div style="margin-bottom:16px">
+              <div class="ins-chart-title">Top 5 Posts</div>
+              <div id="insTopPosts"><div class="empty-state">เลือกเพจเพื่อดูข้อมูล</div></div>
+            </div>
+            <div class="ins-heatmap-wrap">
+              <div class="ins-chart-title">Best Time to Post</div>
+              <div class="ins-heatmap" id="insHeatmap"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -800,6 +850,7 @@
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
       if(tab==='tickets') loadTickets();
+      if(tab==='insights') loadInsightsPages();
     }
 
     // Compose
@@ -1666,6 +1717,218 @@
       } catch(e) { el.innerHTML = '<div class="empty-state">Error loading tickets</div>'; }
     }
 
+
+    // === Insights Dashboard ===
+    var insData = {};
+
+    async function loadInsightsPages() {
+      var sel = document.getElementById('insPageSelect');
+      if (!sel || sel.options.length > 1) return;
+      try {
+        var r = await fetch('/api/pages', { credentials: 'same-origin' });
+        var d = await r.json();
+        (d.pages || []).forEach(function(pg) {
+          var o = document.createElement('option');
+          o.value = pg.page_id;
+          o.textContent = pg.page_name || pg.page_id;
+          sel.appendChild(o);
+        });
+      } catch(e) { /* ignore */ }
+    }
+
+    function showInsSkeleton() {
+      ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) {
+        document.getElementById(id).innerHTML = '<div class="ins-skel" style="width:50px;height:24px;margin:0 auto"></div>';
+      });
+      document.getElementById('insTopPosts').innerHTML = '<div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div>';
+    }
+
+    async function loadInsights(force) {
+      var sel = document.getElementById('insPageSelect');
+      var pageId = sel ? sel.value : '';
+      if (!pageId) return;
+      var cacheKey = 'ins:' + pageId;
+      if (!force) {
+        try {
+          var cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            insData = JSON.parse(cached);
+            renderInsStats();
+            setTimeout(renderInsChart, 0);
+            setTimeout(renderInsTopPosts, 0);
+            setTimeout(renderInsHeatmap, 10);
+            return;
+          }
+        } catch(e) { /* ignore */ }
+      }
+      showInsSkeleton();
+      try {
+        var r = await fetch('/api/insights-bundle/' + pageId, { credentials: 'same-origin' });
+        insData = await r.json();
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(insData)); } catch(e) { /* ignore */ }
+        renderInsStats();
+        setTimeout(renderInsChart, 0);
+        setTimeout(renderInsTopPosts, 0);
+        setTimeout(renderInsHeatmap, 10);
+      } catch(e) {
+        document.getElementById('insImpressions').textContent = '—';
+        document.getElementById('insEngaged').textContent = '—';
+        document.getElementById('insFanAdds').textContent = '—';
+        document.getElementById('insPostsToday').textContent = '—';
+      }
+    }
+
+    function insFmtNum(n) {
+      if (!n && n !== 0) return '—';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return String(n);
+    }
+
+    function renderInsDelta(elId, cur, prev) {
+      var el = document.getElementById(elId);
+      if (!el || !prev) return;
+      var pct = Math.round((cur - prev) / prev * 100);
+      el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+      el.className = 'ins-stat-delta ' + (pct >= 0 ? 'up' : 'down');
+    }
+
+    function renderInsStats() {
+      var imp = insData.impressions || {};
+      var eng = insData.engaged || {};
+      var fan = insData.fan_adds || {};
+      var impTotal = imp.values ? imp.values.reduce(function(a, b) { return a + b; }, 0) : (imp.total || 0);
+      var engTotal = eng.values ? eng.values.reduce(function(a, b) { return a + b; }, 0) : (eng.total || 0);
+      var fanTotal = fan.values ? fan.values.reduce(function(a, b) { return a + b; }, 0) : (fan.total || 0);
+      document.getElementById('insImpressions').textContent = insFmtNum(impTotal);
+      document.getElementById('insEngaged').textContent = insFmtNum(engTotal);
+      document.getElementById('insFanAdds').textContent = insFmtNum(fanTotal);
+      var today = new Date().toISOString().slice(0, 10);
+      var posts = insData.posts || [];
+      var todayCount = posts.filter(function(p) { return (p.created_at || '').startsWith(today); }).length;
+      document.getElementById('insPostsToday').textContent = todayCount;
+      renderInsDelta('insDeltaImp', impTotal, imp.prev_total);
+      renderInsDelta('insDeltaEng', engTotal, eng.prev_total);
+      renderInsDelta('insDeltaFan', fanTotal, fan.prev_total);
+    }
+
+    function renderInsChart() {
+      var canvas = document.getElementById('insChart');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var dpr = window.devicePixelRatio || 1;
+      var w = canvas.clientWidth;
+      var h = 200;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+      var imp = insData.impressions || {};
+      var eng = insData.engaged || {};
+      var impVals = imp.values || [];
+      var engVals = eng.values || [];
+      var labels = imp.labels || [];
+      if (!impVals.length && !engVals.length) {
+        ctx.fillStyle = '#555';
+        ctx.font = '13px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('ไม่มีข้อมูล', w / 2, h / 2);
+        return;
+      }
+      var all = impVals.concat(engVals);
+      var maxVal = Math.max(1, Math.max.apply(null, all));
+      var padL = 45, padR = 10, padT = 20, padB = 30;
+      var chartW = w - padL - padR;
+      var chartH = h - padT - padB;
+      var n = Math.max(impVals.length, engVals.length, 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      var g, gy;
+      for (g = 0; g <= 4; g++) {
+        gy = padT + chartH - (g / 4) * chartH;
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+        ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+        ctx.fillText(insFmtNum(Math.round(maxVal * g / 4)), padL - 6, gy + 3);
+      }
+      function insDrawLine(vals, color) {
+        if (!vals.length) return;
+        var i, x, y;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (i = 0; i < vals.length; i++) {
+          x = padL + (i / (n - 1)) * chartW;
+          y = padT + chartH - (vals[i] / maxVal) * chartH;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = color;
+        for (i = 0; i < vals.length; i++) {
+          x = padL + (i / (n - 1)) * chartW;
+          y = padT + chartH - (vals[i] / maxVal) * chartH;
+          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      insDrawLine(impVals, '#4f6ef7');
+      insDrawLine(engVals, '#22c55e');
+      ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+      var i, x, lbl;
+      for (i = 0; i < n; i++) {
+        x = padL + (i / (n - 1)) * chartW;
+        lbl = labels[i] || '';
+        if (lbl.length > 5) lbl = lbl.slice(5);
+        ctx.fillText(lbl, x, h - 8);
+      }
+      ctx.fillStyle = '#4f6ef7'; ctx.fillRect(padL, 4, 10, 3);
+      ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
+      ctx.fillText('Impressions', padL + 14, 9);
+      ctx.fillStyle = '#22c55e'; ctx.fillRect(padL + 90, 4, 10, 3);
+      ctx.fillStyle = '#8b8fa3'; ctx.fillText('Engagement', padL + 104, 9);
+    }
+
+    function renderInsTopPosts() {
+      var el = document.getElementById('insTopPosts');
+      var posts = insData.posts || [];
+      if (!posts.length) { el.innerHTML = '<div class="empty-state">ไม่มีโพส</div>'; return; }
+      var sorted = posts.slice().sort(function(a, b) {
+        return ((b.likes || 0) + (b.comments || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.comments || 0) + (a.shares || 0));
+      }).slice(0, 5);
+      el.innerHTML = sorted.map(function(p, i) {
+        var msg = (p.message || '').substring(0, 60).replace(/</g, '&lt;') || '(ไม่มีข้อความ)';
+        var date = (p.created_at || '').slice(0, 10);
+        return '<div class="ins-post"><div class="ins-post-rank">' + (i + 1) + '</div><div class="ins-post-body"><div class="ins-post-msg">' + msg + '</div><div class="ins-post-meta">' + (p.likes || 0) + ' likes · ' + (p.comments || 0) + ' comments · ' + (p.shares || 0) + ' shares — ' + date + '</div></div></div>';
+      }).join('');
+    }
+
+    function renderInsHeatmap() {
+      var el = document.getElementById('insHeatmap');
+      var grid = (insData.best_time && insData.best_time.grid) || null;
+      var days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+      var html = '<div class="ins-hm-label"></div>';
+      var hr, d, h, v, maxHeat, intensity, bg;
+      for (hr = 0; hr < 24; hr++) {
+        html += '<div class="ins-hm-hr">' + (hr % 3 === 0 ? hr : '') + '</div>';
+      }
+      maxHeat = 1;
+      if (grid) {
+        for (d = 0; d < 7; d++) {
+          for (h = 0; h < 24; h++) {
+            v = (grid[d] && grid[d][h]) || 0;
+            if (v > maxHeat) maxHeat = v;
+          }
+        }
+      }
+      for (d = 0; d < 7; d++) {
+        html += '<div class="ins-hm-label">' + days[d] + '</div>';
+        for (h = 0; h < 24; h++) {
+          v = grid ? ((grid[d] && grid[d][h]) || 0) : 0;
+          intensity = grid ? v / maxHeat : 0;
+          bg = intensity === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
+          html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + v + '"></div>';
+        }
+      }
+      el.innerHTML = html;
+    }
 
     // Trend category filter
     function filterTrends(cat) {
