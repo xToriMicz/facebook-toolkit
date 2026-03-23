@@ -649,6 +649,16 @@
         <div class="card" style="margin-top:12px">
           <div class="card-title"><span class="card-title-icon">🔑</span> API Keys</div>
           <div class="field">
+            <label>Default Image Model</label>
+            <select id="imageProvider" onchange="saveImageProvider()" style="padding:8px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.85rem;font-family:inherit;cursor:pointer;width:100%">
+              <option value="pollinations">Pollinations (ฟรี)</option>
+              <option value="fal">FAL.ai (ต้องมี API key)</option>
+              <option value="unsplash">Unsplash (รูป stock ฟรี)</option>
+              <option value="nana">Nano Banana Pro (copy prompt)</option>
+            </select>
+            <div id="providerStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+          <div class="field">
             <label>Shopee / Apify API Key</label>
             <div style="display:flex;gap:6px"><input id="apifyKey" type="password" placeholder="apify_api_..." style="flex:1"><button onclick="saveApiKey('apify_api_key','apifyKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
             <div id="apifyStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
@@ -2262,6 +2272,17 @@
     }
 
     // === API Keys Settings ===
+    async function saveImageProvider() {
+      var val = document.getElementById('imageProvider').value;
+      try {
+        await fetch('/api/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_provider: val }) });
+        var st = document.getElementById('providerStatus');
+        st.textContent = '✅ บันทึกแล้ว';
+        st.style.color = 'var(--success)';
+        setTimeout(function() { st.textContent = ''; }, 2000);
+      } catch(e) { toast('err', 'บันทึกไม่สำเร็จ'); }
+    }
+
     async function saveApiKey(keyName, inputId) {
       var val = document.getElementById(inputId).value.trim();
       if (!val) { toast('err', 'กรุณากรอก API key'); return; }
@@ -2279,6 +2300,7 @@
       try {
         var r = await fetch('/api/settings', { credentials: 'same-origin' });
         var d = await r.json();
+        if (d.image_provider) { var ps = document.getElementById('imageProvider'); if (ps) ps.value = d.image_provider; }
         var keys = [['has_apify_key','apifyStatus','Shopee/Apify'],['has_gemini_key','geminiStatus','Gemini'],['has_fal_key','falStatus','FAL.ai']];
         keys.forEach(function(k) {
           var el = document.getElementById(k[1]);
