@@ -2131,7 +2131,7 @@
         var act = CH_ACTIONS[c.id] || {};
         var actionBtn = (!done && act.tab) ? '<button class="ch-action" onclick="event.stopPropagation();switchTab(\'' + act.tab + '\')">' + insEsc(act.label) + '</button>' : '';
         var remaining = Math.max(0, c.target - c.current);
-        var boostBtn = (!done && (c.id === 'posts' || c.id === 'reels') && remaining > 0) ? '<button class="ch-boost" onclick="event.stopPropagation();boostChallenge(\'' + c.id + '\',' + remaining + ',this)">🤖 AI สร้าง ' + remaining + ' โพส (รูป+ข้อความ+คำถาม)</button>' : '';
+        var boostBtn = (!done && (c.id === 'posts' || c.id === 'reels') && remaining > 0) ? '<button class="ch-boost" onclick="event.stopPropagation();boostChallenge(\'' + c.id + '\',' + remaining + ',this)">🤖 AI</button>' : '';
         var tipHtml = !done && act.tip ? '<div class="ch-tip">💡 ' + insEsc(act.tip) + '</div>' : '';
         var details = CH_DETAILS[c.id] || [];
         var detailHtml = details.length ? '<div class="ch-detail">' + details.map(function(t){return '<div class="ch-detail-item">💡 ' + insEsc(t) + '</div>';}).join('') + '</div>' : '';
@@ -2217,7 +2217,7 @@
       if (btn.dataset.confirmed !== 'yes') {
         btn.textContent = '⚠️ กดอีกครั้งเพื่อยืนยัน';
         btn.dataset.confirmed = 'yes';
-        setTimeout(function() { btn.textContent = '🤖 AI สร้าง ' + count + ' โพส (รูป+ข้อความ+คำถาม)'; btn.dataset.confirmed = ''; }, 3000);
+        setTimeout(function() { btn.textContent = '🤖 AI'; btn.dataset.confirmed = ''; }, 3000);
         return;
       }
       btn.dataset.confirmed = '';
