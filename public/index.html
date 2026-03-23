@@ -2064,11 +2064,12 @@
       el.innerHTML = [1,2,3,4,5].map(function(){return '<div class="ch-card" style="pointer-events:none"><div class="ins-skel" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div class="ch-body"><div class="ins-skel" style="height:12px;width:50%;margin-bottom:6px"></div><div class="ins-skel" style="height:6px;width:100%"></div></div></div>';}).join('');
       try {
         var r = await fetch('/api/challenges/' + pageId, { credentials: 'same-origin' });
+        if (!r.ok) { el.innerHTML = '<div class="empty-state">API error ' + r.status + ' — ลองกด ↻</div>'; return; }
         var d = await r.json();
         try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch(e) {}
         if (d.error) { el.innerHTML = '<div class="empty-state">' + insEsc(d.error) + '</div>'; return; }
         renderChCards(d);
-      } catch(e) { document.getElementById('chList').innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+      } catch(e) { document.getElementById('chList').innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ — ' + insEsc(e.message || 'ลองกด ↻') + '</div>'; }
     }
 
     function renderChCards(d) {
