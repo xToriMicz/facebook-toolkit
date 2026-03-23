@@ -646,6 +646,24 @@
           </div>
           <div class="toast" id="aiSettingsStatus"></div>
         </div>
+        <div class="card" style="margin-top:12px">
+          <div class="card-title"><span class="card-title-icon">🔑</span> API Keys</div>
+          <div class="field">
+            <label>Shopee / Apify API Key</label>
+            <div style="display:flex;gap:6px"><input id="apifyKey" type="password" placeholder="apify_api_..." style="flex:1"><button onclick="saveApiKey('apify_api_key','apifyKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="apifyStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+          <div class="field">
+            <label>Gemini / Nano Banana Pro API Key</label>
+            <div style="display:flex;gap:6px"><input id="geminiKey" type="password" placeholder="AIza..." style="flex:1"><button onclick="saveApiKey('gemini_api_key','geminiKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="geminiStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+          <div class="field">
+            <label>FAL.ai API Key</label>
+            <div style="display:flex;gap:6px"><input id="falKey" type="password" placeholder="fal_..." style="flex:1"><button onclick="saveApiKey('fal_api_key','falKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="falStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+        </div>
       </div>
 
       <div id="tabSchedule" class="hidden">
@@ -880,7 +898,7 @@
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
-      if(tab==='aiSettings') loadAiSettings();
+      if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); }
       if(tab==='tickets') loadTickets();
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
@@ -2219,6 +2237,34 @@
         btn.textContent = '❌ ลองใหม่';
         setTimeout(function() { btn.textContent = '🤖 AI ช่วยทำ'; btn.disabled = false; }, 3000);
       }
+    }
+
+    // === API Keys Settings ===
+    async function saveApiKey(keyName, inputId) {
+      var val = document.getElementById(inputId).value.trim();
+      if (!val) { toast('err', 'กรุณากรอก API key'); return; }
+      try {
+        var body = {};
+        body[keyName] = val;
+        var r = await fetch('/api/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var d = await r.json();
+        if (d.ok) { showNotify('บันทึก ' + keyName + ' สำเร็จ!'); document.getElementById(inputId).value = ''; loadApiKeyStatus(); }
+        else { toast('err', d.error || 'บันทึกไม่สำเร็จ'); }
+      } catch(e) { toast('err', 'เกิดข้อผิดพลาด'); }
+    }
+
+    async function loadApiKeyStatus() {
+      try {
+        var r = await fetch('/api/settings', { credentials: 'same-origin' });
+        var d = await r.json();
+        var keys = [['has_apify','apifyStatus','Shopee/Apify'],['has_gemini','geminiStatus','Gemini'],['has_fal','falStatus','FAL.ai']];
+        keys.forEach(function(k) {
+          var el = document.getElementById(k[1]);
+          if (!el) return;
+          if (d[k[0]]) { el.textContent = '✅ ' + k[2] + ' configured'; el.style.color = 'var(--success)'; }
+          else { el.textContent = '⚠️ ยังไม่ได้ตั้งค่า'; el.style.color = 'var(--text-muted)'; }
+        });
+      } catch(e) { /* ignore */ }
     }
 
     function filterTrends(cat) {
