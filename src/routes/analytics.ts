@@ -443,11 +443,29 @@ analytics.post("/ai-image", async (c) => {
   // Always return the full prompt for copy-to-clipboard (Nana Banana Pro)
   const result: any = { ok: true, prompt: finalPrompt };
 
-  // Optionally generate with Pollinations
+  // Generate image: fetch from Pollinations → upload to R2 → return stable URL
   if (generate !== false) {
-    const encoded = encodeURIComponent(finalPrompt);
-    result.image_url = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
-    result.provider = "pollinations";
+    try {
+      const encoded = encodeURIComponent(finalPrompt);
+      const polUrl = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
+      const imgRes = await fetch(polUrl);
+      if (imgRes.ok && imgRes.headers.get("content-type")?.startsWith("image/")) {
+        const key = `ai-images/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        await c.env.ASSETS.put(key, await imgRes.arrayBuffer(), {
+          httpMetadata: { contentType: imgRes.headers.get("content-type") || "image/jpeg" },
+        });
+        result.image_url = `https://fb.makeloops.xyz/img/${key}`;
+        result.provider = "pollinations+r2";
+      } else {
+        result.image_url = polUrl;
+        result.provider = "pollinations";
+        result.note = "รูปกำลังสร้าง — รอ 5-10 วิแล้ว refresh";
+      }
+    } catch {
+      const encoded = encodeURIComponent(finalPrompt);
+      result.image_url = `https://image.pollinations.ai/prompt/${encoded}?width=1200&height=630&nologo=true`;
+      result.provider = "pollinations";
+    }
   }
 
   return c.json(result);
