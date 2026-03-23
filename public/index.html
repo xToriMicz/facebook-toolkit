@@ -922,6 +922,11 @@
       return new Promise((resolve) => {
         const img = new Image();
         const objUrl = URL.createObjectURL(file);
+        img.onerror = () => {
+          URL.revokeObjectURL(objUrl);
+          // Fallback: return original file if image can't be loaded
+          resolve({ blob: file, thumbUrl: URL.createObjectURL(file), origSize: file.size, compSize: file.size });
+        };
         img.onload = () => {
           let w = img.width, h = img.height;
           if (w > MAX_IMG_PX || h > MAX_IMG_PX) {
@@ -933,6 +938,7 @@
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
           canvas.toBlob((blob) => {
             URL.revokeObjectURL(objUrl);
+            if (!blob) { resolve({ blob: file, thumbUrl: URL.createObjectURL(file), origSize: file.size, compSize: file.size }); return; }
             resolve({ blob, thumbUrl: URL.createObjectURL(blob), origSize: file.size, compSize: blob.size });
           }, 'image/jpeg', COMPRESS_Q);
         };
@@ -960,10 +966,11 @@
         const form = new FormData();
         form.append('file', new File([blob], file.name, { type: 'image/jpeg' }));
         try {
-          const r = await fetch('/api/upload', { method:'POST', body:form });
+          const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
           const d = await r.json();
           if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;uploadedImageUrl=d.url;} }
-        } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+          else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
+        } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ: '+(e.message||'')); }
       }
       dz.textContent = '✅ '+uploadedImages.length+' รูป';
     }
@@ -1403,10 +1410,11 @@
       if(!file) return;
       const form = new FormData(); form.append('file', file);
       try {
-        const r = await fetch('/api/upload', { method:'POST', body:form });
+        const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
         const d = await r.json();
         if(d.ok) { document.getElementById('ticketImage').value = d.url; showNotify('แนบรูปสำเร็จ!'); }
-      } catch { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+        else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
+      } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
     }
 
     async function loadTickets() {
