@@ -12,6 +12,7 @@ import media from "./routes/media";
 import rss from "./routes/rss";
 import tickets from "./routes/tickets";
 import trends from "./routes/trends";
+import shopee from "./routes/shopee-trends";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -75,6 +76,7 @@ app.route("/api", media);
 app.route("/api", rss);
 app.route("/api", tickets);
 app.route("/api", trends);
+app.route("/api", shopee);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {

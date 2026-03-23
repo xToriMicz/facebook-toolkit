@@ -74,19 +74,24 @@ media.post("/stories", async (c) => {
 media.get("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const [pageId, pageToken, pageName] = await Promise.all([
-    c.env.KV.get("fb_page_id"), c.env.KV.get("fb_page_token"), c.env.KV.get("fb_page_name"),
+  const [pageId, pageToken, pageName, apifyKey] = await Promise.all([
+    c.env.KV.get("fb_page_id"), c.env.KV.get("fb_page_token"), c.env.KV.get("fb_page_name"), c.env.KV.get("apify_api_key"),
   ]);
-  return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken });
+  return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken, has_apify_key: !!apifyKey });
 });
 
 media.post("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const { page_id, page_token, page_name } = await c.req.json();
+  const { page_id, page_token, page_name, apify_api_key } = await c.req.json();
   if (page_id) await c.env.KV.put("fb_page_id", page_id);
   if (page_token) await c.env.KV.put("fb_page_token", page_token);
   if (page_name) await c.env.KV.put("fb_page_name", page_name);
+  if (apify_api_key !== undefined) {
+    if (apify_api_key) await c.env.KV.put("apify_api_key", apify_api_key);
+    else await c.env.KV.delete("apify_api_key");
+    await c.env.KV.delete("shopee:trending:v2");
+  }
   return c.json({ ok: true });
 });
 
