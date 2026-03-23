@@ -2124,6 +2124,13 @@
     async function boostChallenge(challengeId, count, btn) {
       var pageId = selectedPage ? selectedPage.id : '';
       if (!pageId) return;
+      if (btn.dataset.confirmed !== 'yes') {
+        btn.textContent = '⚠️ กดอีกครั้งเพื่อยืนยัน';
+        btn.dataset.confirmed = 'yes';
+        setTimeout(function() { btn.textContent = '🤖 AI สร้าง ' + count + ' โพส (รูป+ข้อความ+คำถาม)'; btn.dataset.confirmed = ''; }, 3000);
+        return;
+      }
+      btn.dataset.confirmed = '';
       btn.disabled = true;
       btn.textContent = '⏳ กำลังสร้าง...';
       try {
