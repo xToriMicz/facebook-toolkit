@@ -256,33 +256,6 @@
     .cal-detail-item { font-size:0.78rem; color:var(--text-secondary); padding:6px 0; border-top:1px solid rgba(255,255,255,0.03); }
     .cal-detail-item:first-child { border-top:none; }
 
-    .ins-skel { background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.06) 50%,rgba(255,255,255,0.03) 75%); background-size:200% 100%; animation:insShimmer 1.5s infinite; border-radius:8px; }
-    @keyframes insShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-    /* === Insights Dashboard === */
-    .ins-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-    .ins-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; }
-    @media(min-width:640px){ .ins-stats { grid-template-columns:repeat(4,1fr); } }
-    .ins-stat { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; text-align:center; }
-    .ins-stat-val { font-size:1.5rem; font-weight:800; color:var(--accent); }
-    .ins-stat-label { font-size:0.72rem; color:var(--text-secondary); margin-top:4px; }
-    .ins-stat-delta { font-size:0.62rem; font-weight:600; padding:2px 6px; border-radius:4px; margin-top:6px; display:inline-block; }
-    .ins-stat-delta.up { color:var(--success); background:rgba(34,197,94,0.1); }
-    .ins-stat-delta.down { color:var(--danger); background:rgba(239,68,68,0.1); }
-    .ins-chart-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
-    .ins-chart-title { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
-    .ins-top-posts { margin-bottom:16px; }
-    .ins-post { display:flex; gap:10px; padding:10px; border-bottom:1px solid rgba(255,255,255,0.03); align-items:flex-start; }
-    .ins-post:last-child { border-bottom:none; }
-    .ins-post-rank { width:28px; height:28px; border-radius:8px; background:var(--accent-glow); display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; color:var(--accent); flex-shrink:0; }
-    .ins-post-body { flex:1; min-width:0; }
-    .ins-post-msg { font-size:0.8rem; color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.4; }
-    .ins-post-meta { font-size:0.68rem; color:var(--text-secondary); margin-top:4px; }
-    .ins-heatmap-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
-    .ins-heatmap { display:grid; grid-template-columns:40px repeat(24,1fr); gap:1px; }
-    .ins-hm-label { font-size:0.55rem; color:var(--text-muted); display:flex; align-items:center; justify-content:flex-end; padding-right:4px; }
-    .ins-hm-cell { aspect-ratio:1; border-radius:3px; min-width:0; }
-    .ins-hm-hr { font-size:0.5rem; color:var(--text-muted); text-align:center; }
-
     /* === Multi-image === */
     .multi-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .multi-thumb { position:relative; }
@@ -662,33 +635,9 @@
       
       <div id="tabInsights" class="hidden">
         <div class="card">
-          <div class="ins-header">
-            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <select id="insPageSelect" onchange="loadInsights()" style="padding:5px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">เลือกเพจ...</option></select>
-              <button onclick="loadInsights(true)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
-            </div>
-          </div>
-          <div id="insContent">
-            <div class="ins-stats" id="insStats">
-              <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Impressions</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
-              <div class="ins-stat"><div class="ins-stat-val" id="insEngaged">—</div><div class="ins-stat-label">Engaged Users</div><div class="ins-stat-delta" id="insDeltaEng"></div></div>
-              <div class="ins-stat"><div class="ins-stat-val" id="insFanAdds">—</div><div class="ins-stat-label">Fan Adds</div><div class="ins-stat-delta" id="insDeltaFan"></div></div>
-              <div class="ins-stat"><div class="ins-stat-val" id="insPostsToday">—</div><div class="ins-stat-label">โพสวันนี้</div></div>
-            </div>
-            <div class="ins-chart-wrap">
-              <div class="ins-chart-title">Impressions & Engagement (7 วัน)</div>
-              <canvas id="insChart" width="600" height="200" style="width:100%;height:auto"></canvas>
-            </div>
-            <div class="ins-top-posts">
-              <div class="ins-chart-title">Top 5 Posts</div>
-              <div id="insTopPosts"><div class="empty-state">เลือกเพจเพื่อดูข้อมูล</div></div>
-            </div>
-            <div class="ins-heatmap-wrap">
-              <div class="ins-chart-title">Best Time to Post</div>
-              <div class="ins-heatmap" id="insHeatmap"></div>
-            </div>
-          </div>
+          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📊 Page Insights (7 วัน)</h3>
+          <div id="insightsContent"><div class="empty-state">เลือกเพจแล้วกดดู Insights</div></div>
+          <button class="btn btn-accent" onclick="loadInsights()" style="margin-top:12px">📊 โหลด Insights</button>
         </div>
       </div>
 
@@ -845,7 +794,6 @@
       if(tab==='compose') loadComposeTemplates();
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
-      if(tab==='insights') loadInsightsPages();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') loadAiSettings();
       if(tab==='tickets') loadTickets();
@@ -1723,198 +1671,10 @@
     function filterTrends(cat) {
       document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)';b.style.color='var(--text-secondary)';});
       event.target.style.background='var(--accent)';event.target.style.color='#fff';
-      document.querySelectorAll('.trend-card,.trend-item').forEach(el=>{
+      document.querySelectorAll('.trend-item').forEach(el=>{
         if(cat==='all'||el.dataset.cat===cat) el.style.display='';
         else el.style.display='none';
       });
-    }
-
-    // === Insights Dashboard ===
-    var insData = {};
-    async function loadInsightsPages() {
-      var sel = document.getElementById('insPageSelect');
-      if (!sel || sel.options.length > 1) return;
-      try {
-        var r = await fetch('/api/pages', { credentials: 'same-origin' });
-        var d = await r.json();
-        (d.pages || []).forEach(function(pg) {
-          var o = document.createElement('option');
-          o.value = pg.page_id;
-          o.textContent = pg.page_name || pg.page_id;
-          sel.appendChild(o);
-        });
-      } catch(e) {}
-    }
-
-    function showInsSkeleton() {
-      document.getElementById('insImpressions').innerHTML = '<div class="ins-skel" style="width:60px;height:24px;margin:0 auto"></div>';
-      document.getElementById('insEngaged').innerHTML = '<div class="ins-skel" style="width:60px;height:24px;margin:0 auto"></div>';
-      document.getElementById('insFanAdds').innerHTML = '<div class="ins-skel" style="width:60px;height:24px;margin:0 auto"></div>';
-      document.getElementById('insPostsToday').innerHTML = '<div class="ins-skel" style="width:40px;height:24px;margin:0 auto"></div>';
-      document.getElementById('insTopPosts').innerHTML = [1,2,3].map(function(){return '<div style="display:flex;gap:10px;padding:10px"><div class="ins-skel" style="width:24px;height:24px"></div><div style="flex:1"><div class="ins-skel" style="height:14px;width:80%;margin-bottom:6px"></div><div class="ins-skel" style="height:10px;width:50%"></div></div></div>';}).join('');
-    }
-
-    async function loadInsights(force) {
-      var sel = document.getElementById('insPageSelect');
-      var pageId = sel ? sel.value : '';
-      if (!pageId) return;
-      // sessionStorage cache
-      var cacheKey = 'ins:' + pageId;
-      if (!force) {
-        var cached = sessionStorage.getItem(cacheKey);
-        if (cached) {
-          try { insData = JSON.parse(cached); renderInsStats(); setTimeout(renderInsChart, 0); setTimeout(renderInsTopPosts, 0); setTimeout(renderInsHeatmap, 10); return; } catch(e) {}
-        }
-      }
-      showInsSkeleton();
-      try {
-        var r = await fetch('/api/insights-bundle/' + pageId, { credentials: 'same-origin' });
-        var d = await r.json();
-        insData = d;
-        sessionStorage.setItem(cacheKey, JSON.stringify(d));
-        // Lazy render: stats first, then chart/heatmap
-        renderInsStats();
-        setTimeout(renderInsChart, 0);
-        setTimeout(renderInsTopPosts, 0);
-        setTimeout(renderInsHeatmap, 10);
-      } catch(e) {
-        document.getElementById('insImpressions').textContent = '—';
-        document.getElementById('insEngaged').textContent = '—';
-        document.getElementById('insFanAdds').textContent = '—';
-        document.getElementById('insPostsToday').textContent = '—';
-      }
-    }
-
-    function fmtNum(n) { if (!n && n !== 0) return '—'; if (n >= 1e6) return (n/1e6).toFixed(1)+'M'; if (n >= 1e3) return (n/1e3).toFixed(1)+'K'; return String(n); }
-    function renderDelta(elId, cur, prev) {
-      var el = document.getElementById(elId);
-      if (!el || !prev) return;
-      var pct = prev ? Math.round((cur - prev) / prev * 100) : 0;
-      el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
-      el.className = 'ins-stat-delta ' + (pct >= 0 ? 'up' : 'down');
-    }
-
-    function renderInsStats() {
-      var d = insData;
-      var impTotal = (d.impressions && d.impressions.values) ? d.impressions.values.reduce(function(a,b){return a+b;},0) : (d.impressions ? d.impressions.total||0 : 0);
-      var engTotal = (d.engaged && d.engaged.values) ? d.engaged.values.reduce(function(a,b){return a+b;},0) : (d.engaged ? d.engaged.total||0 : 0);
-      var fanTotal = (d.fan_adds && d.fan_adds.values) ? d.fan_adds.values.reduce(function(a,b){return a+b;},0) : (d.fan_adds ? d.fan_adds.total||0 : 0);
-      document.getElementById('insImpressions').textContent = fmtNum(impTotal);
-      document.getElementById('insEngaged').textContent = fmtNum(engTotal);
-      document.getElementById('insFanAdds').textContent = fmtNum(fanTotal);
-      var today = new Date().toISOString().slice(0,10);
-      var todayPosts = (d.posts || []).filter(function(p){return (p.created_at||'').startsWith(today);});
-      document.getElementById('insPostsToday').textContent = todayPosts.length;
-      renderDelta('insDeltaImp', impTotal, d.impressions ? d.impressions.prev_total : null);
-      renderDelta('insDeltaEng', engTotal, d.engaged ? d.engaged.prev_total : null);
-      renderDelta('insDeltaFan', fanTotal, d.fan_adds ? d.fan_adds.prev_total : null);
-    }
-
-    function renderInsChart() {
-      var canvas = document.getElementById('insChart');
-      if (!canvas) return;
-      var ctx = canvas.getContext('2d');
-      var dpr = window.devicePixelRatio || 1;
-      var w = canvas.clientWidth;
-      var h = 200;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, w, h);
-      var impVals = (insData.impressions && insData.impressions.values) || [];
-      var engVals = (insData.engaged && insData.engaged.values) || [];
-      var labels = (insData.impressions && insData.impressions.labels) || [];
-      if (!impVals.length && !engVals.length) {
-        ctx.fillStyle = '#555'; ctx.font = '13px Inter'; ctx.textAlign = 'center';
-        ctx.fillText('ไม่มีข้อมูล', w/2, h/2);
-        return;
-      }
-      var maxVal = Math.max(1, Math.max.apply(null, impVals.concat(engVals)));
-      var padL = 45, padR = 10, padT = 20, padB = 30;
-      var chartW = w - padL - padR, chartH = h - padT - padB;
-      var n = Math.max(impVals.length, engVals.length, 1);
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
-      for (var g = 0; g <= 4; g++) {
-        var gy = padT + chartH - (g/4) * chartH;
-        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
-        ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
-        ctx.fillText(fmtNum(Math.round(maxVal * g / 4)), padL - 6, gy + 3);
-      }
-      function drawLine(vals, color) {
-        if (!vals.length) return;
-        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
-        for (var i = 0; i < vals.length; i++) {
-          var x = padL + (i / (n - 1 || 1)) * chartW;
-          var y = padT + chartH - (vals[i] / maxVal) * chartH;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.fillStyle = color;
-        for (var i = 0; i < vals.length; i++) {
-          var x = padL + (i / (n - 1 || 1)) * chartW;
-          var y = padT + chartH - (vals[i] / maxVal) * chartH;
-          ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-      drawLine(impVals, '#4f6ef7');
-      drawLine(engVals, '#22c55e');
-      ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
-      for (var i = 0; i < n; i++) {
-        var x = padL + (i / (n - 1 || 1)) * chartW;
-        var label = labels[i] || '';
-        if (label.length > 5) label = label.slice(5);
-        ctx.fillText(label, x, h - 8);
-      }
-      ctx.fillStyle = '#4f6ef7'; ctx.fillRect(padL, 4, 10, 3);
-      ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
-      ctx.fillText('Impressions', padL + 14, 9);
-      ctx.fillStyle = '#22c55e'; ctx.fillRect(padL + 90, 4, 10, 3);
-      ctx.fillStyle = '#8b8fa3'; ctx.fillText('Engagement', padL + 104, 9);
-    }
-
-    function renderInsTopPosts() {
-      var el = document.getElementById('insTopPosts');
-      var posts = insData.posts || [];
-      if (!posts.length) { el.innerHTML = '<div class="empty-state">ไม่มีโพส</div>'; return; }
-      var sorted = posts.slice().sort(function(a,b) {
-        return ((b.likes||0)+(b.comments||0)+(b.shares||0)) - ((a.likes||0)+(a.comments||0)+(a.shares||0));
-      }).slice(0, 5);
-      el.innerHTML = sorted.map(function(p, i) {
-        var date = (p.created_at||'').slice(0,10);
-        return '<div class="ins-post"><div class="ins-post-rank">' + (i+1) + '</div><div class="ins-post-body"><div class="ins-post-msg">' + ((p.message||'').substring(0,60).replace(/</g,'&lt;')||'(ไม่มีข้อความ)') + '</div><div class="ins-post-meta">❤️ ' + (p.likes||0) + ' 💬 ' + (p.comments||0) + ' 🔄 ' + (p.shares||0) + ' — ' + date + '</div></div></div>';
-      }).join('');
-    }
-
-    function renderInsHeatmap() {
-      var el = document.getElementById('insHeatmap');
-      var data = (insData.best_time && insData.best_time.grid) || null;
-      var days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-      var html = '<div class="ins-hm-label"></div>';
-      for (var hr = 0; hr < 24; hr++) html += '<div class="ins-hm-hr">' + (hr % 3 === 0 ? hr : '') + '</div>';
-      var maxHeat = 1;
-      if (data) {
-        for (var d = 0; d < 7; d++) for (var h = 0; h < 24; h++) {
-          var v = (data[d] && data[d][h]) || 0;
-          if (v > maxHeat) maxHeat = v;
-        }
-      }
-      for (var d = 0; d < 7; d++) {
-        html += '<div class="ins-hm-label">' + days[d] + '</div>';
-        for (var h = 0; h < 24; h++) {
-          var val = data ? ((data[d] && data[d][h]) || 0) : 0;
-          var intensity = data ? val / maxHeat : 0;
-          var bg = intensity === 0 ? 'rgba(79,110,247,0.03)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
-          html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + val + '"></div>';
-        }
-      }
-      el.innerHTML = html;
-    }
-0 ? 'rgba(255,255,255,0.02)' :
-                   'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
-          html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + val + ' interactions"></div>';
-        }
-      }
-      el.innerHTML = html;
     }
 
   </script>
