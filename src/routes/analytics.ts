@@ -339,23 +339,28 @@ analytics.get("/challenges/:pageId", async (c) => {
   if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `challenges:${pageId}:v1`, 180, async () => {
+    const data = await kvCache(c.env.KV, `challenges:${pageId}:v2`, 180, async () => {
       const since = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
-      const [fbMetrics, postCount, reelCount] = await Promise.all([
+      const [fbMetrics, postCount, reelCount, recentPosts, recentReels] = await Promise.all([
         fetchChallengeMetrics(pageId, page.page_token, since),
         c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted'").bind(pageId, since).first<{ c: number }>(),
         c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' AND post_type = 'reel'").bind(pageId, since).first<{ c: number }>(),
+        c.env.DB.prepare("SELECT message, created_at FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' ORDER BY created_at DESC LIMIT 10").bind(pageId, since).all(),
+        c.env.DB.prepare("SELECT message, created_at FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' AND post_type = 'reel' ORDER BY created_at DESC LIMIT 5").bind(pageId, since).all(),
       ]);
 
       const targets = { follows: 100, posts: 10, reels: 3, engagements: 500, views: 1000 };
 
+      const postsList = (recentPosts.results || []).map((p: any) => ({ message: (p.message || "").slice(0, 60), created_at: p.created_at }));
+      const reelsList = (recentReels.results || []).map((p: any) => ({ message: (p.message || "").slice(0, 60), created_at: p.created_at }));
+
       const challenges = [
-        { id: "follows", name: "ผู้ติดตามใหม่", icon: "👥", current: fbMetrics.follows, target: targets.follows },
-        { id: "posts", name: "สร้างโพสต์", icon: "📝", current: postCount?.c || 0, target: targets.posts },
-        { id: "reels", name: "สร้าง Reels", icon: "🎬", current: reelCount?.c || 0, target: targets.reels },
-        { id: "engagements", name: "ได้โต้ตอบ", icon: "❤️", current: fbMetrics.engagements, target: targets.engagements },
-        { id: "views", name: "เพิ่มยอดดู", icon: "👁️", current: fbMetrics.views, target: targets.views },
+        { id: "follows", name: "ผู้ติดตามใหม่", icon: "👥", current: fbMetrics.follows, target: targets.follows, details: `7 วันที่ผ่านมาได้ผู้ติดตามใหม่ ${fbMetrics.follows} คน` },
+        { id: "posts", name: "สร้างโพสต์", icon: "📝", current: postCount?.c || 0, target: targets.posts, details: postsList },
+        { id: "reels", name: "สร้าง Reels", icon: "🎬", current: reelCount?.c || 0, target: targets.reels, details: reelsList.length ? reelsList : "ยังไม่มี Reel ในสัปดาห์นี้" },
+        { id: "engagements", name: "ได้โต้ตอบ", icon: "❤️", current: fbMetrics.engagements, target: targets.engagements, details: `รวม ${fbMetrics.engagements} interactions (likes, comments, shares)` },
+        { id: "views", name: "เพิ่มยอดดู", icon: "👁️", current: fbMetrics.views, target: targets.views, details: `ยอดดูวิดีโอรวม ${fbMetrics.views} ครั้ง` },
       ].map((ch) => {
         const percent = Math.min(100, Math.round((ch.current / ch.target) * 100));
         const level = percent >= 80 ? "Gold" : percent >= 50 ? "Silver" : "Bronze";
@@ -490,7 +495,7 @@ analytics.post("/challenges/:pageId/boost", async (c) => {
     }
 
     // Clear challenges cache
-    await c.env.KV.delete(`challenges:${pageId}:v1`);
+    await c.env.KV.delete(`challenges:${pageId}:v2`);
 
     return c.json({ ok: true, generated: scheduled.length, scheduled, note: "โพสจะเผยแพร่อัตโนมัติตามเวลาที่ตั้งไว้ (ทุก 2 ชม.)" });
   } catch (e: any) {
