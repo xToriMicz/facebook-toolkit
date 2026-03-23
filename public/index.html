@@ -1793,23 +1793,25 @@
       el.className = 'ins-stat-delta ' + (pct >= 0 ? 'up' : 'down');
     }
 
+    function insGetMetric(name) {
+      var arr = insData.insights || [];
+      for (var i = 0; i < arr.length; i++) { if (arr[i].name === name) return arr[i]; }
+      return null;
+    }
+    function insMetricTotal(name) {
+      var m = insGetMetric(name);
+      if (!m || !m.values) return 0;
+      return m.values.reduce(function(a, v) { return a + (v.value || 0); }, 0);
+    }
     function renderInsStats() {
-      var imp = insData.impressions || {};
-      var eng = insData.engaged || {};
-      var fan = insData.fan_adds || {};
-      var impTotal = imp.values ? imp.values.reduce(function(a, b) { return a + b; }, 0) : (imp.total || 0);
-      var engTotal = eng.values ? eng.values.reduce(function(a, b) { return a + b; }, 0) : (eng.total || 0);
-      var fanTotal = fan.values ? fan.values.reduce(function(a, b) { return a + b; }, 0) : (fan.total || 0);
+      var impTotal = insMetricTotal('page_impressions');
+      var engTotal = insMetricTotal('page_engaged_users');
+      var fanTotal = insMetricTotal('page_fan_adds');
       document.getElementById('insImpressions').textContent = insFmtNum(impTotal);
       document.getElementById('insEngaged').textContent = insFmtNum(engTotal);
       document.getElementById('insFanAdds').textContent = insFmtNum(fanTotal);
-      var today = new Date().toISOString().slice(0, 10);
-      var posts = insData.posts || [];
-      var todayCount = posts.filter(function(p) { return (p.created_at || '').startsWith(today); }).length;
-      document.getElementById('insPostsToday').textContent = todayCount;
-      renderInsDelta('insDeltaImp', impTotal, imp.prev_total);
-      renderInsDelta('insDeltaEng', engTotal, eng.prev_total);
-      renderInsDelta('insDeltaFan', fanTotal, fan.prev_total);
+      var stats = insData.stats || {};
+      document.getElementById('insPostsToday').textContent = stats.posts || 0;
     }
 
     function renderInsChart() {
@@ -1823,11 +1825,11 @@
       canvas.height = h * dpr;
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
-      var imp = insData.impressions || {};
-      var eng = insData.engaged || {};
-      var impVals = imp.values || [];
-      var engVals = eng.values || [];
-      var labels = imp.labels || [];
+      var impMetric = insGetMetric('page_impressions');
+      var engMetric = insGetMetric('page_engaged_users');
+      var impVals = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return v.value || 0; }) : [];
+      var engVals = (engMetric && engMetric.values) ? engMetric.values.map(function(v) { return v.value || 0; }) : [];
+      var labels = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return (v.end_time || '').slice(0, 10); }) : [];
       if (!impVals.length && !engVals.length) {
         ctx.fillStyle = '#555';
         ctx.font = '13px Inter';
@@ -1888,7 +1890,8 @@
 
     function renderInsTopPosts() {
       var el = document.getElementById('insTopPosts');
-      var posts = insData.posts || [];
+      var perf = insData.performance || {};
+      var posts = perf.top || [];
       if (!posts.length) { el.innerHTML = '<div class="empty-state">ไม่มีโพส</div>'; return; }
       var sorted = posts.slice().sort(function(a, b) {
         return ((b.likes || 0) + (b.comments || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.comments || 0) + (a.shares || 0));
@@ -1902,31 +1905,34 @@
 
     function renderInsHeatmap() {
       var el = document.getElementById('insHeatmap');
-      var grid = (insData.best_time && insData.best_time.grid) || null;
+      var bt = insData.bestTime || {};
+      var raw = bt.heatmap || [];
       var days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
-      var html = '<div class="ins-hm-label"></div>';
-      var hr, d, h, v, maxHeat, intensity, bg;
-      for (hr = 0; hr < 24; hr++) {
-        html += '<div class="ins-hm-hr">' + (hr % 3 === 0 ? hr : '') + '</div>';
-      }
-      maxHeat = 1;
-      if (grid) {
-        for (d = 0; d < 7; d++) {
-          for (h = 0; h < 24; h++) {
-            v = (grid[d] && grid[d][h]) || 0;
-            if (v > maxHeat) maxHeat = v;
-          }
+      // Build 7x24 grid from [{d,h,eng}] array
+      var grid = [];
+      var d, h, maxHeat = 1;
+      for (d = 0; d < 7; d++) { grid[d] = []; for (h = 0; h < 24; h++) grid[d][h] = 0; }
+      for (var i = 0; i < raw.length; i++) {
+        var r = raw[i];
+        if (r.d >= 0 && r.d < 7 && r.h >= 0 && r.h < 24) {
+          grid[r.d][r.h] = r.eng || 0;
+          if (grid[r.d][r.h] > maxHeat) maxHeat = grid[r.d][r.h];
         }
+      }
+      var html = '<div class="ins-hm-label"></div>';
+      for (h = 0; h < 24; h++) {
+        html += '<div class="ins-hm-hr">' + (h % 3 === 0 ? h : '') + '</div>';
       }
       for (d = 0; d < 7; d++) {
         html += '<div class="ins-hm-label">' + days[d] + '</div>';
         for (h = 0; h < 24; h++) {
-          v = grid ? ((grid[d] && grid[d][h]) || 0) : 0;
-          intensity = grid ? v / maxHeat : 0;
-          bg = intensity === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
-          html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + v + '"></div>';
+          var v = grid[d][h];
+          var intensity = v / maxHeat;
+          var bg = intensity === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
+          html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + Math.round(v) + '"></div>';
         }
       }
+      if (bt.tip) html += '<div style="grid-column:1/-1;text-align:center;font-size:0.72rem;color:var(--accent);margin-top:8px">' + bt.tip + '</div>';
       el.innerHTML = html;
     }
 
