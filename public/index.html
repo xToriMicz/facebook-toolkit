@@ -473,6 +473,7 @@
             📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง (เลือกหลายรูปได้)
           </div>
           <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+          <div style="margin-top:6px"><button id="aiImageBtn" onclick="generateAiImage()" style="padding:6px 14px;border:1px solid #a855f7;border-radius:8px;background:none;color:#a855f7;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s" onmouseover="this.style.background='#a855f7';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='#a855f7'">🎨 AI สร้างรูป</button></div>
           <div class="multi-preview" id="imagePreview"></div>
           <div class="actions">
             <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
@@ -2119,6 +2120,26 @@
           '<div class="ch-status" style="' + statusStyle + '">' + statusText + '</div>' +
         '</div>';
       }).join('');
+    }
+
+    async function generateAiImage() {
+      var msg = document.getElementById('message').value.trim();
+      if (!msg) { toast('err', 'เขียนข้อความก่อน แล้วกด AI สร้างรูป'); return; }
+      var btn = document.getElementById('aiImageBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ กำลังสร้างรูป...';
+      try {
+        var r = await fetch('/api/ai-image', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: msg.substring(0, 200) }) });
+        var d = await r.json();
+        if (d.ok && d.image_url) {
+          uploadedImages.push(d.image_url);
+          var prev = document.getElementById('imagePreview');
+          prev.innerHTML += '<div class="multi-thumb"><img src="' + insEsc(d.image_url) + '"><button class="multi-thumb-remove" onclick="removeImage(' + (uploadedImages.length - 1) + ')">×</button></div>';
+          showNotify('สร้างรูป AI สำเร็จ!');
+        } else { toast('err', d.error || 'สร้างรูปไม่สำเร็จ'); }
+      } catch(e) { toast('err', 'เกิดข้อผิดพลาด'); }
+      btn.disabled = false;
+      btn.textContent = '🎨 AI สร้างรูป';
     }
 
     async function boostChallenge(challengeId, count, btn) {
