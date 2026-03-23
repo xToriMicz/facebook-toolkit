@@ -327,4 +327,65 @@ export async function refreshAllEngagement(env: Env) {
   console.log(`[cron] synced ${synced} new posts, refreshed ${total} total`);
 }
 
+// GET /api/challenges/:pageId — progress vs targets (7-day)
+analytics.get("/challenges/:pageId", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const pageId = c.req.param("pageId");
+
+  const page = await c.env.DB.prepare(
+    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, pageId).first<{ page_token: string }>();
+  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+
+  try {
+    const data = await kvCache(c.env.KV, `challenges:${pageId}:v1`, 180, async () => {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+
+      const [fbMetrics, postCount, reelCount] = await Promise.all([
+        fetchChallengeMetrics(pageId, page.page_token, since),
+        c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted'").bind(pageId, since).first<{ c: number }>(),
+        c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' AND post_type = 'reel'").bind(pageId, since).first<{ c: number }>(),
+      ]);
+
+      const targets = { follows: 100, posts: 10, reels: 3, engagements: 500, views: 1000 };
+
+      const challenges = [
+        { id: "follows", name: "ผู้ติดตามใหม่", icon: "👥", current: fbMetrics.follows, target: targets.follows },
+        { id: "posts", name: "สร้างโพสต์", icon: "📝", current: postCount?.c || 0, target: targets.posts },
+        { id: "reels", name: "สร้าง Reels", icon: "🎬", current: reelCount?.c || 0, target: targets.reels },
+        { id: "engagements", name: "ได้โต้ตอบ", icon: "❤️", current: fbMetrics.engagements, target: targets.engagements },
+        { id: "views", name: "เพิ่มยอดดู", icon: "👁️", current: fbMetrics.views, target: targets.views },
+      ].map((ch) => {
+        const percent = Math.min(100, Math.round((ch.current / ch.target) * 100));
+        const level = percent >= 80 ? "Gold" : percent >= 50 ? "Silver" : "Bronze";
+        return { ...ch, percent, level };
+      });
+
+      return { challenges, period: "7d", updated_at: new Date().toISOString() };
+    });
+
+    return c.json(data);
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+async function fetchChallengeMetrics(pageId: string, token: string, since: string) {
+  const result = { follows: 0, engagements: 0, views: 0 };
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=page_daily_follows,page_post_engagements,page_video_views&period=day&since=${since}&access_token=${token}`);
+    const data: any = await res.json();
+    if (!data.error) {
+      for (const m of (data.data || [])) {
+        const total = (m.values || []).reduce((a: number, v: any) => a + (typeof v.value === "number" ? v.value : 0), 0);
+        if (m.name === "page_daily_follows") result.follows = total;
+        if (m.name === "page_post_engagements") result.engagements = total;
+        if (m.name === "page_video_views") result.views = total;
+      }
+    }
+  } catch {}
+  return result;
+}
+
 export default analytics;
