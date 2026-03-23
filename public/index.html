@@ -1299,6 +1299,7 @@
       document.getElementById('calDetail').innerHTML='';
     }
     function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();renderCalendar();}
+    function closeCalPopup(){document.getElementById('calPopup').classList.remove('open');}
     function calCreatePost(dateStr){switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
     function showCalDay(dateStr) {
       const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
