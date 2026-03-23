@@ -418,12 +418,12 @@ analytics.get("/challenges/:pageId/suggestions", async (c) => {
   return c.json({ suggestions });
 });
 
-// POST /api/challenges/:pageId/boost — AI generate + schedule posts
+// POST /api/challenges/:pageId/boost — AI generate mixed posts + schedule
 analytics.post("/challenges/:pageId/boost", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.param("pageId");
-  const { challenge_id, count } = await c.req.json() as { challenge_id: string; count?: number };
+  const { challenge_id, count, types } = await c.req.json() as { challenge_id: string; count?: number; types?: string[] };
 
   if (!challenge_id || !["posts", "reels"].includes(challenge_id)) {
     return c.json({ error: "Boost ได้เฉพาะ posts หรือ reels" }, 400);
@@ -434,50 +434,35 @@ analytics.post("/challenges/:pageId/boost", async (c) => {
   ).bind(session.fb_id, pageId).first<{ page_id: string; page_name: string }>();
   if (!page) return c.json({ error: "Page not found" }, 404);
 
-  const numPosts = Math.min(count || 3, 5); // cap at 5
+  const numPosts = Math.min(count || 3, 5);
+  const postTypes = types?.length ? types : ["text", "photo", "question"];
 
-  // Generate posts via AI
   const aiSettings = await c.env.DB.prepare(
     "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
   ).bind(session.fb_id).first<{ provider: string; model: string; api_key: string; endpoint_url: string }>();
   const apiKey = aiSettings?.api_key || c.env.ANTHROPIC_API_KEY;
   if (!apiKey) return c.json({ error: "No AI API key — ตั้งค่าใน Settings > AI" }, 400);
 
-  const prompt = `สร้าง ${numPosts} captions สำหรับ Facebook Page "${page.page_name}" ให้หลากหลาย สนุก มี engagement สูง
-กฎ: ภาษาไทย, มีอีโมจิ, hashtag 3-5 อัน, แต่ละอันต่างหัวข้อกัน
-ตอบเป็น JSON array: [{"text":"caption","hashtags":["#tag1"]}]
+  const typeInstructions = postTypes.map((t, i) => {
+    if (t === "photo") return `โพส ${i + 1}: caption สำหรับโพสรูป + ใส่ "image_query" เป็นคำค้น Unsplash ภาษาอังกฤษ 2-3 คำ`;
+    if (t === "link") return `โพส ${i + 1}: caption แนะนำสินค้า + ใส่ "link_type":"shopee" เพื่อแนบ link สินค้า`;
+    if (t === "question") return `โพส ${i + 1}: โพสแบบถามคำถาม/poll ดึง engagement ใส่ "type":"question"`;
+    return `โพส ${i + 1}: caption ข้อความทั่วไป`;
+  }).join("\n");
+
+  const prompt = `สร้าง ${numPosts} โพสสำหรับ Facebook Page "${page.page_name}":
+${typeInstructions}
+กฎ: ภาษาไทย, มีอีโมจิ, hashtag 3-5 อัน, หลากหลายหัวข้อ
+ตอบ JSON array: [{"text":"caption","hashtags":["#tag1"],"type":"text|photo|question|link","image_query":"sunset nature"}]
 ตอบ JSON เท่านั้น`;
 
   try {
-    let responseText = "";
-    const model = aiSettings?.model || "claude-haiku-4-5-20251001";
-    const endpoint = aiSettings?.endpoint_url || "https://api.anthropic.com/v1/messages";
-    const provider = aiSettings?.provider || "anthropic";
-
-    if (provider === "google") {
-      const res = await fetch(`${endpoint}/${model}:generateContent?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-      const data: any = await res.json();
-      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    } else if (provider === "openai") {
-      const res = await fetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
-      const data: any = await res.json();
-      responseText = data.choices?.[0]?.message?.content || "";
-    } else {
-      const res = await fetch(endpoint, { method: "POST", headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-        body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
-      const data: any = await res.json();
-      responseText = data.content?.[0]?.text || "";
-    }
-
-    // Parse AI response
+    const responseText = await callAI(aiSettings, apiKey, prompt);
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) return c.json({ error: "AI ไม่สามารถสร้างโพสได้ ลองใหม่อีกครั้ง" }, 500);
-    const posts: { text: string; hashtags?: string[] }[] = JSON.parse(jsonMatch[0]);
+    const posts: { text: string; hashtags?: string[]; type?: string; image_query?: string; link_type?: string }[] = JSON.parse(jsonMatch[0]);
 
-    // Schedule posts with 2-hour intervals starting from next hour
-    const scheduled: { message: string; scheduled_at: string }[] = [];
+    const scheduled: { message: string; image_url?: string; scheduled_at: string; type: string }[] = [];
     const startTime = new Date();
     startTime.setMinutes(0, 0, 0);
     startTime.setHours(startTime.getHours() + 1);
@@ -486,21 +471,54 @@ analytics.post("/challenges/:pageId/boost", async (c) => {
       const p = posts[i];
       const message = p.text + (p.hashtags?.length ? "\n\n" + p.hashtags.join(" ") : "");
       const schedAt = new Date(startTime.getTime() + i * 2 * 3600000).toISOString();
+      let imageUrl: string | null = null;
+
+      // Fetch Unsplash image for photo type
+      if (p.type === "photo" && p.image_query) {
+        imageUrl = await fetchUnsplashImage(p.image_query);
+      }
 
       await c.env.DB.prepare(
-        "INSERT INTO scheduled_posts (user_fb_id, page_id, message, scheduled_at) VALUES (?, ?, ?, ?)"
-      ).bind(session.fb_id, pageId, message, schedAt).run();
+        "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
+      ).bind(session.fb_id, pageId, message, imageUrl, schedAt).run();
 
-      scheduled.push({ message: message.slice(0, 80) + "...", scheduled_at: schedAt });
+      scheduled.push({ message: message.slice(0, 80) + "...", image_url: imageUrl || undefined, scheduled_at: schedAt, type: p.type || "text" });
     }
 
-    // Clear challenges cache
     await c.env.KV.delete(`challenges:${pageId}:v2`);
-
     return c.json({ ok: true, generated: scheduled.length, scheduled, note: "โพสจะเผยแพร่อัตโนมัติตามเวลาที่ตั้งไว้ (ทุก 2 ชม.)" });
   } catch (e: any) {
     return c.json({ error: "AI error: " + e.message }, 500);
   }
 });
+
+async function callAI(settings: any, apiKey: string, prompt: string): Promise<string> {
+  const provider = settings?.provider || "anthropic";
+  const model = settings?.model || "claude-haiku-4-5-20251001";
+  const endpoint = settings?.endpoint_url || "https://api.anthropic.com/v1/messages";
+  if (provider === "google") {
+    const res = await fetch(`${endpoint}/${model}:generateContent?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+    const data: any = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  } else if (provider === "openai") {
+    const res = await fetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
+    const data: any = await res.json();
+    return data.choices?.[0]?.message?.content || "";
+  }
+  const res = await fetch(endpoint, { method: "POST", headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
+  const data: any = await res.json();
+  return data.content?.[0]?.text || "";
+}
+
+async function fetchUnsplashImage(query: string): Promise<string | null> {
+  try {
+    const res = await fetch(`https://source.unsplash.com/1200x630/?${encodeURIComponent(query)}`);
+    if (res.ok && res.url && !res.url.includes("source.unsplash.com")) return res.url;
+  } catch {}
+  return null;
+}
 
 export default analytics;
