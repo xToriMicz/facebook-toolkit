@@ -22,8 +22,13 @@ app.use("*", async (c, next) => {
   await next();
   c.header("X-Content-Type-Options", "nosniff");
   c.header("X-Frame-Options", "DENY");
-  c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  c.header("X-XSS-Protection", "1; mode=block");
+  if (!c.req.path.startsWith("/api/")) {
+    c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://graph.facebook.com https://down-th.img.susercontent.com https://*.fbcdn.net data:; connect-src 'self' https://graph.facebook.com https://www.facebook.com; frame-ancestors 'none';");
+  }
   const path = c.req.path;
   if (path.startsWith("/api/")) {
     c.header("Cache-Control", "private, max-age=0");
