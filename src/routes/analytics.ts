@@ -388,4 +388,114 @@ async function fetchChallengeMetrics(pageId: string, token: string, since: strin
   return result;
 }
 
+// GET /api/challenges/:pageId/suggestions — tips per challenge
+analytics.get("/challenges/:pageId/suggestions", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const pageId = c.req.param("pageId");
+  const page = await c.env.DB.prepare(
+    "SELECT page_id FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, pageId).first();
+  if (!page) return c.json({ error: "Page not found" }, 404);
+
+  // Get current challenge data to tailor suggestions
+  const since = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+  const postCount = await c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id=? AND created_at>=? AND status='posted'").bind(pageId, since).first<{c:number}>();
+  const reelCount = await c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id=? AND created_at>=? AND status='posted' AND post_type='reel'").bind(pageId, since).first<{c:number}>();
+
+  const suggestions = [
+    { id: "follows", tips: ["โพสช่วง 18:00-20:00 ดึง follower ใหม่ได้ดีสุด", "ใช้ hashtag trending ไทยเพิ่ม reach", "โพส Reel สั้น 15-30 วิ ดึง follower ใหม่ 3x"] },
+    { id: "posts", tips: [`ต้องโพสอีก ${Math.max(0, 10 - (postCount?.c || 0))} อัน ถึง target`, "ใช้ปุ่ม 'ช่วยทำ' ให้ AI สร้างโพส + schedule อัตโนมัติ", "โพสวันละ 1-2 อัน ดีกว่ายิงรวดเดียว"] },
+    { id: "reels", tips: [`ต้องสร้าง Reel อีก ${Math.max(0, 3 - (reelCount?.c || 0))} อัน`, "Reel 15-60 วิ ได้ algorithm boost 50%", "ถ่ายวิดีโอแนวตั้ง 9:16 ใส่ข้อความสั้นๆ"] },
+    { id: "engagements", tips: ["โพสแบบถามคำถาม ได้ engagement 3x", "ตอบ comment ภายใน 1 ชม. เพิ่ม reach", "ใช้ Poll/Quiz ดึง interaction"] },
+    { id: "views", tips: ["Reel สั้นได้ view สูงกว่า image 2-3x", "ใส่ hook 3 วินาทีแรกให้คนหยุดดู", "โพสช่วง 12:00 + 20:00 คนดูเยอะสุด"] },
+  ];
+  return c.json({ suggestions });
+});
+
+// POST /api/challenges/:pageId/boost — AI generate + schedule posts
+analytics.post("/challenges/:pageId/boost", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const pageId = c.req.param("pageId");
+  const { challenge_id, count } = await c.req.json() as { challenge_id: string; count?: number };
+
+  if (!challenge_id || !["posts", "reels"].includes(challenge_id)) {
+    return c.json({ error: "Boost ได้เฉพาะ posts หรือ reels" }, 400);
+  }
+
+  const page = await c.env.DB.prepare(
+    "SELECT page_id, page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, pageId).first<{ page_id: string; page_name: string }>();
+  if (!page) return c.json({ error: "Page not found" }, 404);
+
+  const numPosts = Math.min(count || 3, 5); // cap at 5
+
+  // Generate posts via AI
+  const aiSettings = await c.env.DB.prepare(
+    "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
+  ).bind(session.fb_id).first<{ provider: string; model: string; api_key: string; endpoint_url: string }>();
+  const apiKey = aiSettings?.api_key || c.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return c.json({ error: "No AI API key — ตั้งค่าใน Settings > AI" }, 400);
+
+  const prompt = `สร้าง ${numPosts} captions สำหรับ Facebook Page "${page.page_name}" ให้หลากหลาย สนุก มี engagement สูง
+กฎ: ภาษาไทย, มีอีโมจิ, hashtag 3-5 อัน, แต่ละอันต่างหัวข้อกัน
+ตอบเป็น JSON array: [{"text":"caption","hashtags":["#tag1"]}]
+ตอบ JSON เท่านั้น`;
+
+  try {
+    let responseText = "";
+    const model = aiSettings?.model || "claude-haiku-4-5-20251001";
+    const endpoint = aiSettings?.endpoint_url || "https://api.anthropic.com/v1/messages";
+    const provider = aiSettings?.provider || "anthropic";
+
+    if (provider === "google") {
+      const res = await fetch(`${endpoint}/${model}:generateContent?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+      const data: any = await res.json();
+      responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    } else if (provider === "openai") {
+      const res = await fetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
+      const data: any = await res.json();
+      responseText = data.choices?.[0]?.message?.content || "";
+    } else {
+      const res = await fetch(endpoint, { method: "POST", headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+        body: JSON.stringify({ model, max_tokens: 2048, messages: [{ role: "user", content: prompt }] }) });
+      const data: any = await res.json();
+      responseText = data.content?.[0]?.text || "";
+    }
+
+    // Parse AI response
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return c.json({ error: "AI ไม่สามารถสร้างโพสได้ ลองใหม่อีกครั้ง" }, 500);
+    const posts: { text: string; hashtags?: string[] }[] = JSON.parse(jsonMatch[0]);
+
+    // Schedule posts with 2-hour intervals starting from next hour
+    const scheduled: { message: string; scheduled_at: string }[] = [];
+    const startTime = new Date();
+    startTime.setMinutes(0, 0, 0);
+    startTime.setHours(startTime.getHours() + 1);
+
+    for (let i = 0; i < Math.min(posts.length, numPosts); i++) {
+      const p = posts[i];
+      const message = p.text + (p.hashtags?.length ? "\n\n" + p.hashtags.join(" ") : "");
+      const schedAt = new Date(startTime.getTime() + i * 2 * 3600000).toISOString();
+
+      await c.env.DB.prepare(
+        "INSERT INTO scheduled_posts (user_fb_id, page_id, message, scheduled_at) VALUES (?, ?, ?, ?)"
+      ).bind(session.fb_id, pageId, message, schedAt).run();
+
+      scheduled.push({ message: message.slice(0, 80) + "...", scheduled_at: schedAt });
+    }
+
+    // Clear challenges cache
+    await c.env.KV.delete(`challenges:${pageId}:v1`);
+
+    return c.json({ ok: true, generated: scheduled.length, scheduled, note: "โพสจะเผยแพร่อัตโนมัติตามเวลาที่ตั้งไว้ (ทุก 2 ชม.)" });
+  } catch (e: any) {
+    return c.json({ error: "AI error: " + e.message }, 500);
+  }
+});
+
 export default analytics;
