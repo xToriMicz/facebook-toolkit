@@ -306,6 +306,15 @@
     .trend-card-stars { color:#f59e0b; }
     .trend-card-btn { display:block; width:100%; padding:5px; border:none; border-top:1px solid var(--border); background:transparent; color:var(--accent); font-size:0.65rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background 0.15s; text-align:center; text-decoration:none; }
     .trend-card-btn:hover { background:rgba(79,110,247,0.06); }
+    .trend-list-mode { grid-template-columns:1fr !important; gap:4px !important; }
+    .trend-list-mode .trend-card { display:flex; flex-direction:row; align-items:center; }
+    .trend-list-mode .trend-card-img { width:56px; height:56px; aspect-ratio:auto; flex-shrink:0; border-radius:6px; }
+    .trend-list-mode .trend-card-body { flex:1; padding:6px 10px; }
+    .trend-list-mode .trend-card-name { min-height:auto; -webkit-line-clamp:1; }
+    .trend-list-mode .trend-card-btn { width:auto; border-top:none; border-left:1px solid var(--border); padding:8px 12px; flex-shrink:0; }
+    .trend-view-toggle { display:flex; gap:2px; background:var(--bg-input); border-radius:6px; padding:2px; border:1px solid var(--border); }
+    .trend-view-btn { padding:3px 8px; border:none; border-radius:4px; font-size:0.7rem; cursor:pointer; background:transparent; color:var(--text-muted); font-family:inherit; transition:all 0.2s; }
+    .trend-view-btn.active { background:var(--accent); color:#fff; }
     .trend-refresh:hover { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
 
     .hidden { display: none !important; }
@@ -531,7 +540,13 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px">
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🛒</span> สินค้าขายดี <span id="trendCount" style="font-size:0.75rem;color:var(--text-muted);font-weight:400"></span></div>
-            <button onclick="loadTrends()" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit">↻</button>
+            <div style="display:flex;gap:4px;align-items:center">
+              <div class="trend-view-toggle">
+                <button class="trend-view-btn active" onclick="setTrendView('grid')" id="trendViewGrid">▦</button>
+                <button class="trend-view-btn" onclick="setTrendView('list')" id="trendViewList">☰</button>
+              </div>
+              <button onclick="loadTrends()" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit">↻</button>
+            </div>
           </div>
           <div style="display:flex;gap:4px;margin:8px 0;flex-wrap:wrap" id="trendFilters">
             <button onclick="filterTrends('all')" class="trend-filter active" style="padding:4px 10px;border-radius:6px;font-size:0.72rem;border:1px solid var(--border);background:var(--accent);color:#fff;cursor:pointer">ทั้งหมด</button>
@@ -1005,6 +1020,14 @@
     }
 
     // Trends
+    function setTrendView(mode) {
+      var grid = document.getElementById('trendList');
+      document.getElementById('trendViewGrid').classList.toggle('active', mode === 'grid');
+      document.getElementById('trendViewList').classList.toggle('active', mode === 'list');
+      if (mode === 'list') grid.classList.add('trend-list-mode');
+      else grid.classList.remove('trend-list-mode');
+    }
+
     var SHOPEE_MOCK = [
       {name:"เสื้อยืดโอเวอร์ไซส์ Unisex",price:199,price_min:159,price_max:299,image:"",rating:4.8,sold:12500,category:"fashion",url:"#"},
       {name:"หูฟัง Bluetooth TWS กันน้ำ IPX5",price:390,price_min:290,price_max:590,image:"",rating:4.6,sold:8700,category:"electronics",url:"#"},
