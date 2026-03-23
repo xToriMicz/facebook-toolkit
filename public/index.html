@@ -2257,7 +2257,7 @@
       try {
         var r = await fetch('/api/settings', { credentials: 'same-origin' });
         var d = await r.json();
-        var keys = [['has_apify','apifyStatus','Shopee/Apify'],['has_gemini','geminiStatus','Gemini'],['has_fal','falStatus','FAL.ai']];
+        var keys = [['has_apify_key','apifyStatus','Shopee/Apify'],['has_gemini_key','geminiStatus','Gemini'],['has_fal_key','falStatus','FAL.ai']];
         keys.forEach(function(k) {
           var el = document.getElementById(k[1]);
           if (!el) return;
