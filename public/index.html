@@ -266,6 +266,18 @@
     .ins-hm-cell { aspect-ratio:1; border-radius:2px; min-width:0; }
     .ins-hm-hr { font-size:0.5rem; color:var(--text-muted); text-align:center; }
 
+    /* === Challenge Dashboard === */
+    .ch-list { display:flex; flex-direction:column; gap:8px; }
+    .ch-card { display:flex; align-items:center; gap:12px; padding:14px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); transition:all 0.2s; }
+    .ch-card.completed { border-color:rgba(34,197,94,0.2); background:rgba(34,197,94,0.03); }
+    .ch-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .ch-body { flex:1; min-width:0; }
+    .ch-title { font-size:0.82rem; font-weight:600; color:var(--text); }
+    .ch-desc { font-size:0.68rem; color:var(--text-secondary); margin-top:2px; }
+    .ch-bar { height:6px; background:var(--bg-input); border-radius:3px; margin-top:6px; overflow:hidden; }
+    .ch-bar-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
+    .ch-status { font-size:0.68rem; font-weight:600; flex-shrink:0; padding:3px 8px; border-radius:5px; }
+
     /* === Multi-image === */
     .multi-preview { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     .multi-thumb { position:relative; }
@@ -377,6 +389,7 @@
           <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
+          <button class="sidebar-nav-item" onclick="switchTab('challenges',this)">🏆 Challenge</button>
           <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
           <button class="sidebar-nav-item" onclick="switchTab('tickets',this)" style="color:#ef4444;border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-top:8px">🐛 แจ้งบัค</button>
           <a href="/howto.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📖 คู่มือ Affiliate</a>
@@ -679,6 +692,16 @@
         </div>
       </div>
 
+      <div id="tabChallenges" class="hidden">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">🏆</span> Challenge <span id="chPeriod" style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
+            <button onclick="loadChallenges(true)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit">↻</button>
+          </div>
+          <div class="ch-list" id="chList"><div class="empty-state">เลือกเพจเพื่อดู Challenge</div></div>
+        </div>
+      </div>
+
       <!-- Tickets -->
       <div id="tabTickets" class="hidden">
         <!-- Ticket Form -->
@@ -822,7 +845,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabTickets'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabChallenges','tabTickets'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -840,6 +863,7 @@
       if(tab==='drafts') loadDrafts();
       if(tab==='tickets') loadTickets();
       if(tab==='insights') loadInsights();
+      if(tab==='challenges') loadChallenges();
     }
 
     // Compose
@@ -1999,6 +2023,43 @@
     }
 
     // Trend category filter
+    // === Challenge Dashboard ===
+    var CH_COLORS = {follows:'#4f6ef7',posts:'#22c55e',reels:'#a855f7',engagements:'#f59e0b',views:'#ec4899'};
+    var CH_BG = {follows:'rgba(79,110,247,0.1)',posts:'rgba(34,197,94,0.1)',reels:'rgba(168,85,247,0.1)',engagements:'rgba(245,158,11,0.1)',views:'rgba(236,72,153,0.1)'};
+
+    async function loadChallenges(force) {
+      var pageId = selectedPage ? selectedPage.id : '';
+      if (!pageId) { document.getElementById('chList').innerHTML = '<div class="empty-state">เลือกเพจจาก sidebar ก่อน</div>'; return; }
+      var el = document.getElementById('chList');
+      el.innerHTML = '<div class="empty-state">กำลังโหลด...</div>';
+      try {
+        var r = await fetch('/api/challenges/' + pageId, { credentials: 'same-origin' });
+        var d = await r.json();
+        if (d.error) { el.innerHTML = '<div class="empty-state">' + insEsc(d.error) + '</div>'; return; }
+        var challenges = d.challenges || [];
+        if (!challenges.length) { el.innerHTML = '<div class="empty-state">ไม่มี challenge</div>'; return; }
+        var periodEl = document.getElementById('chPeriod');
+        if (periodEl && d.period) periodEl.textContent = '(' + d.period + ')';
+        el.innerHTML = challenges.map(function(c) {
+          var pct = Math.min(100, c.percent || 0);
+          var done = pct >= 100;
+          var color = CH_COLORS[c.id] || 'var(--accent)';
+          var bg = CH_BG[c.id] || 'rgba(79,110,247,0.1)';
+          var statusText = done ? '✓ สำเร็จ' : c.current + '/' + c.target;
+          var statusStyle = done ? 'color:#22c55e;background:rgba(34,197,94,0.1)' : 'color:var(--text-secondary);background:var(--bg-input)';
+          return '<div class="ch-card' + (done ? ' completed' : '') + '">' +
+            '<div class="ch-icon" style="background:' + bg + '">' + insEsc(c.icon || '🎯') + '</div>' +
+            '<div class="ch-body">' +
+              '<div class="ch-title">' + insEsc(c.name) + '</div>' +
+              '<div class="ch-desc">' + c.current + ' / ' + c.target + ' (' + Math.round(pct) + '%)</div>' +
+              '<div class="ch-bar"><div class="ch-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+            '</div>' +
+            '<div class="ch-status" style="' + statusStyle + '">' + statusText + '</div>' +
+          '</div>';
+        }).join('');
+      } catch(e) { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+    }
+
     function filterTrends(cat) {
       document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)';b.style.color='var(--text-secondary)';});
       event.target.style.background='var(--accent)';event.target.style.color='#fff';
