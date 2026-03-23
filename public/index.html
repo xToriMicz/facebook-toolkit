@@ -669,13 +669,13 @@
           <div id="insTimestamp" style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;text-align:right"></div>
           <div id="insContent">
             <div class="ins-stats" id="insStats">
-              <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Impressions</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
-              <div class="ins-stat"><div class="ins-stat-val" id="insEngaged">—</div><div class="ins-stat-label">Engaged Users</div><div class="ins-stat-delta" id="insDeltaEng"></div></div>
-              <div class="ins-stat"><div class="ins-stat-val" id="insFanAdds">—</div><div class="ins-stat-label">Fan Adds</div><div class="ins-stat-delta" id="insDeltaFan"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Page Views</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insEngaged">—</div><div class="ins-stat-label">Engagements</div><div class="ins-stat-delta" id="insDeltaEng"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insFanAdds">—</div><div class="ins-stat-label">Follows</div><div class="ins-stat-delta" id="insDeltaFan"></div></div>
               <div class="ins-stat"><div class="ins-stat-val" id="insPostsToday">—</div><div class="ins-stat-label">โพสวันนี้</div></div>
             </div>
             <div class="ins-chart-wrap">
-              <div class="ins-chart-title">Impressions & Engagement (7 วัน)</div>
+              <div class="ins-chart-title">Page Views & Engagements (7 วัน)</div>
               <canvas id="insChart" width="600" height="200" style="width:100%;height:auto"></canvas>
             </div>
             <div style="margin-bottom:16px">
@@ -1828,9 +1828,9 @@
       return m.values.reduce(function(a, v) { return a + (v.value || 0); }, 0);
     }
     function renderInsStats() {
-      var impTotal = insMetricTotal('page_impressions');
-      var engTotal = insMetricTotal('page_engaged_users');
-      var fanTotal = insMetricTotal('page_fan_adds');
+      var impTotal = insMetricTotal('page_views_total');
+      var engTotal = insMetricTotal('page_post_engagements');
+      var fanTotal = insMetricTotal('page_daily_follows');
       document.getElementById('insImpressions').textContent = insFmtNum(impTotal);
       document.getElementById('insEngaged').textContent = insFmtNum(engTotal);
       document.getElementById('insFanAdds').textContent = insFmtNum(fanTotal);
@@ -1849,8 +1849,8 @@
       canvas.height = h * dpr;
       ctx.scale(dpr, dpr);
       ctx.clearRect(0, 0, w, h);
-      var impMetric = insGetMetric('page_impressions');
-      var engMetric = insGetMetric('page_engaged_users');
+      var impMetric = insGetMetric('page_views_total');
+      var engMetric = insGetMetric('page_post_engagements');
       var impVals = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return v.value || 0; }) : [];
       var engVals = (engMetric && engMetric.values) ? engMetric.values.map(function(v) { return v.value || 0; }) : [];
       var labels = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return (v.end_time || '').slice(0, 10); }) : [];
@@ -1907,9 +1907,9 @@
       }
       ctx.fillStyle = '#4f6ef7'; ctx.fillRect(padL, 4, 10, 3);
       ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
-      ctx.fillText('Impressions', padL + 14, 9);
-      ctx.fillStyle = '#22c55e'; ctx.fillRect(padL + 90, 4, 10, 3);
-      ctx.fillStyle = '#8b8fa3'; ctx.fillText('Engagement', padL + 104, 9);
+      ctx.fillText('Page Views', padL + 14, 9);
+      ctx.fillStyle = '#22c55e'; ctx.fillRect(padL + 85, 4, 10, 3);
+      ctx.fillStyle = '#8b8fa3'; ctx.fillText('Engagements', padL + 99, 9);
     }
 
     function renderInsTopPosts() {
