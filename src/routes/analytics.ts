@@ -250,9 +250,15 @@ async function fetchInsights(pageId: string, token: string) {
     const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
     const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${token}`);
     const data: any = await res.json();
-    if (data.error) return { error: data.error.message, code: data.error.code };
-    return (data.data || []).map((m: any) => ({ name: m.name, values: m.values?.slice(-7) }));
-  } catch (e: any) { return { error: e.message }; }
+    if (data.error) return [];
+    return (data.data || []).map((m: any) => ({
+      name: m.name,
+      values: (m.values || []).slice(-7).map((v: any) => ({
+        value: typeof v.value === 'object' ? Object.values(v.value as Record<string, number>).reduce((a: number, b: number) => a + b, 0) : (v.value || 0),
+        end_time: v.end_time,
+      })),
+    }));
+  } catch { return []; }
 }
 
 async function fetchPerformance(db: D1Database, pageId: string) {
