@@ -805,7 +805,7 @@
       pages.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = p.name + (p.category ? ' (' + p.category + ')' : '');
+        opt.textContent = p.name;
         sel.appendChild(opt);
       });
       const saved = localStorage.getItem('fb-selected-page');
