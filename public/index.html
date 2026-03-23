@@ -1721,7 +1721,15 @@
 
     // Trend category filter
     function filterTrends(cat) {
-      document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)'    // === Insights Dashboard ===
+      document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)';b.style.color='var(--text-secondary)';});
+      event.target.style.background='var(--accent)';event.target.style.color='#fff';
+      document.querySelectorAll('.trend-card,.trend-item').forEach(el=>{
+        if(cat==='all'||el.dataset.cat===cat) el.style.display='';
+        else el.style.display='none';
+      });
+    }
+
+    // === Insights Dashboard ===
     var insData = {};
     async function loadInsightsPages() {
       var sel = document.getElementById('insPageSelect');
