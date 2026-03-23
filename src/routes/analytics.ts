@@ -339,7 +339,7 @@ analytics.get("/challenges/:pageId", async (c) => {
   if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `challenges:${pageId}:v2`, 180, async () => {
+    const data = await kvCache(c.env.KV, `challenges:${pageId}:v2`, 600, async () => {
       const since = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
       const [fbMetrics, postCount, reelCount, recentPosts, recentReels] = await Promise.all([
