@@ -474,12 +474,11 @@
           </div>
           <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
           <div style="margin-top:8px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
-            <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">🎨 AI สร้างรูป</div>
+            <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">🎨 Nano Banana Pro — สร้าง Prompt</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               <select id="aiImageTemplate" style="flex:1;min-width:120px;padding:5px 8px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit"><option value="">เลือกสไตล์...</option><option value="cinematic">Cinematic Poster</option><option value="morning">สวัสดีตอนเช้า</option><option value="quote">Quote Card</option><option value="product">Product Showcase</option><option value="food">Food Photography</option><option value="nature">Nature & Landscape</option></select>
               <input id="aiImageKeyword" placeholder="keyword เช่น กาแฟ ร้านสวย" style="flex:2;min-width:100px;padding:5px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit">
-              <button id="aiImageBtn" onclick="generateAiImage()" style="padding:5px 12px;border:1px solid #a855f7;border-radius:6px;background:none;color:#a855f7;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">สร้างรูป</button>
-              <button onclick="copyAiPrompt()" style="padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit;white-space:nowrap">Copy prompt</button>
+              <button onclick="copyAiPrompt()" style="padding:5px 12px;border:1px solid #a855f7;border-radius:6px;background:none;color:#a855f7;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">📋 Copy Prompt</button>
             </div>
             <div id="aiPromptPreview" style="display:none;margin-top:6px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:0.68rem;color:var(--text-muted);max-height:60px;overflow-y:auto;white-space:pre-wrap"></div>
           </div>
@@ -648,16 +647,6 @@
         </div>
         <div class="card" style="margin-top:12px">
           <div class="card-title"><span class="card-title-icon">🔑</span> API Keys</div>
-          <div class="field">
-            <label>Default Image Model</label>
-            <select id="imageProvider" onchange="saveImageProvider()" style="padding:8px 12px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.85rem;font-family:inherit;cursor:pointer;width:100%">
-              <option value="pollinations">Pollinations (ฟรี)</option>
-              <option value="fal">FAL.ai (ต้องมี API key)</option>
-              <option value="unsplash">Unsplash (รูป stock ฟรี)</option>
-              <option value="nana">Nano Banana Pro (copy prompt)</option>
-            </select>
-            <div id="providerStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
-          </div>
           <div class="field">
             <label>Shopee / Apify API Key</label>
             <div style="display:flex;gap:6px"><input id="apifyKey" type="password" placeholder="apify_api_..." style="flex:1"><button onclick="saveApiKey('apify_api_key','apifyKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
@@ -2229,18 +2218,20 @@
       var msg = document.getElementById('message').value.trim();
       var prompt = keyword || msg;
       if (!prompt) { toast('err', 'กรอก keyword ก่อน'); return; }
+      var text = prompt;
       try {
         var body = { prompt: prompt.substring(0, 200), generate: false };
         if (templateId) body.template_id = templateId;
         var r = await fetch('/api/ai-image', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        var d = await r.json();
-        var text = d.prompt || prompt;
-        var pv = document.getElementById('aiPromptPreview');
-        pv.textContent = text;
-        pv.style.display = 'block';
+        if (r.ok) { var d = await r.json(); text = d.prompt || prompt; }
+      } catch(e) { /* use prompt as-is */ }
+      var pv = document.getElementById('aiPromptPreview');
+      pv.textContent = text;
+      pv.style.display = 'block';
+      try {
         await navigator.clipboard.writeText(text);
         showNotify('Copy prompt แล้ว — วางใน Nana Banana Pro ได้เลย!');
-      } catch(e) { toast('err', 'Copy ไม่สำเร็จ'); }
+      } catch(e) { toast('err', 'Copy ไม่สำเร็จ — กด Ctrl+C เอง'); }
     }
 
     async function boostChallenge(challengeId, count, btn) {
@@ -2272,17 +2263,6 @@
     }
 
     // === API Keys Settings ===
-    async function saveImageProvider() {
-      var val = document.getElementById('imageProvider').value;
-      try {
-        await fetch('/api/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_provider: val }) });
-        var st = document.getElementById('providerStatus');
-        st.textContent = '✅ บันทึกแล้ว';
-        st.style.color = 'var(--success)';
-        setTimeout(function() { st.textContent = ''; }, 2000);
-      } catch(e) { toast('err', 'บันทึกไม่สำเร็จ'); }
-    }
-
     async function saveApiKey(keyName, inputId) {
       var val = document.getElementById(inputId).value.trim();
       if (!val) { toast('err', 'กรุณากรอก API key'); return; }
@@ -2300,7 +2280,6 @@
       try {
         var r = await fetch('/api/settings', { credentials: 'same-origin' });
         var d = await r.json();
-        if (d.image_provider) { var ps = document.getElementById('imageProvider'); if (ps) ps.value = d.image_provider; }
         var keys = [['has_apify_key','apifyStatus','Shopee/Apify'],['has_gemini_key','geminiStatus','Gemini'],['has_fal_key','falStatus','FAL.ai']];
         keys.forEach(function(k) {
           var el = document.getElementById(k[1]);
