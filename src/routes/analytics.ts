@@ -3,6 +3,25 @@ import { Env, getSessionFromReq, kvCache } from "../helpers";
 
 const analytics = new Hono<{ Bindings: Env }>();
 
+// GET /api/pages — list user's pages (no token exposed)
+analytics.get("/pages", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const { results } = await c.env.DB.prepare(
+    "SELECT page_id, page_name, category, picture_url FROM user_pages WHERE user_fb_id = ?"
+  ).bind(session.fb_id).all();
+  const selectedPageId = await c.env.KV.get("fb_page_id");
+  return c.json({
+    pages: (results || []).map((p: any) => ({
+      id: p.page_id,
+      name: p.page_name,
+      category: p.category || null,
+      picture: p.picture_url || null,
+      selected: p.page_id === selectedPageId,
+    })),
+  });
+});
+
 // GET /api/insights/:pageId
 analytics.get("/insights/:pageId", async (c) => {
   const session = await getSessionFromReq(c);
