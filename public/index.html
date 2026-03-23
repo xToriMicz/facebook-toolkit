@@ -663,7 +663,10 @@
         <div class="card">
           <div class="ins-header">
             <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
-            <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
+            <div style="display:flex;gap:4px">
+              <button id="insSyncBtn" onclick="insSyncPosts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit">Sync โพส</button>
+              <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
+            </div>
           </div>
           <div id="insError" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:0.8rem;background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.15)"></div>
           <div id="insTimestamp" style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;text-align:right"></div>
@@ -1799,6 +1802,23 @@
       try { sessionStorage.removeItem('ins:' + pageId); } catch(e) { /* ignore */ }
       await loadInsights(true);
       btn.textContent = '↻';
+      btn.disabled = false;
+    }
+
+    async function insSyncPosts() {
+      var pageId = selectedPage ? selectedPage.id : '';
+      if (!pageId) { insShowError('กรุณาเลือกเพจก่อน'); return; }
+      var btn = document.getElementById('insSyncBtn');
+      btn.textContent = '⏳ Syncing...';
+      btn.disabled = true;
+      insShowError(null);
+      try {
+        var r = await fetch('/api/analytics/sync-posts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId }) });
+        var d = await r.json();
+        if (d.error) { insShowError(d.error); }
+        else { try { sessionStorage.removeItem('ins:' + pageId); } catch(e) {} await loadInsights(true); }
+      } catch(e) { insShowError('Sync ไม่สำเร็จ — ลองใหม่'); }
+      btn.textContent = 'Sync โพส';
       btn.disabled = false;
     }
 
