@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, rateLimit, sanitize, kvCache, getUserPageId, getUserPageToken } from "../helpers";
+import { Env, getSessionFromReq, rateLimit, sanitize, kvCache, getUserPageId, getUserPageToken, getDecryptedPageToken, decryptToken } from "../helpers";
 
 const post = new Hono<{ Bindings: Env }>();
 
@@ -24,10 +24,13 @@ post.post("/post", async (c) => {
   const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
-  const page = await c.env.DB.prepare(
-    "SELECT page_token, page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, targetPageId).first<{ page_token: string; page_name: string }>();
-  if (!page?.page_token) return c.json({ error: "Page not found or token missing." }, 400);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, targetPageId, encKey);
+  const pageRow = await c.env.DB.prepare(
+    "SELECT page_name FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, targetPageId).first<{ page_name: string }>();
+  if (!pageToken || !pageRow) return c.json({ error: "Page not found or token missing." }, 400);
+  const page = { page_token: pageToken, page_name: pageRow.page_name };
 
   try {
     let result: any;
@@ -80,8 +83,8 @@ post.post("/post", async (c) => {
 
     const fbPostId = result.id || result.post_id || null;
     await c.env.DB.prepare(
-      "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
-    ).bind(message || "", image_url || null, fbPostId, targetPageId, new Date().toISOString()).run();
+      "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
+    ).bind(message || "", image_url || null, fbPostId, targetPageId, session.fb_id, new Date().toISOString()).run();
 
     let commentResult = null;
     if (affiliate_link && fbPostId) {
@@ -126,10 +129,13 @@ post.get("/posts", async (c) => {
   const pageFilter = c.req.query("page_id");
   const withEngagement = c.req.query("engagement") === "1";
 
-  let query = "SELECT p.*, up.page_name, up.page_id as matched_page_id FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id";
-  const params: (string | number)[] = [];
+  let query = "SELECT p.*, up.page_name, up.page_id as matched_page_id FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id AND up.user_fb_id = ?";
+  const params: (string | number)[] = [session.fb_id];
+  // Always filter by user's pages
+  query += " WHERE (p.page_id IN (SELECT page_id FROM user_pages WHERE user_fb_id = ?) OR p.page_id IS NULL)";
+  params.push(session.fb_id);
   if (pageFilter) {
-    query += " WHERE p.page_id = ?";
+    query += " AND p.page_id = ?";
     params.push(pageFilter);
   }
   query += " ORDER BY p.created_at DESC LIMIT ?";
@@ -137,10 +143,10 @@ post.get("/posts", async (c) => {
 
   const { results } = await c.env.DB.prepare(query).bind(...params).all();
 
-  // Get unique pages for filter dropdown
+  // Get unique pages for filter dropdown (user's pages only)
   const { results: pages } = await c.env.DB.prepare(
-    "SELECT DISTINCT p.page_id, up.page_name FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id WHERE p.page_id IS NOT NULL"
-  ).all();
+    "SELECT DISTINCT p.page_id, up.page_name FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id WHERE p.page_id IS NOT NULL AND up.user_fb_id = ?"
+  ).bind(session.fb_id).all();
 
   if (withEngagement && results.length > 0) {
     const token = await getUserPageToken(c.env.KV, session.fb_id);

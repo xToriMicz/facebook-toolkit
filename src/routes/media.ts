@@ -76,8 +76,8 @@ media.get("/settings", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const [pageId, pageToken, pageName, apifyKey, geminiKey, falKey, imageProvider] = await Promise.all([
     getUserPageId(c.env.KV, session.fb_id), getUserPageToken(c.env.KV, session.fb_id), c.env.KV.get(`u:${session.fb_id}:page_name`),
-    c.env.KV.get("apify_api_key"), c.env.KV.get("gemini_api_key"), c.env.KV.get("fal_api_key"),
-    c.env.KV.get("image_provider"),
+    c.env.KV.get(`u:${session.fb_id}:apify_key`), c.env.KV.get(`u:${session.fb_id}:gemini_key`), c.env.KV.get(`u:${session.fb_id}:fal_key`),
+    c.env.KV.get(`u:${session.fb_id}:image_provider`),
   ]);
   return c.json({ page_id: pageId, page_name: pageName, has_token: !!pageToken, has_apify_key: !!apifyKey, has_gemini_key: !!geminiKey, has_fal_key: !!falKey, image_provider: imageProvider || "pollinations" });
 });
@@ -87,25 +87,26 @@ media.post("/settings", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { page_id, page_token, page_name, apify_api_key, gemini_api_key, fal_api_key, image_provider } = await c.req.json();
   if (page_id && page_token) await setUserPage(c.env.KV, session.fb_id, page_id, page_token, page_name || "");
-  // Shopee/Apify key
+  // Shopee/Apify key (per-user)
+  const uk = (k: string) => `u:${session.fb_id}:${k}`;
   if (apify_api_key !== undefined) {
-    if (apify_api_key) await c.env.KV.put("apify_api_key", apify_api_key);
-    else await c.env.KV.delete("apify_api_key");
+    if (apify_api_key) await c.env.KV.put(uk("apify_key"), apify_api_key);
+    else await c.env.KV.delete(uk("apify_key"));
     await c.env.KV.delete("shopee:trending:v2");
   }
-  // Gemini / Nano Banana Pro key
+  // Gemini / Nano Banana Pro key (per-user)
   if (gemini_api_key !== undefined) {
-    if (gemini_api_key) await c.env.KV.put("gemini_api_key", gemini_api_key);
-    else await c.env.KV.delete("gemini_api_key");
+    if (gemini_api_key) await c.env.KV.put(uk("gemini_key"), gemini_api_key);
+    else await c.env.KV.delete(uk("gemini_key"));
   }
-  // FAL.ai key (image generation)
+  // FAL.ai key (per-user)
   if (fal_api_key !== undefined) {
-    if (fal_api_key) await c.env.KV.put("fal_api_key", fal_api_key);
-    else await c.env.KV.delete("fal_api_key");
+    if (fal_api_key) await c.env.KV.put(uk("fal_key"), fal_api_key);
+    else await c.env.KV.delete(uk("fal_key"));
   }
-  // Image provider preference
+  // Image provider preference (per-user)
   if (image_provider && ["pollinations", "fal", "unsplash"].includes(image_provider)) {
-    await c.env.KV.put("image_provider", image_provider);
+    await c.env.KV.put(uk("image_provider"), image_provider);
   }
   return c.json({ ok: true });
 });
