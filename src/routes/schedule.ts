@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, getUserPageId } from "../helpers";
+import { Env, getSessionFromReq, getUserPageId, decryptToken } from "../helpers";
 
 const schedule = new Hono<{ Bindings: Env }>();
 
@@ -78,6 +78,7 @@ schedule.delete("/schedule/:id", async (c) => {
 export async function processScheduledPosts(env: Env) {
   const now = new Date().toISOString();
   console.log(`[cron] checking scheduled posts at ${now}`);
+  const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
   const { results: pending } = await env.DB.prepare(
     "SELECT sp.*, up.page_token FROM scheduled_posts sp JOIN user_pages up ON sp.user_fb_id = up.user_fb_id AND sp.page_id = up.page_id WHERE sp.status = 'pending' AND sp.scheduled_at <= ? LIMIT 10"
   ).bind(now).all();
@@ -89,17 +90,19 @@ export async function processScheduledPosts(env: Env) {
       continue;
     }
     try {
+      // Decrypt token (supports both encrypted and plaintext for migration)
+      const pageToken = await decryptToken(post.page_token, encKey);
       let result: any;
       if (post.image_url) {
         const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: post.image_url, message: post.message, access_token: post.page_token }),
+          body: JSON.stringify({ url: post.image_url, message: post.message, access_token: pageToken }),
         });
         result = await res.json();
       } else {
         const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: post.message, access_token: post.page_token }),
+          body: JSON.stringify({ message: post.message, access_token: pageToken }),
         });
         result = await res.json();
       }
@@ -109,8 +112,8 @@ export async function processScheduledPosts(env: Env) {
         const fbPostId = result.id || result.post_id || null;
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
         await env.DB.prepare(
-          "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
-        ).bind(post.message, post.image_url, fbPostId, post.page_id, new Date().toISOString()).run();
+          "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
+        ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, new Date().toISOString()).run();
       }
     } catch {
       await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();

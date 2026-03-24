@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, getUserPageId } from "../helpers";
+import { Env, getSessionFromReq, getUserPageId, getDecryptedPageToken } from "../helpers";
 
 const drafts = new Hono<{ Bindings: Env }>();
 
@@ -53,13 +53,12 @@ drafts.post("/drafts/:id/publish", async (c) => {
 
   const pageId = draft.page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!pageId) return c.json({ error: "No page selected" }, 400);
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, pageId).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "Page token missing" }, 400);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, pageId, encKey);
+  if (!pageToken) return c.json({ error: "Page token missing" }, 400);
 
   const endpoint = draft.image_url ? `${pageId}/photos` : `${pageId}/feed`;
-  const body: any = { access_token: page.page_token };
+  const body: any = { access_token: pageToken };
   if (draft.image_url) { body.url = draft.image_url; body.message = draft.message; }
   else { body.message = draft.message; }
 
@@ -71,8 +70,8 @@ drafts.post("/drafts/:id/publish", async (c) => {
 
   await c.env.DB.prepare("DELETE FROM drafts WHERE id = ?").bind(id).run();
   await c.env.DB.prepare(
-    "INSERT INTO posts (message, image_url, fb_post_id, page_id, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
-  ).bind(draft.message, draft.image_url, result.id || result.post_id, pageId, new Date().toISOString()).run();
+    "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
+  ).bind(draft.message, draft.image_url, result.id || result.post_id, pageId, session.fb_id, new Date().toISOString()).run();
 
   return c.json({ ok: true, result });
 });

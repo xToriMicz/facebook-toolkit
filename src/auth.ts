@@ -1,12 +1,6 @@
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
-import { setUserPage, getUserPageId } from "./helpers";
-
-interface Env {
-  DB: D1Database;
-  KV: KVNamespace;
-  FB_APP_SECRET: string;
-}
+import { setUserPage, getUserPageId, encryptToken, type Env } from "./helpers";
 
 const FB_APP_ID = "26012743801749271";
 const FB_REDIRECT_URI = "https://fb.makeloops.xyz/auth/callback";
@@ -110,6 +104,7 @@ auth.get("/callback", async (c) => {
     `https://graph.facebook.com/${FB_GRAPH_VERSION}/${profile.id}/accounts?fields=id,name,access_token,category,picture&access_token=${longToken}`
   );
   const pagesData = (await pagesRes.json()) as any;
+  console.log("[auth] user:", profile.id, profile.name, "pages_count:", (pagesData.data || []).length, "error:", pagesData.error?.message || "none");
   const pages = (pagesData.data || []).map((p: any) => ({
     ...p,
     picture_url: p.picture?.data?.url || `https://graph.facebook.com/${p.id}/picture?type=small`,
@@ -120,6 +115,12 @@ auth.get("/callback", async (c) => {
     const pictureUrl = profile.picture?.data?.url || null;
     const now = new Date().toISOString();
     const firstPage = pages.length > 0 ? pages[0] : null;
+    const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+
+    // Encrypt tokens before storing
+    const encryptedUserToken = await encryptToken(longToken, encKey);
+    const encryptedFirstPageToken = firstPage?.access_token
+      ? await encryptToken(firstPage.access_token, encKey) : null;
 
     await c.env.DB.prepare(
       `INSERT INTO users (fb_user_id, name, email, profile_pic, access_token, page_id, page_name, page_token, created_at, last_login)
@@ -138,16 +139,17 @@ auth.get("/callback", async (c) => {
       profile.name || "",
       profile.email || null,
       pictureUrl,
-      longToken,
+      encryptedUserToken,
       firstPage?.id || null,
       firstPage?.name || null,
-      firstPage?.access_token || null,
+      encryptedFirstPageToken,
       now,
       now
     ).run();
 
-    // Save ALL pages to user_pages table (with picture)
+    // Save ALL pages to user_pages table (with picture) — encrypted tokens
     for (const page of pages) {
+      const encPageToken = await encryptToken(page.access_token, encKey);
       await c.env.DB.prepare(
         `INSERT INTO user_pages (user_fb_id, page_id, page_name, page_token, category, picture_url)
          VALUES (?, ?, ?, ?, ?, ?)
@@ -160,15 +162,15 @@ auth.get("/callback", async (c) => {
         profile.id,
         page.id,
         page.name,
-        page.access_token,
+        encPageToken,
         page.category || null,
         page.picture_url || null
       ).run();
     }
 
-    // Store first page in KV as default (per-user)
+    // Store first page in KV as default (per-user) — encrypted
     if (pages.length > 0) {
-      await setUserPage(c.env.KV, profile.id, pages[0].id, pages[0].access_token, pages[0].name);
+      await setUserPage(c.env.KV, profile.id, pages[0].id, pages[0].access_token, pages[0].name, encKey);
     }
   } catch (e: any) {
     console.error("DB save error:", e.message);
@@ -261,6 +263,7 @@ auth.post("/api/pages/select", async (c) => {
 
   if (!page) return c.json({ error: "Page not found" }, 404);
 
+  // page.page_token is already encrypted in DB — pass through to KV as-is
   await setUserPage(c.env.KV, session.fb_id, page.page_id, page.page_token, page.page_name);
 
   return c.json({ ok: true, selected: { id: page.page_id, name: page.page_name } });

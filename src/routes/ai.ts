@@ -126,20 +126,17 @@ ai.post("/ai-write", async (c) => {
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 });
 
-// GET /api/templates
+// GET /api/templates — per-user + shared (user_fb_id IS NULL)
 ai.get("/templates", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const category = c.req.query("category") || "all";
-  const data = await kvCache(c.env.KV, `tpl:${category}`, 600, async () => {
-    let query = "SELECT * FROM content_templates";
-    const params: string[] = [];
-    if (category !== "all") { query += " WHERE category = ?"; params.push(category); }
-    query += " ORDER BY created_at DESC";
-    const { results } = await c.env.DB.prepare(query).bind(...params).all();
-    return { templates: results, total: results.length };
-  });
-  return c.json(data);
+  let query = "SELECT * FROM content_templates WHERE (user_fb_id = ? OR user_fb_id IS NULL)";
+  const params: (string | null)[] = [session.fb_id];
+  if (category !== "all") { query += " AND category = ?"; params.push(category); }
+  query += " ORDER BY created_at DESC";
+  const { results } = await c.env.DB.prepare(query).bind(...params).all();
+  return c.json({ templates: results, total: results.length });
 });
 
 // POST /api/templates
@@ -150,9 +147,8 @@ ai.post("/templates", async (c) => {
   if (!title || !template_text) return c.json({ error: "title and template_text required" }, 400);
   const cat = sanitize(category || "ทั่วไป");
   const { meta } = await c.env.DB.prepare(
-    "INSERT INTO content_templates (title, template_text, category) VALUES (?, ?, ?)"
-  ).bind(sanitize(title), sanitize(template_text), cat).run();
-  await c.env.KV.delete("tpl:all"); await c.env.KV.delete(`tpl:${cat}`);
+    "INSERT INTO content_templates (title, template_text, category, user_fb_id) VALUES (?, ?, ?, ?)"
+  ).bind(sanitize(title), sanitize(template_text), cat, session.fb_id).run();
   return c.json({ ok: true, id: meta.last_row_id }, 201);
 });
 

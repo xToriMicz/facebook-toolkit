@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, kvCache, getUserPageId, getUserPageToken } from "../helpers";
+import { Env, getSessionFromReq, kvCache, getUserPageId, getUserPageToken, getDecryptedPageToken } from "../helpers";
 
 const analytics = new Hono<{ Bindings: Env }>();
 
@@ -27,13 +27,12 @@ analytics.get("/insights/:pageId", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.param("pageId");
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, pageId).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, pageId, encKey);
+  if (!pageToken) return c.json({ error: "Page not found" }, 404);
   try {
     const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
-    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${page.page_token}`);
+    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${pageToken}`);
     const data = await res.json() as any;
     if (data.error) return c.json({ error: data.error.message }, 400);
     return c.json({ ok: true, insights: data.data || [] });
@@ -131,17 +130,17 @@ analytics.get("/analytics/best-time", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { results: byHour } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' GROUP BY hour ORDER BY avg_engagement DESC"
-  ).all();
+    "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY hour ORDER BY avg_engagement DESC"
+  ).bind(session.fb_id).all();
   const { results: byDay } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' GROUP BY day ORDER BY avg_engagement DESC"
-  ).all();
+    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY day ORDER BY avg_engagement DESC"
+  ).bind(session.fb_id).all();
   const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
   const bestHours = (byHour as any[]).slice(0, 3).map((h: any) => h.hour);
   const bestDays = (byDay as any[]).slice(0, 3).map((d: any) => dayNames[d.day]);
   const { results: heatmap } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as count FROM posts WHERE status = 'posted' GROUP BY day, hour"
-  ).all();
+    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY day, hour"
+  ).bind(session.fb_id).all();
   return c.json({
     best_hours: bestHours, best_days: bestDays, by_hour: byHour,
     by_day: (byDay as any[]).map((d: any) => ({ ...d, day_name: dayNames[d.day] })),
@@ -158,17 +157,16 @@ analytics.post("/analytics/refresh", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const targetPageId = await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page" }, 400);
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, targetPageId).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "No token" }, 400);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, targetPageId, encKey);
+  if (!pageToken) return c.json({ error: "No token" }, 400);
   const { results: posts } = await c.env.DB.prepare(
-    "SELECT id, fb_post_id FROM posts WHERE fb_post_id IS NOT NULL AND status = 'posted' ORDER BY created_at DESC LIMIT 20"
-  ).all();
+    "SELECT id, fb_post_id FROM posts WHERE fb_post_id IS NOT NULL AND status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) ORDER BY created_at DESC LIMIT 20"
+  ).bind(session.fb_id).all();
   let updated = 0;
   for (const post of posts as any[]) {
     try {
-      const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${page.page_token}`);
+      const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pageToken}`);
       const data: any = await res.json();
       if (!data.error) {
         await c.env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
@@ -186,13 +184,12 @@ analytics.post("/analytics/sync-posts", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { page_id } = await c.req.json();
   if (!page_id) return c.json({ error: "page_id required" }, 400);
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, page_id).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, page_id, encKey);
+  if (!pageToken) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=50&access_token=${page.page_token}`);
+    const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=50&access_token=${pageToken}`);
     const data: any = await res.json();
     if (data.error) return c.json({ error: data.error.message }, 400);
 
@@ -224,17 +221,16 @@ analytics.get("/insights-bundle/:pageId", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.param("pageId");
 
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, pageId).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = await getDecryptedPageToken(c.env.DB, session.fb_id, pageId, encKey);
+  if (!pageToken) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `insights:${pageId}:v3`, 180, async () => {
+    const data = await kvCache(c.env.KV, `insights:${session.fb_id}:${pageId}:v3`, 180, async () => {
       const [insights, performance, bestTime, stats] = await Promise.all([
-        fetchInsights(pageId, page.page_token),
-        fetchPerformance(c.env.DB, pageId),
-        fetchBestTime(c.env.DB, pageId),
+        fetchInsights(pageId, pageToken),
+        fetchPerformance(c.env.DB, pageId, session.fb_id),
+        fetchBestTime(c.env.DB, pageId, session.fb_id),
         fetchStats(c.env.DB, session.fb_id, pageId),
       ]);
       return { insights, performance, bestTime, stats, ts: new Date().toISOString() };
@@ -261,18 +257,23 @@ async function fetchInsights(pageId: string, token: string) {
   } catch { return []; }
 }
 
-async function fetchPerformance(db: D1Database, pageId: string) {
+async function fetchPerformance(db: D1Database, pageId: string, fbId?: string) {
+  const userFilter = fbId ? " AND (user_fb_id = ? OR user_fb_id IS NULL)" : "";
+  const params1 = fbId ? [pageId, fbId] : [pageId];
+  const params2 = fbId ? [pageId, fbId] : [pageId];
   const [top, avg] = await Promise.all([
-    db.prepare("SELECT id, message, fb_post_id, page_id, (COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, likes, comments, shares, created_at FROM posts WHERE status='posted' AND page_id=? ORDER BY eng DESC LIMIT 5").bind(pageId).all(),
-    db.prepare("SELECT AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as avg_eng, COUNT(*) as total, SUM(COALESCE(likes,0)) as likes, SUM(COALESCE(comments,0)) as comments, SUM(COALESCE(shares,0)) as shares FROM posts WHERE status='posted' AND page_id=?").bind(pageId).first<any>(),
+    db.prepare(`SELECT id, message, fb_post_id, page_id, (COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, likes, comments, shares, created_at FROM posts WHERE status='posted' AND page_id=?${userFilter} ORDER BY eng DESC LIMIT 5`).bind(...params1).all(),
+    db.prepare(`SELECT AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as avg_eng, COUNT(*) as total, SUM(COALESCE(likes,0)) as likes, SUM(COALESCE(comments,0)) as comments, SUM(COALESCE(shares,0)) as shares FROM posts WHERE status='posted' AND page_id=?${userFilter}`).bind(...params2).first<any>(),
   ]);
   return { top: top.results, avg_eng: avg?.avg_eng || 0, total: avg?.total || 0, likes: avg?.likes || 0, comments: avg?.comments || 0, shares: avg?.shares || 0 };
 }
 
-async function fetchBestTime(db: D1Database, pageId: string) {
+async function fetchBestTime(db: D1Database, pageId: string, fbId?: string) {
+  const userFilter = fbId ? " AND (user_fb_id = ? OR user_fb_id IS NULL)" : "";
+  const params = fbId ? [pageId, fbId] : [pageId];
   const { results } = await db.prepare(
-    "SELECT CAST(strftime('%w',created_at) AS INTEGER) as d, CAST(strftime('%H',created_at) AS INTEGER) as h, AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, COUNT(*) as n FROM posts WHERE status='posted' AND page_id=? GROUP BY d,h"
-  ).bind(pageId).all();
+    `SELECT CAST(strftime('%w',created_at) AS INTEGER) as d, CAST(strftime('%H',created_at) AS INTEGER) as h, AVG(COALESCE(likes,0)+COALESCE(comments,0)+COALESCE(shares,0)) as eng, COUNT(*) as n FROM posts WHERE status='posted' AND page_id=?${userFilter} GROUP BY d,h`
+  ).bind(...params).all();
   const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
   const heatmap = results as any[];
   const bestSlot = heatmap.sort((a: any, b: any) => b.eng - a.eng)[0];
@@ -333,17 +334,16 @@ analytics.get("/challenges/:pageId", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.param("pageId");
 
-  const page = await c.env.DB.prepare(
-    "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
-  ).bind(session.fb_id, pageId).first<{ page_token: string }>();
-  if (!page?.page_token) return c.json({ error: "Page not found" }, 404);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const challengeToken = await getDecryptedPageToken(c.env.DB, session.fb_id, pageId, encKey);
+  if (!challengeToken) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const data = await kvCache(c.env.KV, `challenges:${pageId}:v2`, 600, async () => {
+    const data = await kvCache(c.env.KV, `challenges:${session.fb_id}:${pageId}:v2`, 600, async () => {
       const since = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
 
       const [fbMetrics, postCount, reelCount, recentPosts, recentReels] = await Promise.all([
-        fetchChallengeMetrics(pageId, page.page_token, since),
+        fetchChallengeMetrics(pageId, challengeToken, since),
         c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted'").bind(pageId, since).first<{ c: number }>(),
         c.env.DB.prepare("SELECT COUNT(*) as c FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' AND post_type = 'reel'").bind(pageId, since).first<{ c: number }>(),
         c.env.DB.prepare("SELECT message, created_at FROM posts WHERE page_id = ? AND created_at >= ? AND status = 'posted' ORDER BY created_at DESC LIMIT 10").bind(pageId, since).all(),

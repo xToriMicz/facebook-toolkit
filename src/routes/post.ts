@@ -131,9 +131,9 @@ post.get("/posts", async (c) => {
 
   let query = "SELECT p.*, up.page_name, up.page_id as matched_page_id FROM posts p LEFT JOIN user_pages up ON p.page_id = up.page_id AND up.user_fb_id = ?";
   const params: (string | number)[] = [session.fb_id];
-  // Always filter by user's pages
-  query += " WHERE (p.page_id IN (SELECT page_id FROM user_pages WHERE user_fb_id = ?) OR p.page_id IS NULL)";
-  params.push(session.fb_id);
+  // Strict user isolation — only show posts belonging to this user
+  query += " WHERE (p.user_fb_id = ? OR (p.user_fb_id IS NULL AND p.page_id IN (SELECT page_id FROM user_pages WHERE user_fb_id = ?)))";
+  params.push(session.fb_id, session.fb_id);
   if (pageFilter) {
     query += " AND p.page_id = ?";
     params.push(pageFilter);
@@ -149,7 +149,8 @@ post.get("/posts", async (c) => {
   ).bind(session.fb_id).all();
 
   if (withEngagement && results.length > 0) {
-    const token = await getUserPageToken(c.env.KV, session.fb_id);
+    const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+    const token = await getUserPageToken(c.env.KV, session.fb_id, encKey);
     if (token) {
       const enriched = await Promise.all(results.map(async (post: any) => {
         if (!post.fb_post_id) return { ...post, engagement: null };
@@ -176,7 +177,8 @@ post.get("/posts/:postId/comments", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const postId = c.req.param("postId");
-  const token = await getUserPageToken(c.env.KV, session.fb_id);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const token = await getUserPageToken(c.env.KV, session.fb_id, encKey);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(
@@ -196,7 +198,8 @@ post.post("/posts/:postId/reply", async (c) => {
   const { message: rawMsg } = await c.req.json() as { message: string };
   const message = rawMsg ? sanitize(rawMsg) : "";
   if (!message) return c.json({ error: "message required" }, 400);
-  const token = await getUserPageToken(c.env.KV, session.fb_id);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const token = await getUserPageToken(c.env.KV, session.fb_id, encKey);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(`https://graph.facebook.com/v25.0/${commentId}/comments`, {
@@ -217,7 +220,8 @@ post.post("/posts/:postId/auto-comment", async (c) => {
   const { message: rawMsg2 } = await c.req.json() as { message: string };
   const message = rawMsg2 ? sanitize(rawMsg2) : "";
   if (!message) return c.json({ error: "message required" }, 400);
-  const token = await getUserPageToken(c.env.KV, session.fb_id);
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const token = await getUserPageToken(c.env.KV, session.fb_id, encKey);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(`https://graph.facebook.com/v25.0/${postId}/comments`, {
