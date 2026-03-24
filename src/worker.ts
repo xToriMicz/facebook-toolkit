@@ -21,20 +21,23 @@ const app = new Hono<{ Bindings: Env }>();
 // Security + cache headers
 app.use("*", async (c, next) => {
   await next();
+  const path = c.req.path;
+  // Skip security headers for /img/* — Facebook crawler needs clean image responses
+  if (path.startsWith("/img/")) {
+    c.header("Cache-Control", "public, max-age=31536000, immutable");
+    return;
+  }
   c.header("X-Content-Type-Options", "nosniff");
   c.header("X-Frame-Options", "DENY");
   c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   c.header("Referrer-Policy", "strict-origin-when-cross-origin");
   c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   c.header("X-XSS-Protection", "1; mode=block");
-  if (!c.req.path.startsWith("/api/")) {
+  if (!path.startsWith("/api/")) {
     c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://graph.facebook.com https://down-th.img.susercontent.com https://*.fbcdn.net https://platform-lookaside.fbsbx.com https://image.pollinations.ai data:; connect-src 'self' https://graph.facebook.com https://www.facebook.com https://cloudflareinsights.com; frame-ancestors 'none';");
   }
-  const path = c.req.path;
   if (path.startsWith("/api/")) {
     c.header("Cache-Control", "private, max-age=0");
-  } else if (path.startsWith("/img/")) {
-    c.header("Cache-Control", "public, max-age=31536000, immutable");
   }
 });
 
