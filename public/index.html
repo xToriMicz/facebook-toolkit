@@ -968,7 +968,7 @@
         try {
           const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
           const d = await r.json();
-          if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;uploadedImageUrl=d.url;} }
+          if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;img.data=d.url;uploadedImageUrl=d.url;} renderImagePreviews(); }
           else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
         } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ: '+(e.message||'')); }
       }
