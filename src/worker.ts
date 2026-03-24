@@ -34,7 +34,7 @@ app.use("*", async (c, next) => {
   c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   c.header("X-XSS-Protection", "1; mode=block");
   if (!path.startsWith("/api/")) {
-    c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://graph.facebook.com https://down-th.img.susercontent.com https://*.fbcdn.net https://platform-lookaside.fbsbx.com https://image.pollinations.ai data:; connect-src 'self' https://graph.facebook.com https://www.facebook.com https://cloudflareinsights.com; frame-ancestors 'none';");
+    c.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' blob: https://graph.facebook.com https://down-th.img.susercontent.com https://*.fbcdn.net https://platform-lookaside.fbsbx.com https://image.pollinations.ai data:; connect-src 'self' https://graph.facebook.com https://www.facebook.com https://cloudflareinsights.com; frame-ancestors 'none';");
   }
   if (path.startsWith("/api/")) {
     c.header("Cache-Control", "private, max-age=0");

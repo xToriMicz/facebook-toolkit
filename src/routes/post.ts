@@ -17,6 +17,7 @@ post.post("/post", async (c) => {
   const image_urls = body.image_urls;
   const page_id = body.page_id;
   const affiliate_link = body.affiliate_link ? sanitize(body.affiliate_link) : null;
+  console.log("[post] received:", JSON.stringify({ message: message?.slice(0, 50), image_url, image_urls, page_id }));
   if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
@@ -59,11 +60,14 @@ post.post("/post", async (c) => {
       });
       result = await res.json();
     } else if (urls.length === 1) {
+      console.log("[post] single photo URL:", urls[0]);
+      const fbBody = { url: urls[0], message: message || "", access_token: page.page_token };
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/photos`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urls[0], message: message || "", access_token: page.page_token }),
+        body: JSON.stringify(fbBody),
       });
       result = await res.json();
+      console.log("[post] FB response:", JSON.stringify(result).slice(0, 300));
     } else {
       const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed`, {
         method: "POST", headers: { "Content-Type": "application/json" },
