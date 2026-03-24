@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, rateLimit, sanitize, kvCache } from "../helpers";
+import { Env, getSessionFromReq, rateLimit, sanitize, kvCache, getUserPageId, getUserPageToken } from "../helpers";
 
 const post = new Hono<{ Bindings: Env }>();
 
@@ -21,7 +21,7 @@ post.post("/post", async (c) => {
   if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
-  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
   const page = await c.env.DB.prepare(
@@ -143,7 +143,7 @@ post.get("/posts", async (c) => {
   ).all();
 
   if (withEngagement && results.length > 0) {
-    const token = await c.env.KV.get("fb_page_token");
+    const token = await getUserPageToken(c.env.KV, session.fb_id);
     if (token) {
       const enriched = await Promise.all(results.map(async (post: any) => {
         if (!post.fb_post_id) return { ...post, engagement: null };
@@ -170,7 +170,7 @@ post.get("/posts/:postId/comments", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const postId = c.req.param("postId");
-  const token = await c.env.KV.get("fb_page_token");
+  const token = await getUserPageToken(c.env.KV, session.fb_id);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(
@@ -190,7 +190,7 @@ post.post("/posts/:postId/reply", async (c) => {
   const { message: rawMsg } = await c.req.json() as { message: string };
   const message = rawMsg ? sanitize(rawMsg) : "";
   if (!message) return c.json({ error: "message required" }, 400);
-  const token = await c.env.KV.get("fb_page_token");
+  const token = await getUserPageToken(c.env.KV, session.fb_id);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(`https://graph.facebook.com/v25.0/${commentId}/comments`, {
@@ -211,7 +211,7 @@ post.post("/posts/:postId/auto-comment", async (c) => {
   const { message: rawMsg2 } = await c.req.json() as { message: string };
   const message = rawMsg2 ? sanitize(rawMsg2) : "";
   if (!message) return c.json({ error: "message required" }, 400);
-  const token = await c.env.KV.get("fb_page_token");
+  const token = await getUserPageToken(c.env.KV, session.fb_id);
   if (!token) return c.json({ error: "No page token" }, 400);
   try {
     const res = await fetch(`https://graph.facebook.com/v25.0/${postId}/comments`, {

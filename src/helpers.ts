@@ -42,3 +42,32 @@ export async function getSessionFromReq(c: any): Promise<any | null> {
   const data = await c.env.KV.get(`session:${sessionId}`);
   return data ? JSON.parse(data) : null;
 }
+
+// Per-user KV helpers — prefix keys with user fb_id to prevent cross-user leaks
+export function userKey(fbId: string, key: string): string {
+  return `u:${fbId}:${key}`;
+}
+
+export async function getUserPageId(kv: KVNamespace, fbId: string): Promise<string | null> {
+  return kv.get(userKey(fbId, "page_id"));
+}
+
+export async function getUserPageToken(kv: KVNamespace, fbId: string): Promise<string | null> {
+  return kv.get(userKey(fbId, "page_token"));
+}
+
+export async function setUserPage(kv: KVNamespace, fbId: string, pageId: string, pageToken: string, pageName: string): Promise<void> {
+  await Promise.all([
+    kv.put(userKey(fbId, "page_id"), pageId),
+    kv.put(userKey(fbId, "page_token"), pageToken),
+    kv.put(userKey(fbId, "page_name"), pageName),
+  ]);
+}
+
+export async function clearUserPage(kv: KVNamespace, fbId: string): Promise<void> {
+  await Promise.all([
+    kv.delete(userKey(fbId, "page_id")),
+    kv.delete(userKey(fbId, "page_token")),
+    kv.delete(userKey(fbId, "page_name")),
+  ]);
+}

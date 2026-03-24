@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq } from "../helpers";
+import { Env, getSessionFromReq, getUserPageId } from "../helpers";
 
 const schedule = new Hono<{ Bindings: Env }>();
 
@@ -11,7 +11,7 @@ schedule.post("/schedule", async (c) => {
   const { page_id, message, image_url, scheduled_at } = await c.req.json();
   if (!message || !scheduled_at) return c.json({ error: "message and scheduled_at required" }, 400);
 
-  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
   const page = await c.env.DB.prepare(
@@ -35,7 +35,7 @@ schedule.post("/schedule/bulk", async (c) => {
   if (!Array.isArray(posts) || posts.length === 0) return c.json({ error: "posts array required" }, 400);
   if (posts.length > 20) return c.json({ error: "Maximum 20 posts per bulk schedule" }, 400);
 
-  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
 
   const page = await c.env.DB.prepare(

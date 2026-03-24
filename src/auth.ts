@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
+import { setUserPage, getUserPageId } from "./helpers";
 
 interface Env {
   DB: D1Database;
@@ -165,13 +166,10 @@ auth.get("/callback", async (c) => {
       ).run();
     }
 
-    // Store first page in KV as default
+    // Store first page in KV as default (per-user)
     if (pages.length > 0) {
-      await c.env.KV.put("fb_page_token", pages[0].access_token);
-      await c.env.KV.put("fb_page_id", pages[0].id);
-      await c.env.KV.put("fb_page_name", pages[0].name);
+      await setUserPage(c.env.KV, profile.id, pages[0].id, pages[0].access_token, pages[0].name);
     }
-    await c.env.KV.put("fb_user_id", profile.id);
   } catch (e: any) {
     console.error("DB save error:", e.message);
     return c.redirect(`/?error=db_error&detail=${encodeURIComponent(e.message)}`);
@@ -236,7 +234,7 @@ auth.get("/api/pages", async (c) => {
     "SELECT page_id, page_name, category, picture_url FROM user_pages WHERE user_fb_id = ?"
   ).bind(session.fb_id).all();
 
-  const selectedPageId = await c.env.KV.get("fb_page_id");
+  const selectedPageId = await getUserPageId(c.env.KV, session.fb_id);
 
   return c.json({
     pages: results.map((p: any) => ({
@@ -263,9 +261,7 @@ auth.post("/api/pages/select", async (c) => {
 
   if (!page) return c.json({ error: "Page not found" }, 404);
 
-  await c.env.KV.put("fb_page_token", page.page_token);
-  await c.env.KV.put("fb_page_id", page.page_id);
-  await c.env.KV.put("fb_page_name", page.page_name);
+  await setUserPage(c.env.KV, session.fb_id, page.page_id, page.page_token, page.page_name);
 
   return c.json({ ok: true, selected: { id: page.page_id, name: page.page_name } });
 });

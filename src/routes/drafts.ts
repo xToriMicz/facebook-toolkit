@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq } from "../helpers";
+import { Env, getSessionFromReq, getUserPageId } from "../helpers";
 
 const drafts = new Hono<{ Bindings: Env }>();
 
@@ -51,7 +51,7 @@ drafts.post("/drafts/:id/publish", async (c) => {
   ).bind(id, session.fb_id).first<any>();
   if (!draft) return c.json({ error: "Draft not found" }, 404);
 
-  const pageId = draft.page_id || await c.env.KV.get("fb_page_id");
+  const pageId = draft.page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!pageId) return c.json({ error: "No page selected" }, 400);
   const page = await c.env.DB.prepare(
     "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"

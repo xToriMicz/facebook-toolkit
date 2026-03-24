@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq, kvCache } from "../helpers";
+import { Env, getSessionFromReq, kvCache, getUserPageId, getUserPageToken } from "../helpers";
 
 const analytics = new Hono<{ Bindings: Env }>();
 
@@ -10,7 +10,7 @@ analytics.get("/pages", async (c) => {
   const { results } = await c.env.DB.prepare(
     "SELECT page_id, page_name, category, picture_url FROM user_pages WHERE user_fb_id = ?"
   ).bind(session.fb_id).all();
-  const selectedPageId = await c.env.KV.get("fb_page_id");
+  const selectedPageId = await getUserPageId(c.env.KV, session.fb_id);
   return c.json({
     pages: (results || []).map((p: any) => ({
       id: p.page_id,
@@ -156,7 +156,7 @@ analytics.get("/analytics/best-time", async (c) => {
 analytics.post("/analytics/refresh", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const targetPageId = await c.env.KV.get("fb_page_id");
+  const targetPageId = await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page" }, 400);
   const page = await c.env.DB.prepare(
     "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"

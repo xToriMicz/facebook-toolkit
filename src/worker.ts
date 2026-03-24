@@ -161,11 +161,9 @@ app.post("/auth/deauthorize", async (c) => {
   if (!payload) return c.json({ error: "Invalid signed_request" }, 403);
   const userId = payload.user_id;
   const confirmationCode = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  const storedUserId = await c.env.KV.get("fb_user_id");
-  if (storedUserId === userId) {
-    await c.env.KV.delete("fb_page_token"); await c.env.KV.delete("fb_page_id");
-    await c.env.KV.delete("fb_page_name"); await c.env.KV.delete("fb_user_id");
-  }
+  // Clear per-user KV data
+  const { clearUserPage } = await import("./helpers");
+  await clearUserPage(c.env.KV, userId);
   await c.env.DB.prepare(
     "INSERT INTO deletion_requests (fb_user_id, confirmation_code, status, created_at) VALUES (?, ?, 'completed', ?)"
   ).bind(userId, confirmationCode, new Date().toISOString()).run();

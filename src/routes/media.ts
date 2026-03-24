@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { Env, getSessionFromReq } from "../helpers";
+import { Env, getSessionFromReq, getUserPageId, getUserPageToken, setUserPage } from "../helpers";
 
 const media = new Hono<{ Bindings: Env }>();
 
@@ -9,7 +9,7 @@ media.post("/reels", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { video_url, description, page_id } = await c.req.json();
   if (!video_url) return c.json({ error: "video_url required" }, 400);
-  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
   const page = await c.env.DB.prepare(
     "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
@@ -47,7 +47,7 @@ media.post("/stories", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { image_url, video_url, page_id } = await c.req.json();
   if (!image_url && !video_url) return c.json({ error: "image_url or video_url required" }, 400);
-  const targetPageId = page_id || await c.env.KV.get("fb_page_id");
+  const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
   if (!targetPageId) return c.json({ error: "No page selected" }, 400);
   const page = await c.env.DB.prepare(
     "SELECT page_token FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
@@ -75,7 +75,7 @@ media.get("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const [pageId, pageToken, pageName, apifyKey, geminiKey, falKey, imageProvider] = await Promise.all([
-    c.env.KV.get("fb_page_id"), c.env.KV.get("fb_page_token"), c.env.KV.get("fb_page_name"),
+    getUserPageId(c.env.KV, session.fb_id), getUserPageToken(c.env.KV, session.fb_id), c.env.KV.get(`u:${session.fb_id}:page_name`),
     c.env.KV.get("apify_api_key"), c.env.KV.get("gemini_api_key"), c.env.KV.get("fal_api_key"),
     c.env.KV.get("image_provider"),
   ]);
@@ -86,9 +86,7 @@ media.post("/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { page_id, page_token, page_name, apify_api_key, gemini_api_key, fal_api_key, image_provider } = await c.req.json();
-  if (page_id) await c.env.KV.put("fb_page_id", page_id);
-  if (page_token) await c.env.KV.put("fb_page_token", page_token);
-  if (page_name) await c.env.KV.put("fb_page_name", page_name);
+  if (page_id && page_token) await setUserPage(c.env.KV, session.fb_id, page_id, page_token, page_name || "");
   // Shopee/Apify key
   if (apify_api_key !== undefined) {
     if (apify_api_key) await c.env.KV.put("apify_api_key", apify_api_key);
