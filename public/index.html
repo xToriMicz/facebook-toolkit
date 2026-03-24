@@ -831,7 +831,16 @@
     // Auth
     function checkAuth() {
       fetch('/api/me', { credentials: 'same-origin' }).then(r => r.json()).then(data => {
-        if (data.logged_in && data.user) { currentUser = data.user; userPages = data.user.pages || []; showApp(data.user); populatePages(userPages); loadHistory(); loadComposeDrafts(); }
+        if (data.logged_in && data.user) {
+          currentUser = data.user;
+          showApp(data.user);
+          // Fetch pages fresh from DB (not stale session data)
+          fetch('/api/pages', { credentials: 'same-origin' }).then(r => r.json()).then(pd => {
+            userPages = pd.pages || data.user.pages || [];
+            populatePages(userPages);
+          }).catch(() => { userPages = data.user.pages || []; populatePages(userPages); });
+          loadHistory(); loadComposeDrafts();
+        }
         else showLogin();
       }).catch(() => showLogin());
     }
@@ -854,6 +863,12 @@
     function populatePages(pages) {
       const sel = document.getElementById('pageSelect');
       sel.innerHTML = '<option value="">-- เลือกเพจ --</option>';
+      if (!pages || !pages.length) {
+        sel.innerHTML = '<option value="">ไม่พบเพจ — สร้างเพจ Facebook ก่อน</option>';
+        var info = document.getElementById('pageInfo');
+        if(info) { info.classList.remove('hidden'); info.innerHTML = '<div style="padding:12px;font-size:0.82rem;color:var(--warning);line-height:1.6"><strong>ไม่พบเพจ Facebook</strong><br>คุณต้องมีเพจ Facebook อย่างน้อย 1 เพจ และเป็นแอดมินของเพจนั้น<br><a href="https://www.facebook.com/pages/create" target="_blank" rel="noopener" style="color:var(--accent)">สร้างเพจใหม่</a> แล้วกลับมา Login ใหม่</div>'; }
+        return;
+      }
       pages.forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
