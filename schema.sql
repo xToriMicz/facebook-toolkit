@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS posts (
   message TEXT,
   image_url TEXT,
   fb_post_id TEXT,
+  page_id TEXT,
+  user_fb_id TEXT,
   status TEXT DEFAULT 'posted',
   created_at TEXT NOT NULL
 );
@@ -42,6 +44,7 @@ CREATE TABLE IF NOT EXISTS scheduled_posts (
   scheduled_at TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
   fb_post_id TEXT,
+  error_message TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_scheduled_status ON scheduled_posts(status, scheduled_at);

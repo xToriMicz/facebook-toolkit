@@ -1775,6 +1775,7 @@
     async function bulkSchedule() {
       const checks = document.querySelectorAll('.bulk-draft-check:checked');
       const st = document.getElementById('bulkStatus');
+      if (!selectedPage) { st.textContent = 'กรุณาเลือกเพจก่อน'; st.className = 'toast err'; return; }
       if (checks.length === 0) { st.textContent = 'เลือกฉบับร่างก่อน'; st.className = 'toast err'; return; }
       const startInput = document.getElementById('bulkStartTime').value;
       if (!startInput) { st.textContent = 'กรุณาเลือกเวลาเริ่มต้น'; st.className = 'toast err'; return; }
@@ -1786,7 +1787,7 @@
         posts.push({ message: cb.dataset.msg, scheduled_at: schedAt.toISOString() });
       });
       try {
-        const r = await fetch('/api/schedule/bulk', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts }) });
+        const r = await fetch('/api/schedule/bulk', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts, page_id: selectedPage.id }) });
         const d = await r.json();
         if (d.ok) { st.textContent = 'ตั้งเวลา ' + d.scheduled + ' โพสสำเร็จ!'; st.className = 'toast ok'; loadSchedule(); loadBulkDrafts(); }
         else { st.textContent = d.error || 'Error'; st.className = 'toast err'; }
