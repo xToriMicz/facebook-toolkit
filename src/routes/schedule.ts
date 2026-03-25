@@ -60,7 +60,7 @@ schedule.get("/schedule", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const { results } = await c.env.DB.prepare(
-    "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? ORDER BY sp.scheduled_at ASC"
+    "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status = 'pending' ORDER BY sp.scheduled_at ASC"
   ).bind(session.fb_id).all();
   return c.json({ scheduled: results, total: results.length });
 });
