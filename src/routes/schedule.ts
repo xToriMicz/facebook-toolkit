@@ -107,16 +107,20 @@ export async function processScheduledPosts(env: Env) {
         result = await res.json();
       }
       if (result.error) {
-        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(JSON.stringify(result.error).slice(0, 500), post.id).run();
       } else {
         const fbPostId = result.id || result.post_id || null;
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
-        await env.DB.prepare(
-          "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
-        ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, new Date().toISOString()).run();
+        try {
+          await env.DB.prepare(
+            "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
+          ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, new Date().toISOString()).run();
+        } catch {
+          // posts table insert is non-critical — scheduled_posts status already updated
+        }
       }
-    } catch {
-      await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+    } catch (e) {
+      await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(String(e).slice(0, 500), post.id).run();
     }
   }
 }
