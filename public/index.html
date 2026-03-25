@@ -1211,7 +1211,7 @@
             var preview = insEsc((p.message || '').substring(0, 50));
             var full = insEsc(p.message || '');
             return '<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.sched-full\');f.style.display=f.style.display===\'block\'?\'none\':\'block\'">' +
-              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem"><span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + (p.page_name ? '<span style="color:var(--accent);font-size:0.72rem">📄 ' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
               '<div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">' + full + '</div>' +
             '</div>';
           }).join('');
@@ -1599,7 +1599,7 @@
             '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">' +
               '<div style="flex:1;min-width:0">' +
                 '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
-                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">' + (s.page_name ? '<span style="color:var(--accent)">📄 ' + insEsc(s.page_name) + '</span> · ' : '') + '📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
               '</div>' + cancelBtn +
             '</div>' +
             '<div class="sched-full" style="display:none;padding:0 12px 10px;font-size:0.78rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;border-top:1px solid var(--border);margin:0 12px;padding-top:8px">' + msg + '</div>' +
