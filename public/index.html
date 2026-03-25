@@ -1211,7 +1211,7 @@
             var preview = insEsc((p.message || '').substring(0, 50));
             var full = insEsc(p.message || '');
             return '<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.sched-full\');f.style.display=f.style.display===\'block\'?\'none\':\'block\'">' +
-              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + (p.page_name ? '<span style="color:var(--accent);font-size:0.72rem">📄 ' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + (p.page_name ? (p.page_picture ? '<img src="' + insEsc(p.page_picture) + '" style="width:14px;height:14px;border-radius:50%;object-fit:cover">' : '') + '<span style="color:#3b82f6;font-size:0.72rem;font-weight:500">' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
               '<div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">' + full + '</div>' +
             '</div>';
           }).join('');
@@ -1588,6 +1588,15 @@
           list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
           return;
         }
+        var pageColors = {};
+        var colorPalette = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#84cc16'];
+        var colorIdx = 0;
+        data.scheduled.forEach(function(s) {
+          if (s.page_id && !pageColors[s.page_id]) {
+            pageColors[s.page_id] = colorPalette[colorIdx % colorPalette.length];
+            colorIdx++;
+          }
+        });
         list.innerHTML = data.scheduled.map(function(s) {
           var msg = insEsc(s.message || '');
           var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
@@ -1595,11 +1604,14 @@
           var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : '#ef4444';
           var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : 'ล้มเหลว';
           var cancelBtn = s.status === 'pending' ? '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;margin-left:8px">ยกเลิก</button>' : '';
-          return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);cursor:pointer" onclick="this.querySelector(\'.sched-full\').style.display=this.querySelector(\'.sched-full\').style.display===\'block\'?\'none\':\'block\'">' +
+          var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
+          var pageBadge = s.page_name ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">' + (s.page_picture ? '<img src="' + insEsc(s.page_picture) + '" style="width:16px;height:16px;border-radius:50%;object-fit:cover">' : '<span style="width:16px;height:16px;border-radius:50%;background:' + pgColor + ';display:inline-block;flex-shrink:0"></span>') + '<span style="font-size:0.72rem;color:' + pgColor + ';font-weight:500">' + insEsc(s.page_name) + '</span></div>' : '';
+          return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + pgColor + ';border:1px solid var(--border);border-left:3px solid ' + pgColor + ';cursor:pointer" onclick="this.querySelector(\'.sched-full\').style.display=this.querySelector(\'.sched-full\').style.display===\'block\'?\'none\':\'block\'">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px">' +
               '<div style="flex:1;min-width:0">' +
+                pageBadge +
                 '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
-                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">' + (s.page_name ? '<span style="color:var(--accent)">📄 ' + insEsc(s.page_name) + '</span> · ' : '') + '📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
               '</div>' + cancelBtn +
             '</div>' +
             '<div class="sched-full" style="display:none;padding:0 12px 10px;font-size:0.78rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;border-top:1px solid var(--border);margin:0 12px;padding-top:8px">' + msg + '</div>' +
