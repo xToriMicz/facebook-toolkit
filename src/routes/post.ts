@@ -150,24 +150,23 @@ post.get("/posts", async (c) => {
 
   if (withEngagement && results.length > 0) {
     const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
-    const token = await getUserPageToken(c.env.KV, session.fb_id, encKey);
-    if (token) {
-      const enriched = await Promise.all(results.map(async (post: any) => {
-        if (!post.fb_post_id) return { ...post, engagement: null };
-        const eng = await kvCache(c.env.KV, `eng:${post.fb_post_id}`, 300, async () => {
-          try {
-            const res = await fetch(
-              `https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${token}`
-            );
-            const data = await res.json() as any;
-            if (data.error) return null;
-            return { likes: data.reactions?.summary?.total_count || 0, comments: data.comments?.summary?.total_count || 0, shares: data.shares?.count || 0 };
-          } catch { return null; }
-        });
-        return { ...post, engagement: eng };
-      }));
-      return c.json({ posts: enriched, total: enriched.length, pages });
-    }
+    const enriched = await Promise.all(results.map(async (post: any) => {
+      if (!post.fb_post_id || !post.page_id) return { ...post, engagement: null };
+      const token = await getDecryptedPageToken(c.env.DB, session.fb_id, post.page_id, encKey);
+      if (!token) return { ...post, engagement: null };
+      const eng = await kvCache(c.env.KV, `eng:${post.fb_post_id}`, 300, async () => {
+        try {
+          const res = await fetch(
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=reactions.summary(true),comments.summary(true),shares&access_token=${token}`
+          );
+          const data = await res.json() as any;
+          if (data.error) return null;
+          return { likes: data.reactions?.summary?.total_count || 0, comments: data.comments?.summary?.total_count || 0, shares: data.shares?.count || 0 };
+        } catch { return null; }
+      });
+      return { ...post, engagement: eng };
+    }));
+    return c.json({ posts: enriched, total: enriched.length, pages });
   }
   return c.json({ posts: results, total: results.length, pages });
 });
