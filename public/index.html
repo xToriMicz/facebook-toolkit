@@ -905,7 +905,7 @@
         if(e) e.classList.add('hidden');
       });
       const tabEl = document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1));
-      if(tabEl) tabEl.classList.remove('hidden');
+      if(tabEl) { tabEl.classList.remove('hidden'); setTimeout(function(){ tabEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); }
       if(tab==='history') loadHistory();
       if(tab==='templates') loadTemplates();
       if(tab==='compose') { loadComposeTemplates(); loadAiImageTemplates(); }
