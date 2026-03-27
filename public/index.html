@@ -984,8 +984,7 @@
         const form = new FormData();
         form.append('file', new File([blob], file.name, { type: isVideo ? file.type : 'image/jpeg' }));
         try {
-          const endpoint = isVideo ? '/api/upload-video' : '/api/upload';
-          const r = await fetch(endpoint, { method:'POST', credentials:'same-origin', body:form });
+          const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
           const d = await r.json();
           if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;img.data=isVideo?thumbUrl:d.url;uploadedImageUrl=d.url;} renderImagePreviews(); }
           else { toast('err', d.error || 'อัพโหลดไม่สำเร็จ'); }
