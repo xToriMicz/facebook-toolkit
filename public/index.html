@@ -1237,7 +1237,7 @@
           : { message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id, scheduled_at:scheduledAt };
         const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
         const d = await r.json();
-        if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; loadScheduled(); }
+        if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; document.getElementById('imagePreview').innerHTML=''; uploadedImages=[]; uploadedImageUrl=null; uploadedImageData=null; var dz=document.getElementById('dropZone'); dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; loadScheduled(); }
         else toast('err', d.error || 'ตั้งเวลาไม่สำเร็จ');
       } catch(e) { toast('err','เกิดข้อผิดพลาด'); }
     }
