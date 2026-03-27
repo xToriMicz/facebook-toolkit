@@ -25,7 +25,17 @@ async function textToImagePrompt(text: string, env: Env, fbId: string): Promise<
   if (!apiKey) throw new Error("No AI API key configured");
 
   const result = await callAI(provider, apiKey, model,
-    `You are an image prompt engineer. Convert the following Thai text into a concise English image generation prompt (max 200 chars). Focus on visual elements, style, and composition. Output ONLY the prompt, nothing else.\n\nText: ${text}`,
+    `You are an image prompt engineer for social media posts. Convert the following Thai text into an English image generation prompt (max 300 chars).
+
+Rules:
+- Create a photorealistic or high-quality illustration style image (NOT infographic, NOT clip art, NOT flat icons)
+- Focus on emotion, atmosphere, and visual storytelling
+- Include lighting, color mood, and composition details
+- Good example: "A person looking worried at a gas station pump showing high prices, warm sunset lighting, cinematic composition, shallow depth of field"
+- Bad example: "Infographic about fuel prices with icons and text labels"
+- Output ONLY the prompt, nothing else
+
+Text: ${text}`,
     endpoint
   );
   return result.text.trim();

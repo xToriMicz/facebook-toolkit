@@ -2410,6 +2410,22 @@
     }
 
     function addAiImageToPreview(imageUrl) {
+      // Show large preview modal first
+      showAiImagePreview(imageUrl);
+    }
+    function showAiImagePreview(imageUrl) {
+      var overlay = document.createElement('div');
+      overlay.id = 'aiPreviewOverlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+      overlay.innerHTML = '<img src="'+insEsc(imageUrl)+'" style="max-width:90%;max-height:70vh;border-radius:12px;border:2px solid rgba(255,255,255,0.1)">' +
+        '<div style="margin-top:16px;display:flex;gap:12px">' +
+        '<button onclick="acceptAiImage(\''+insEsc(imageUrl)+'\')" style="padding:10px 24px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">✅ ใช้รูปนี้</button>' +
+        '<button onclick="rejectAiImage()" style="padding:10px 24px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">🔄 สร้างใหม่</button>' +
+        '<button onclick="closeAiPreview()" style="padding:10px 24px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">✕ ไม่ใช้</button>' +
+        '</div>';
+      document.body.appendChild(overlay);
+    }
+    function acceptAiImage(imageUrl) {
       uploadedImages.push({ data: imageUrl, name: 'ai-generated.jpg', url: imageUrl, sizeInfo: 'AI', isVideo: false });
       renderImagePreviews();
       uploadedImageUrl = imageUrl;
@@ -2418,6 +2434,15 @@
       var imgCount = uploadedImages.filter(function(i){return !i.isVideo;}).length;
       var vidCount = uploadedImages.filter(function(i){return i.isVideo;}).length;
       dz.textContent = '✅ '+(imgCount?imgCount+' รูป':'')+(imgCount&&vidCount?' + ':'')+(vidCount?vidCount+' วิดีโอ':'');
+      closeAiPreview();
+    }
+    function rejectAiImage() {
+      closeAiPreview();
+      generateAiImageAuto();
+    }
+    function closeAiPreview() {
+      var el = document.getElementById('aiPreviewOverlay');
+      if (el) el.remove();
     }
 
     // Legacy — keep for backward compat
