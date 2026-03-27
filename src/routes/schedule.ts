@@ -65,6 +65,33 @@ schedule.get("/schedule", async (c) => {
   return c.json({ scheduled: results, total: results.length });
 });
 
+// PUT /api/schedule/:id — update pending scheduled post
+schedule.put("/schedule/:id", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const id = c.req.param("id");
+  const { message, image_url, scheduled_at } = await c.req.json();
+
+  const existing = await c.env.DB.prepare(
+    "SELECT id FROM scheduled_posts WHERE id = ? AND status = 'pending' AND user_fb_id = ?"
+  ).bind(id, session.fb_id).first();
+  if (!existing) return c.json({ error: "Post not found or already posted" }, 404);
+
+  const updates: string[] = [];
+  const values: any[] = [];
+  if (message !== undefined) { updates.push("message = ?"); values.push(message); }
+  if (image_url !== undefined) { updates.push("image_url = ?"); values.push(image_url || null); }
+  if (scheduled_at !== undefined) { updates.push("scheduled_at = ?"); values.push(scheduled_at); }
+  if (updates.length === 0) return c.json({ error: "Nothing to update" }, 400);
+
+  values.push(id, session.fb_id);
+  await c.env.DB.prepare(
+    `UPDATE scheduled_posts SET ${updates.join(", ")} WHERE id = ? AND user_fb_id = ?`
+  ).bind(...values).run();
+
+  return c.json({ ok: true });
+});
+
 // DELETE /api/schedule/:id
 schedule.delete("/schedule/:id", async (c) => {
   const session = await getSessionFromReq(c);
