@@ -454,7 +454,7 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
-            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">ตัวอักษร</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
+            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">คำ</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               <select id="aiTone" onchange="onStyleChange()" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
                 <option value="general" selected>📝 ทั่วไป</option>
@@ -463,7 +463,7 @@
               <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
             </div>
           </div>
-          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: 80-150 ตัวอักษร, Hook→Benefit→CTA</div>
+          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 250 คำ, เขียนอิสระ</div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
           </div>
@@ -1099,7 +1099,7 @@
     }
     function applyTemplate() {
       const sel=document.getElementById('tplSelect');
-      if(sel&&sel.value){document.getElementById('message').value=sel.value;document.getElementById('charCount').textContent=sel.value.length;sel.selectedIndex=0;}
+      if(sel&&sel.value){document.getElementById('message').value=sel.value;document.getElementById('charCount').textContent=countWords(sel.value);sel.selectedIndex=0;}
     }
 
     async function loadTemplates() {
@@ -1250,16 +1250,18 @@
       updateCharColor();
     }
 
+    function countWords(text) { return text.trim() ? text.trim().split(/\s+/).length : 0; }
     function updateCharColor() {
-      const len = document.getElementById('message').value.length;
+      const text = document.getElementById('message').value;
+      const words = countWords(text);
       const style = document.getElementById('aiTone').value;
       const guide = STYLE_GUIDE[style] || STYLE_GUIDE.general;
       const countEl = document.getElementById('charCount');
       const hintEl = document.getElementById('charHint');
-      countEl.textContent = len;
-      if (len === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
-      else if (len <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
-      else if (len <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
+      countEl.textContent = words;
+      if (words === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
+      else if (words <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
+      else if (words <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
       else { countEl.style.color = '#ef4444'; hintEl.textContent = '✗ ยาวเกิน'; hintEl.style.color = '#ef4444'; }
     }
 
@@ -1587,7 +1589,8 @@
         const text = d.text || '';
         const tags = (d.hashtags || []).join(' ');
         ta.value = text + (tags ? '\n\n' + tags : '');
-        document.getElementById('charCount').textContent = ta.value.length;
+        document.getElementById('charCount').textContent = countWords(ta.value);
+        updateCharColor();
       } catch(e) { toast('err', 'AI error: ' + e.message); }
       btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
     }
