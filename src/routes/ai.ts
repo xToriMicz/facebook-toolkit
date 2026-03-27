@@ -92,25 +92,26 @@ ai.post("/ai-write", async (c) => {
   const endpoint = aiSettings?.endpoint_url || "https://api.anthropic.com/v1/messages";
   if (!apiKey) return c.json({ error: "No API key configured. Go to Settings > AI to add one." }, 400);
 
+  const maxTokens = tone === "professional" ? 4096 : 2048;
   const userMsg = `เขียน caption Facebook เกี่ยวกับ: ${topic}`;
 
   try {
     let responseText = "";
     if (provider === "openai") {
       const res = await fetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }] }) });
+        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userMsg }] }) });
       const data = await res.json() as any;
       if (data.error) return c.json({ error: data.error.message }, 500);
       responseText = data.choices?.[0]?.message?.content || "";
     } else if (provider === "google") {
       const res = await fetch(`${endpoint}/${model}:generateContent?key=${apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMsg}` }] }] }) });
+        body: JSON.stringify({ contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMsg}` }] }], generationConfig: { maxOutputTokens: maxTokens } }) });
       const data = await res.json() as any;
       if (data.error) return c.json({ error: data.error.message }, 500);
       responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     } else {
       const res = await fetch(endpoint, { method: "POST", headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-        body: JSON.stringify({ model, max_tokens: 1024, messages: [{ role: "user", content: userMsg }], system: systemPrompt }) });
+        body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: "user", content: userMsg }], system: systemPrompt }) });
       const data = await res.json() as any;
       if (data.error) return c.json({ error: data.error.message }, 500);
       responseText = data.content?.[0]?.text || "";
@@ -118,10 +119,17 @@ ai.post("/ai-write", async (c) => {
 
     let cleaned = responseText.trim();
     if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+    // Try to extract JSON from response (AI sometimes wraps in extra text)
+    const jsonMatch = cleaned.match(/\{[\s\S]*"text"\s*:\s*"[\s\S]*"\s*[\s\S]*\}/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : cleaned;
     try {
-      const parsed = JSON.parse(cleaned);
+      const parsed = JSON.parse(jsonStr);
       return c.json({ ok: true, text: parsed.text || "", hashtags: parsed.hashtags || [], provider });
-    } catch { return c.json({ ok: true, text: cleaned, hashtags: [], provider }); }
+    } catch {
+      // If JSON parse fails, use the raw text but strip any JSON artifacts
+      const fallback = cleaned.replace(/^\s*\{?\s*"text"\s*:\s*"?/, "").replace(/"?\s*,?\s*"hashtags".*$/, "").replace(/"\s*\}\s*$/, "").trim();
+      return c.json({ ok: true, text: fallback || cleaned, hashtags: [], provider });
+    }
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 });
 
