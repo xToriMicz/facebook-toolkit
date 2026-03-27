@@ -77,10 +77,11 @@ ai.post("/ai-write", async (c) => {
 - โทน: ${config.desc}
 - ความยาว: ${config.wordCount} (สำคัญมาก! ต้องเขียนให้ครบตามจำนวนคำที่กำหนด ห้ามสั้นกว่านี้)
 - ใส่อีโมจิตามความเหมาะสม
+- ห้ามใช้ markdown เด็ดขาด (ห้าม **, ห้าม *, ห้าม #, ห้าม ``` ) เพราะ Facebook ไม่รองรับ ใช้ emoji แทนหัวข้อ
 - แนะนำ hashtag ภาษาไทย 3-5 อัน
 - ตอบเป็น JSON: {"text":"caption ที่เขียน","hashtags":["#tag1","#tag2"]}
 - ตอบ JSON เท่านั้น ไม่มีข้อความอื่น
-- ย้ำอีกครั้ง: เนื้อหาต้องยาว ${config.wordCount} จริงๆ นับคำให้ครบ`;
+- ย้ำอีกครั้ง: เนื้อหาต้องยาว ${config.wordCount} จริงๆ นับคำให้ครบ ห้ามใช้ markdown`;
 
   const aiSettings = await c.env.DB.prepare(
     "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
@@ -119,12 +120,14 @@ ai.post("/ai-write", async (c) => {
 
     let cleaned = responseText.trim();
     if (cleaned.startsWith("```")) cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+    // Strip markdown from text
+    function stripMd(t: string): string { return t.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/```[^`]*```/g, ""); }
     // Try to extract JSON from response (AI sometimes wraps in extra text)
     const jsonMatch = cleaned.match(/\{[\s\S]*"text"\s*:\s*"[\s\S]*"\s*[\s\S]*\}/);
     const jsonStr = jsonMatch ? jsonMatch[0] : cleaned;
     try {
       const parsed = JSON.parse(jsonStr);
-      return c.json({ ok: true, text: parsed.text || "", hashtags: parsed.hashtags || [], provider });
+      return c.json({ ok: true, text: stripMd(parsed.text || ""), hashtags: parsed.hashtags || [], provider });
     } catch {
       // If JSON parse fails, use the raw text but strip any JSON artifacts
       const fallback = cleaned.replace(/^\s*\{?\s*"text"\s*:\s*"?/, "").replace(/"?\s*,?\s*"hashtags".*$/, "").replace(/"\s*\}\s*$/, "").trim();
