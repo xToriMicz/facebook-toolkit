@@ -65,23 +65,22 @@ ai.post("/ai-write", async (c) => {
   if (!topic) return c.json({ error: "topic required" }, 400);
   if (topic.length > 2000) return c.json({ error: "topic too long (max 2000)" }, 400);
 
-  const toneMap: Record<string, string> = {
-    "general": "เขียนอิสระ น่าสนใจ อ่านง่าย ไม่เกิน 250 คำ",
-    "professional": "ให้ความรู้ลึก 300-500 คำ เริ่มด้วย hook แรง แบ่งหัวข้อย่อย มีสถิติ/fact ปิดด้วย takeaway + ถามคำถาม",
+  const toneConfig: Record<string, { desc: string; wordCount: string }> = {
+    "general": { desc: "เขียนอิสระ น่าสนใจ อ่านง่าย", wordCount: "150-250 คำ" },
+    "professional": { desc: "ให้ความรู้ลึก เริ่มด้วย hook แรง 2-3 บรรทัดที่ทำให้คนต้องกด ดูเพิ่มเติม แบ่งเป็นหัวข้อย่อย ใช้ emoji เป็น bullet มีสถิติ/fact ปิดด้วย takeaway ที่ปฏิบัติได้ + ถามคำถามให้คนคอมเมนต์", wordCount: "300-500 คำ" },
   };
-  const formatMap: Record<string, string> = { "สั้น": "1-2 บรรทัด สั้นกระชับ", "ปานกลาง": "3-5 บรรทัด", "ยาว": "6-10 บรรทัด ละเอียด" };
-  const toneDesc = toneMap[tone || "general"] || toneMap["general"];
-  const formatDesc = formatMap[format || "ปานกลาง"] || formatMap["ปานกลาง"];
+  const config = toneConfig[tone || "general"] || toneConfig["general"];
 
   const systemPrompt = `คุณเป็น Social Media Content Writer มืออาชีพ เขียนเป็นภาษาไทย
-กฎ:
+กฎสำคัญ:
 - เขียน caption สำหรับโพส Facebook
-- โทน: ${toneDesc}
-- ความยาว: ${formatDesc}
+- โทน: ${config.desc}
+- ความยาว: ${config.wordCount} (สำคัญมาก! ต้องเขียนให้ครบตามจำนวนคำที่กำหนด ห้ามสั้นกว่านี้)
 - ใส่อีโมจิตามความเหมาะสม
 - แนะนำ hashtag ภาษาไทย 3-5 อัน
 - ตอบเป็น JSON: {"text":"caption ที่เขียน","hashtags":["#tag1","#tag2"]}
-- ตอบ JSON เท่านั้น ไม่มีข้อความอื่น`;
+- ตอบ JSON เท่านั้น ไม่มีข้อความอื่น
+- ย้ำอีกครั้ง: เนื้อหาต้องยาว ${config.wordCount} จริงๆ นับคำให้ครบ`;
 
   const aiSettings = await c.env.DB.prepare(
     "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
