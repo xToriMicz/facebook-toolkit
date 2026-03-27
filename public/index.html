@@ -23,6 +23,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
+    /* Progress Bar */
+    .progress-bar { width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0;display:none }
+    .progress-bar.active { display:block }
+    .progress-bar .bar { height:100%;background:linear-gradient(90deg,#8b5cf6,#6366f1,#8b5cf6);background-size:200% 100%;border-radius:2px;animation:progress-shimmer 1.5s ease-in-out infinite }
+    .progress-bar .bar.done { animation:none;background:#22c55e;width:100%!important }
+    @keyframes progress-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
     :root {
       --bg: #0c0c14;
       --bg-card: #141420;
@@ -458,6 +464,7 @@
             </div>
           </div>
           <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 800 ตัวอักษร, เขียนอิสระ</div>
+          <div class="progress-bar" id="aiWriteProgress"><div class="bar" style="width:70%"></div></div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
           </div>
@@ -490,9 +497,11 @@
               <textarea id="aiImagePrompt" rows="3" placeholder="AI จะสร้าง prompt จากข้อความของคุณ — แก้ไขได้ก่อนกดสร้าง" style="width:100%;padding:6px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;resize:vertical"></textarea>
               <button id="aiImageConfirmBtn" onclick="confirmGenerateImage()" style="margin-top:4px;padding:5px 12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">🎨 สร้างรูปจาก Prompt นี้</button>
             </div>
+            <div class="progress-bar" id="aiImageProgress"><div class="bar" style="width:70%"></div></div>
             <div id="aiImageStatus" style="display:none;margin-top:6px;font-size:0.72rem;color:var(--text-muted)"></div>
           </div>
           <div class="multi-preview" id="imagePreview"></div>
+          <div class="progress-bar" id="postProgress"><div class="bar" style="width:70%"></div></div>
           <div class="actions">
             <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
             <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
@@ -1033,6 +1042,7 @@
       if(!msg && !uploadedImageUrl) { toast('err','เขียนข้อความหรืออัพโหลดรูป/วิดีโอ'); return; }
       if(!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
       const btn=document.getElementById('postBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
+      showProgress('postProgress');
       try {
         const videoFile = uploadedImages.find(i=>i.isVideo && i.url);
         const imageFiles = uploadedImages.filter(i=>!i.isVideo && i.url);
@@ -1049,9 +1059,9 @@
           r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
         }
         d=await r.json();
-        if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; uploadedImages=[]; document.getElementById('charCount').textContent='0'; loadHistory(); }
-        else { const detail = d.photo_errors ? ' ('+d.photo_errors.join(', ')+')' : ''; toast('err',(d.error||'โพสไม่สำเร็จ')+detail); console.error('Post error:', d); }
-      } catch(e) { toast('err','Error: '+e.message); }
+        if(d.ok) { hideProgress('postProgress',true); toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; uploadedImages=[]; document.getElementById('charCount').textContent='0'; loadHistory(); }
+        else { hideProgress('postProgress'); const detail = d.photo_errors ? ' ('+d.photo_errors.join(', ')+')' : ''; toast('err',(d.error||'โพสไม่สำเร็จ')+detail); console.error('Post error:', d); }
+      } catch(e) { hideProgress('postProgress'); toast('err','Error: '+e.message); }
       btn.disabled=false; btn.innerHTML='📤 โพสลงเพจ';
     }
 
@@ -1614,20 +1624,22 @@
       const ta = document.getElementById('message');
       const topic = ta.value.trim() || 'general social media content';
       const btn = document.getElementById('aiGenBtn');
-      btn.disabled = true; btn.textContent = 'Writing...';
+      btn.disabled = true; btn.textContent = '⏳ กำลังเขียน...';
+      showProgress('aiWriteProgress');
       try {
         const r = await fetch('/api/ai-write', {
           method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'same-origin',
           body: JSON.stringify({ topic, tone: document.getElementById('aiTone').value, format: 'ปานกลาง', style_prompt: (STYLE_GUIDE[document.getElementById('aiTone').value]||{}).prompt })
         });
         const d = await r.json();
-        if (d.error) { toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI เขียนให้'; return; }
+        if (d.error) { hideProgress('aiWriteProgress'); toast('err', d.error); btn.disabled = false; btn.textContent = '✨ AI เขียนให้'; return; }
+        hideProgress('aiWriteProgress', true);
         const text = d.text || '';
         const tags = (d.hashtags || []).join(' ');
         ta.value = text + (tags ? '\n\n' + tags : '');
         document.getElementById('charCount').textContent = ta.value.length;
         updateCharColor();
-      } catch(e) { toast('err', 'AI error: ' + e.message); }
+      } catch(e) { hideProgress('aiWriteProgress'); toast('err', 'AI error: ' + e.message); }
       btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
     }
 
@@ -2379,6 +2391,9 @@
       } catch(e) { /* ignore */ }
     }
 
+    function showProgress(id) { var el=document.getElementById(id); if(el){el.classList.add('active');var bar=el.querySelector('.bar');if(bar)bar.classList.remove('done');} }
+    function hideProgress(id,success) { var el=document.getElementById(id); if(el){var bar=el.querySelector('.bar');if(bar&&success){bar.classList.add('done');setTimeout(function(){el.classList.remove('active');},1500);}else{el.classList.remove('active');}} }
+
     function toggleTextOverlay() {
       var checked = document.getElementById('aiTextOverlay').checked;
       document.getElementById('aiTextOverlayArea').style.display = checked ? '' : 'none';
@@ -2399,15 +2414,17 @@
       var statusEl = document.getElementById('aiImageStatus');
       statusEl.style.display = 'block';
       statusEl.textContent = wantOverlay ? '⏳ AI กำลังสร้างรูป + วาดตัวหนังสือ...' : '⏳ AI กำลังสร้างรูป...';
+      showProgress('aiImageProgress');
       try {
         var r = await fetch('/api/ai-image/generate', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: msg, aspect_ratio: ratio, mode: 'auto', overlay_text: overlayText }) });
         var d = await r.json();
         if (d.ok && d.image_url) {
+          hideProgress('aiImageProgress', true);
           addAiImageToPreview(d.image_url);
           statusEl.textContent = '✅ สร้างรูปสำเร็จ!';
           setTimeout(function(){ statusEl.style.display='none'; }, 3000);
-        } else { statusEl.textContent = ''; statusEl.style.display='none'; toast('err', d.error || 'สร้างรูปไม่สำเร็จ'); }
+        } else { hideProgress('aiImageProgress'); statusEl.textContent = ''; statusEl.style.display='none'; toast('err', d.error || 'สร้างรูปไม่สำเร็จ'); }
       } catch(e) { statusEl.style.display='none'; toast('err', 'เกิดข้อผิดพลาด: ' + e.message); }
     }
 
