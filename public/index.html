@@ -506,6 +506,20 @@
             <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
             <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
             <button class="btn btn-ghost" onclick="saveDraftFromCompose()" style="font-size:0.85rem;padding:12px 18px">📝 บันทึกร่าง</button>
+            <button class="btn btn-ghost" onclick="togglePromptLogs()" style="font-size:0.85rem;padding:12px 18px">📋 Logs</button>
+          </div>
+
+          <!-- Prompt Logs -->
+          <div id="promptLogsSection" style="display:none;margin-top:12px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary)">📋 Prompt Logs</div>
+              <div style="display:flex;gap:6px">
+                <button onclick="loadPromptLogs('all')" class="log-filter-btn active" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ทั้งหมด</button>
+                <button onclick="loadPromptLogs('text')" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ข้อความ</button>
+                <button onclick="loadPromptLogs('image')" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">รูป</button>
+              </div>
+            </div>
+            <div id="promptLogsList" style="max-height:300px;overflow-y:auto"></div>
           </div>
 
           <div id="composeDrafts" style="margin-top:12px"></div>
@@ -1639,6 +1653,7 @@
         ta.value = text + (tags ? '\n\n' + tags : '');
         document.getElementById('charCount').textContent = ta.value.length;
         updateCharColor();
+        savePromptLog('text', topic, text, d.provider || '', document.getElementById('aiTone').value);
       } catch(e) { hideProgress('aiWriteProgress'); toast('err', 'AI error: ' + e.message); }
       btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
     }
@@ -2392,6 +2407,55 @@
     }
 
     function showProgress(id) { var el=document.getElementById(id); if(el){el.classList.add('active');var bar=el.querySelector('.bar');if(bar)bar.classList.remove('done');} }
+
+    // Prompt Logs
+    function togglePromptLogs() {
+      var el = document.getElementById('promptLogsSection');
+      var show = el.style.display === 'none';
+      el.style.display = show ? '' : 'none';
+      if (show) loadPromptLogs('all');
+    }
+    async function loadPromptLogs(type) {
+      var el = document.getElementById('promptLogsList');
+      var btns = document.querySelectorAll('.log-filter-btn');
+      btns.forEach(function(b){ b.classList.remove('active'); b.style.background='var(--bg)'; });
+      event.target.classList.add('active'); event.target.style.background='var(--accent)'; event.target.style.color='#fff';
+      try {
+        var url = '/api/prompt-logs?limit=20';
+        if (type && type !== 'all') url += '&type=' + type;
+        var r = await fetch(url, { credentials: 'same-origin' });
+        var d = await r.json();
+        if (!d.logs || !d.logs.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.75rem;padding:20px">ยังไม่มี logs</div>'; return; }
+        el.innerHTML = d.logs.map(function(log) {
+          var icon = log.type === 'image' ? '🎨' : '✍️';
+          var time = new Date(log.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+          var promptPreview = (log.prompt || '').slice(0, 100) + (log.prompt && log.prompt.length > 100 ? '...' : '');
+          var resultPreview = (log.result || '').slice(0, 80) + (log.result && log.result.length > 80 ? '...' : '');
+          var thumb = log.image_url ? '<img src="'+insEsc(log.image_url)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">' : '';
+          var meta = [log.model, log.tone, log.aspect_ratio, log.overlay_text].filter(Boolean).join(' | ');
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">' +
+            '<div style="display:flex;gap:8px;align-items:start">' + thumb +
+            '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
+            '<span style="font-size:0.72rem;color:var(--text-muted)">' + icon + ' ' + time + '</span>' +
+            '<button onclick="copyLogPrompt('+log.id+')" style="padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:none;color:var(--text-secondary);font-size:0.65rem;cursor:pointer">📋 Copy</button>' +
+            '</div>' +
+            '<div style="font-size:0.75rem;color:var(--text);word-break:break-word">' + insEsc(promptPreview) + '</div>' +
+            (resultPreview ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">→ ' + insEsc(resultPreview) + '</div>' : '') +
+            (meta ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">' + insEsc(meta) + '</div>' : '') +
+            '</div></div></div>';
+        }).join('');
+      } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.75rem">Error loading logs</div>'; }
+    }
+    async function savePromptLog(type, prompt, result, model, tone, aspect_ratio, overlay_text, image_url) {
+      try { await fetch('/api/prompt-logs', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type,prompt,result,model,tone,aspect_ratio,overlay_text,image_url}) }); } catch(e) {}
+    }
+    function copyLogPrompt(id) {
+      var el = document.querySelector('[onclick="copyLogPrompt('+id+')"]');
+      var logEl = el.closest('[style*="border-bottom"]');
+      var promptText = logEl.querySelector('[style*="word-break"]').textContent;
+      navigator.clipboard.writeText(promptText).then(function(){ toast('ok','Copied!'); });
+    }
     function hideProgress(id,success) { var el=document.getElementById(id); if(el){var bar=el.querySelector('.bar');if(bar&&success){bar.classList.add('done');setTimeout(function(){el.classList.remove('active');},1500);}else{el.classList.remove('active');}} }
 
     function toggleTextOverlay() {
@@ -2424,6 +2488,7 @@
           addAiImageToPreview(d.image_url);
           statusEl.textContent = '✅ สร้างรูปสำเร็จ!';
           setTimeout(function(){ statusEl.style.display='none'; }, 3000);
+          savePromptLog('image', d.prompt || msg, null, d.model || '', null, ratio, overlayText, d.image_url);
         } else { hideProgress('aiImageProgress'); statusEl.textContent = ''; statusEl.style.display='none'; toast('err', d.error || 'สร้างรูปไม่สำเร็จ'); }
       } catch(e) { statusEl.style.display='none'; toast('err', 'เกิดข้อผิดพลาด: ' + e.message); }
     }
