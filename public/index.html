@@ -1203,8 +1203,9 @@
             var dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
             var preview = insEsc((p.message || '').substring(0, 50));
             var full = insEsc(p.message || '');
+            var thumb = p.image_url ? '<img src="' + insEsc(p.image_url) + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display=\'none\'">' : '';
             return '<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.sched-full\');f.style.display=f.style.display===\'block\'?\'none\':\'block\'">' +
-              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + (p.page_name ? (p.page_picture ? '<img src="' + insEsc(p.page_picture) + '" style="width:14px;height:14px;border-radius:50%;object-fit:cover">' : '') + '<span style="color:#3b82f6;font-size:0.72rem;font-weight:500">' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + thumb + (p.page_name ? (p.page_picture ? '<img src="' + insEsc(p.page_picture) + '" style="width:14px;height:14px;border-radius:50%;object-fit:cover">' : '') + '<span style="color:#3b82f6;font-size:0.72rem;font-weight:500">' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
               '<div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">' + full + '</div>' +
             '</div>';
           }).join('');
