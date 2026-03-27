@@ -1184,7 +1184,11 @@
       if (!date || !time) { toast('err','กรุณาเลือกวันและเวลา'); return; }
       const scheduledAt = new Date(date + 'T' + time + ':00').toISOString();
       try {
-        const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ message:msg, image_url:uploadedImageUrl, page_id:selectedPage.id, scheduled_at:scheduledAt }) });
+        const imageUrls = uploadedImages.filter(i=>i.url).map(i=>i.url);
+        const body = imageUrls.length > 1
+          ? { message:msg, image_urls:imageUrls, page_id:selectedPage.id, scheduled_at:scheduledAt }
+          : { message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id, scheduled_at:scheduledAt };
+        const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
         const d = await r.json();
         if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; loadScheduled(); }
         else toast('err', d.error || 'ตั้งเวลาไม่สำเร็จ');
