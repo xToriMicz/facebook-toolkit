@@ -24,10 +24,15 @@
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     /* Progress Bar */
-    .progress-bar { width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0;display:none }
+    .progress-bar { width:100%;height:6px;background:rgba(139,92,246,0.1);border-radius:6px;overflow:hidden;margin:10px 0;display:none }
     .progress-bar.active { display:block }
-    .progress-bar .bar { height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:3px;transition:width 0.5s ease }
-    .progress-bar .bar.done { background:#22c55e;width:100%!important }
+    .progress-bar .bar { height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#a78bfa,#8b5cf6);background-size:200% 100%;border-radius:6px;transition:width 0.4s cubic-bezier(0.4,0,0.2,1);animation:shimmer 1.5s ease-in-out infinite }
+    .progress-bar .bar.done { background:#22c55e;width:100%!important;animation:none }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    /* Prompt Log Items */
+    .log-item { padding:10px 12px;border-radius:8px;margin-bottom:6px;background:var(--bg);border:1px solid var(--border);transition:border-color 0.2s }
+    .log-item:hover { border-color:var(--border-hover) }
+    .log-filter-btn.active { background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important }
     :root {
       --bg: #0c0c14;
       --bg-card: #141420;
@@ -2439,20 +2444,22 @@
         el.innerHTML = d.logs.map(function(log) {
           var icon = log.type === 'image' ? '🎨' : '✍️';
           var time = new Date(log.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
-          var promptPreview = (log.prompt || '').slice(0, 100) + (log.prompt && log.prompt.length > 100 ? '...' : '');
-          var resultPreview = (log.result || '').slice(0, 80) + (log.result && log.result.length > 80 ? '...' : '');
-          var thumb = log.image_url ? '<img src="'+insEsc(log.image_url)+'" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0" onerror="this.style.display=\'none\'">' : '';
-          var meta = [log.model, log.tone, log.aspect_ratio, log.overlay_text].filter(Boolean).join(' | ');
-          return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">' +
-            '<div style="display:flex;gap:8px;align-items:start">' + thumb +
+          var promptFull = log.prompt || '';
+          var promptPreview = promptFull.slice(0, 120) + (promptFull.length > 120 ? '...' : '');
+          var resultPreview = (log.result || '').slice(0, 100) + (log.result && log.result.length > 100 ? '...' : '');
+          var thumb = log.image_url ? '<img src="'+insEsc(log.image_url)+'" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0"  onerror="this.style.display=\'none\'">' : '';
+          var meta = [log.model, log.tone, log.aspect_ratio].filter(Boolean).join(' · ');
+          var overlayBadge = log.overlay_text ? '<span style="display:inline-block;padding:1px 6px;border-radius:4px;background:rgba(139,92,246,0.15);color:#a78bfa;font-size:0.62rem;margin-left:4px">+ text</span>' : '';
+          return '<div class="log-item" data-prompt="'+insEsc(promptFull).replace(/"/g,'&quot;')+'">' +
+            '<div style="display:flex;gap:10px;align-items:start">' + thumb +
             '<div style="flex:1;min-width:0">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
-            '<span style="font-size:0.72rem;color:var(--text-muted)">' + icon + ' ' + time + '</span>' +
-            '<button onclick="copyLogPrompt('+log.id+')" style="padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:none;color:var(--text-secondary);font-size:0.65rem;cursor:pointer">📋 Copy</button>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+            '<span style="font-size:0.72rem;color:var(--text-muted)">' + icon + ' ' + time + overlayBadge + '</span>' +
+            '<button onclick="copyLogFull(this)" style="padding:3px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-secondary);font-size:0.68rem;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor=\'var(--accent)\';this.style.color=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text-secondary)\'">📋 Copy</button>' +
             '</div>' +
-            '<div style="font-size:0.75rem;color:var(--text);word-break:break-word">' + insEsc(promptPreview) + '</div>' +
-            (resultPreview ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">→ ' + insEsc(resultPreview) + '</div>' : '') +
-            (meta ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">' + insEsc(meta) + '</div>' : '') +
+            '<div style="font-size:0.78rem;color:var(--text);word-break:break-word;line-height:1.4">' + insEsc(promptPreview) + '</div>' +
+            (resultPreview ? '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.3">→ ' + insEsc(resultPreview) + '</div>' : '') +
+            (meta ? '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;opacity:0.7">' + insEsc(meta) + '</div>' : '') +
             '</div></div></div>';
         }).join('');
       } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.75rem">Error loading logs</div>'; }
@@ -2460,11 +2467,10 @@
     async function savePromptLog(type, prompt, result, model, tone, aspect_ratio, overlay_text, image_url) {
       try { await fetch('/api/prompt-logs', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type,prompt,result,model,tone,aspect_ratio,overlay_text,image_url}) }); } catch(e) {}
     }
-    function copyLogPrompt(id) {
-      var el = document.querySelector('[onclick="copyLogPrompt('+id+')"]');
-      var logEl = el.closest('[style*="border-bottom"]');
-      var promptText = logEl.querySelector('[style*="word-break"]').textContent;
-      navigator.clipboard.writeText(promptText).then(function(){ toast('ok','Copied!'); });
+    function copyLogFull(btn) {
+      var logEl = btn.closest('.log-item');
+      var fullPrompt = logEl.getAttribute('data-prompt');
+      navigator.clipboard.writeText(fullPrompt).then(function(){ btn.textContent='✓ Copied'; setTimeout(function(){ btn.textContent='📋 Copy'; },1500); toast('ok','Copied prompt!'); });
     }
     function hideProgress(id,success) { clearInterval(_progressTimers[id]); var el=document.getElementById(id); if(!el)return; var bar=el.querySelector('.bar'); if(bar&&success){bar.style.width='100%';bar.classList.add('done');setTimeout(function(){el.classList.remove('active');bar.style.width='0%';bar.classList.remove('done');},2000);} else{el.classList.remove('active');if(bar)bar.style.width='0%';} }
 
