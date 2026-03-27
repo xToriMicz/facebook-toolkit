@@ -463,27 +463,27 @@
           </div>
           <input type="file" id="fileInput" accept="image/*,video/mp4,video/quicktime,video/webm" multiple onchange="handleFiles(this.files)">
           <!-- AI Image Generation -->
-          <div style="margin-top:8px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
-            <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">🎨 AI สร้างรูป</div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-              <select id="aiImageRatio" style="padding:5px 8px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit">
+          <div style="margin-top:12px;padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">🎨 AI สร้างรูป</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+              <select id="aiImageRatio" style="padding:8px 12px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
                 <option value="9:16" selected>9:16 แนวตั้ง</option>
                 <option value="1:1">1:1 สี่เหลี่ยม</option>
                 <option value="4:5">4:5 Instagram</option>
                 <option value="16:9">16:9 แนวนอน</option>
               </select>
-              <button onclick="generateAiImageAuto()" style="padding:5px 12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Auto</button>
-              <button onclick="generateAiImageSemi()" style="padding:5px 12px;border:1px solid #a855f7;border-radius:6px;background:none;color:#a855f7;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✏️ Semi-Auto</button>
+              <button onclick="generateAiImageAuto()" style="padding:8px 16px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Auto</button>
+              <button onclick="generateAiImageSemi()" style="padding:8px 16px;border:1px solid #a855f7;border-radius:8px;background:none;color:#a855f7;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✏️ Semi-Auto</button>
             </div>
             <!-- Text overlay option -->
-            <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <label style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-secondary);cursor:pointer">
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer">
                 <input type="checkbox" id="aiTextOverlay" onchange="toggleTextOverlay()"> 🔤 วาดตัวหนังสือบนรูป
               </label>
-              <span id="aiTextOverlayNote" style="display:none;font-size:0.65rem;color:var(--text-muted)">(ใช้ Gemini Pro — $0.134/รูป)</span>
+              <span id="aiTextOverlayNote" style="display:none;font-size:0.7rem;color:var(--text-muted)">(ใช้ Gemini Pro)</span>
             </div>
-            <div id="aiTextOverlayArea" style="display:none;margin-top:4px">
-              <input id="aiOverlayText" placeholder="ข้อความที่จะวาดบนรูป เช่น น้ำมันแพง ประหยัดยังไง?" style="width:100%;padding:6px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit">
+            <div id="aiTextOverlayArea" style="display:none;margin-top:8px">
+              <input id="aiOverlayText" placeholder="ข้อความที่จะวาดบนรูป เช่น น้ำมันแพง ประหยัดยังไง?" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit">
             </div>
             <!-- Semi-Auto: prompt edit area -->
             <div id="aiImagePromptArea" style="display:none;margin-top:6px">
