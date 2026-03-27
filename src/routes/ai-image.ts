@@ -132,6 +132,11 @@ aiImage.post("/ai-image/generate", async (c) => {
     return c.json({ error: "Gemini API key not configured. Go to Settings to add one." }, 400);
   }
 
+  // Get AI settings for text-to-prompt + auto headline
+  const aiSettings = await c.env.DB.prepare(
+    "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
+  ).bind(session.fb_id).first<{ provider: string; model: string; api_key: string; endpoint_url: string }>();
+
   try {
     let imagePrompt: string;
 
@@ -149,7 +154,19 @@ aiImage.post("/ai-image/generate", async (c) => {
 
     // Add overlay text to prompt if requested
     if (overlayText) {
-      imagePrompt += `. Include prominent Thai text overlay on the image that reads: "${overlayText}". The text should be large, clear, easy to read, with good contrast against the background. Use a modern bold font style.`;
+      let finalOverlayText = overlayText;
+      // Auto mode: AI generates headline from post text
+      if (overlayText === "auto" && body.text) {
+        const headlineResult = await callAI(
+          aiSettings?.provider || "anthropic",
+          aiSettings?.api_key || c.env.ANTHROPIC_API_KEY,
+          aiSettings?.model || "claude-haiku-4-5-20251001",
+          `สร้างหัวข้อสั้นๆ ภาษาไทย 3-8 คำ สำหรับวาดบนรูปโซเชียล จากข้อความนี้ ตอบแค่หัวข้อเท่านั้น ไม่ต้องอธิบาย:\n\n${sanitize(body.text).slice(0, 500)}`,
+          aiSettings?.endpoint_url
+        );
+        finalOverlayText = headlineResult.text.trim().replace(/"/g, '');
+      }
+      imagePrompt += `. Include prominent Thai text overlay on the image that reads: "${finalOverlayText}". The text should be large, clear, easy to read, with good contrast against the background. Use a modern bold font style.`;
     }
 
     // Generate image (Pro model if text overlay)

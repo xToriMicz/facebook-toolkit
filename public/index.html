@@ -2394,10 +2394,11 @@
       var msg = document.getElementById('message').value.trim();
       if (!msg) { toast('err', 'เขียนข้อความก่อนแล้วค่อยสร้างรูป'); return; }
       var ratio = document.getElementById('aiImageRatio').value;
-      var overlayText = getOverlayText();
+      var wantOverlay = document.getElementById('aiTextOverlay').checked;
+      var overlayText = wantOverlay ? (document.getElementById('aiOverlayText').value.trim() || 'auto') : null;
       var statusEl = document.getElementById('aiImageStatus');
       statusEl.style.display = 'block';
-      statusEl.textContent = '⏳ AI กำลังสร้าง prompt จากข้อความ...';
+      statusEl.textContent = wantOverlay ? '⏳ AI กำลังสร้างรูป + วาดตัวหนังสือ...' : '⏳ AI กำลังสร้างรูป...';
       try {
         var r = await fetch('/api/ai-image/generate', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: msg, aspect_ratio: ratio, mode: 'auto', overlay_text: overlayText }) });
