@@ -847,8 +847,8 @@
     function showLogin() { document.getElementById('loginScreen').classList.remove('hidden'); document.getElementById('appScreen').classList.add('hidden'); document.getElementById('navUser').classList.add('hidden'); }
     function showApp(u) { document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appScreen').classList.remove('hidden'); const n = document.getElementById('navUser'); n.classList.remove('hidden'); if(u.picture) document.getElementById('navAvatar').src=u.picture; document.getElementById('navName').textContent=u.name||'';
       // Session info
-      if(u.login_at){document.getElementById('sessionLoginTime').textContent='เข้าสู่ระบบเมื่อ: '+new Date(u.login_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
-      if(u.expires_at){document.getElementById('sessionExpiry').textContent='หมดอายุ: '+new Date(u.expires_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+      if(u.login_at){document.getElementById('sessionLoginTime').textContent='เข้าสู่ระบบเมื่อ: '+new Date(u.login_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});}
+      if(u.expires_at){document.getElementById('sessionExpiry').textContent='หมดอายุ: '+new Date(u.expires_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});}
       // New IP notification
       if(u.new_ip){showNotify('⚠️ เข้าสู่ระบบจาก IP ใหม่: '+u.ip);} }
     function loginFacebook() { window.location.href='/auth/facebook'; }
@@ -1063,7 +1063,7 @@
         }
         if(!posts.length){el.innerHTML='<div class="empty-state">ยังไม่มีประวัติการโพส</div>';return;}
         el.innerHTML=posts.map(p=>{
-          const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+          const dt=new Date(p.created_at||p.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
           const badge=p.status==='posted'?'<span class="hist-badge ok">Posted</span>':'<span class="hist-badge wait">Pending</span>';
           const thumb=p.image_url?`<img loading="lazy" class="hist-thumb" src="${p.image_url}">`:'<div class="hist-thumb">📝</div>';
           const pageImg = p.page_picture ? '<img loading="lazy" src="'+p.page_picture+'" style="width:16px;height:16px;border-radius:4px;vertical-align:middle;margin-right:3px">' : '';
@@ -1271,7 +1271,7 @@
         el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);font-weight:500;margin-bottom:6px">📝 ฉบับร่าง ('+drafts.length+')</div>' +
           drafts.slice(0,5).map(dr => {
             const preview = (dr.message||'').substring(0,60);
-            const time = new Date(dr.created_at||dr.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+            const time = new Date(dr.created_at||dr.ts).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
             return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-input);border-radius:8px;margin-bottom:4px;font-size:0.78rem;border:1px solid var(--border);cursor:pointer" onclick="loadDraftToCompose('+dr.id+')">' +
               '<span style="flex:1;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+preview+'</span>' +
               '<span style="color:var(--text-muted);font-size:0.68rem;white-space:nowrap">'+time+'</span>' +
@@ -1415,7 +1415,7 @@
       const si={posted:'✅',pending:'⏳',failed:'❌'};
       let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
       posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
-      scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
+      scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
       html+=addBtn+'</div>';
       el.innerHTML=html;
     }
@@ -1600,7 +1600,7 @@
         list.innerHTML = data.scheduled.map(function(s) {
           var msg = insEsc(s.message || '');
           var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
-          var dt = new Date(s.scheduled_at).toLocaleString('th-TH');
+          var dt = new Date(s.scheduled_at).toLocaleString('th-TH',{hour12:false});
           var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : '#ef4444';
           var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : 'ล้มเหลว';
           var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
@@ -1765,7 +1765,7 @@
           <div style="padding:12px;background:var(--bg-input);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)">
             <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;max-height:60px;overflow:hidden">${d.message.slice(0,120)}${d.message.length>120?'...':''}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-              <span style="font-size:0.7rem;color:var(--text-muted)">${new Date(d.updated_at).toLocaleString('th-TH')}</span>
+              <span style="font-size:0.7rem;color:var(--text-muted)">${new Date(d.updated_at).toLocaleString('th-TH',{hour12:false})}</span>
               <div style="display:flex;gap:6px">
                 <button onclick="publishDraft(${d.id})" style="background:var(--accent);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:0.72rem;cursor:pointer">โพสเลย</button>
                 <button onclick="editDraft(${d.id})" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">แก้ไข</button>
@@ -1889,7 +1889,7 @@
         el.innerHTML = d.drafts.map(dr => '<label style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:var(--bg-input);border-radius:8px;margin-bottom:4px;border:1px solid var(--border);cursor:pointer">' +
           '<input type="checkbox" class="bulk-draft-check" value="' + dr.id + '" data-msg="' + (dr.message || '').replace(/"/g, '&quot;').slice(0, 200) + '" style="margin-top:3px">' +
           '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (dr.message || '').slice(0, 60) + '</div>' +
-          '<div style="font-size:0.7rem;color:var(--text-muted)">' + new Date(dr.updated_at).toLocaleString('th-TH') + '</div></div></label>').join('');
+          '<div style="font-size:0.7rem;color:var(--text-muted)">' + new Date(dr.updated_at).toLocaleString('th-TH',{hour12:false}) + '</div></div></label>').join('');
       } catch(e) { el.innerHTML = '<div class="empty-state">Error</div>'; }
     }
 
@@ -1956,7 +1956,7 @@
           '<span style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:' + (statusColors[t.status] || 'var(--text-muted)') + '20;color:' + (statusColors[t.status] || 'var(--text-muted)') + '">' + t.status + '</span>' +
           '</div>' +
           '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">' + (t.body || '').slice(0, 80) + '</div>' +
-          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">' + new Date(t.created_at).toLocaleString('th-TH') + '</div>' +
+          '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">' + new Date(t.created_at).toLocaleString('th-TH',{hour12:false}) + '</div>' +
           '</div>').join('');
       } catch(e) { el.innerHTML = '<div class="empty-state">Error loading tickets</div>'; }
     }
