@@ -1601,11 +1601,8 @@
           var msg = insEsc(s.message || '');
           var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
           var dt = new Date(s.scheduled_at).toLocaleString('th-TH');
-          var schedDate = s.scheduled_at ? s.scheduled_at.slice(0, 10) : '';
-          var schedTime = s.scheduled_at ? s.scheduled_at.slice(11, 16) : '';
           var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : '#ef4444';
           var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : 'ล้มเหลว';
-          var cancelBtn = s.status === 'pending' ? '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' : '';
           var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
           var pageBadge = s.page_name ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">' + (s.page_picture ? '<img src="' + insEsc(s.page_picture) + '" style="width:16px;height:16px;border-radius:50%;object-fit:cover">' : '<span style="width:16px;height:16px;border-radius:50%;background:' + pgColor + ';display:inline-block;flex-shrink:0"></span>') + '<span style="font-size:0.72rem;color:' + pgColor + ';font-weight:500">' + insEsc(s.page_name) + '</span></div>' : '';
           var hasImage = s.image_url && s.image_url.trim() !== '';
@@ -1615,23 +1612,11 @@
           var thumbnail = hasImage
             ? '<img src="' + insEsc(s.image_url) + '" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display=\'none\'">'
             : '<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-card,rgba(148,163,184,0.1));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;border:1px solid var(--border)">📝</div>';
-          var editForm = s.status === 'pending' ? '<div class="sched-edit" style="display:none;padding:10px 12px;border-top:1px solid var(--border)">' +
-            (hasImage ? '<div style="margin-bottom:8px"><img src="' + insEsc(s.image_url) + '" style="max-width:100%;max-height:180px;border-radius:8px;object-fit:contain;border:1px solid var(--border)" onerror="this.style.display=\'none\'"></div>' : '') +
-            '<div style="margin-bottom:6px"><label style="font-size:0.7rem;color:var(--text-muted)">ข้อความ</label>' +
-            '<textarea id="schedEdit_msg_' + s.id + '" style="width:100%;min-height:80px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:0.82rem;resize:vertical;margin-top:2px">' + msg + '</textarea></div>' +
-            '<div style="display:flex;gap:8px;margin-bottom:6px">' +
-            '<div style="flex:1"><label style="font-size:0.7rem;color:var(--text-muted)">URL รูปภาพ</label>' +
-            '<input id="schedEdit_img_' + s.id + '" type="text" value="' + insEsc(s.image_url || '') + '" placeholder="https://..." style="width:100%;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.78rem;margin-top:2px"></div></div>' +
-            '<div style="display:flex;gap:8px;margin-bottom:8px">' +
-            '<div><label style="font-size:0.7rem;color:var(--text-muted)">วันที่</label>' +
-            '<input id="schedEdit_date_' + s.id + '" type="date" value="' + schedDate + '" style="background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.78rem;margin-top:2px"></div>' +
-            '<div><label style="font-size:0.7rem;color:var(--text-muted)">เวลา</label>' +
-            '<input id="schedEdit_time_' + s.id + '" type="time" value="' + schedTime + '" style="background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:0.78rem;margin-top:2px"></div></div>' +
-            '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-            '<button onclick="event.stopPropagation();this.closest(\'.sched-edit\').style.display=\'none\'" style="background:none;border:1px solid var(--border);color:var(--text-muted);padding:5px 14px;border-radius:6px;font-size:0.78rem;cursor:pointer">ยกเลิก</button>' +
-            '<button onclick="event.stopPropagation();updateSchedule(' + s.id + ')" style="background:var(--accent);border:none;color:#fff;padding:5px 14px;border-radius:6px;font-size:0.78rem;cursor:pointer;font-weight:500">บันทึก</button></div>' +
+          var actionBtns = s.status === 'pending' ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+            '<button onclick="event.stopPropagation();editScheduledPost(' + s.id + ',' + JSON.stringify(s.message||'').replace(/'/g,"\\'") + ',' + JSON.stringify(s.image_url||'').replace(/'/g,"\\'") + ',\'' + (s.scheduled_at||'').slice(0,10) + '\',\'' + (s.scheduled_at||'').slice(11,16) + '\')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">✏️ แก้ไข</button>' +
+            '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
             '</div>' : '';
-          return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + pgColor + ';border:1px solid var(--border);border-left:3px solid ' + pgColor + ';cursor:pointer" onclick="var ed=this.querySelector(\'.sched-edit\');if(ed)ed.style.display=ed.style.display===\'block\'?\'none\':\'block\'">' +
+          return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + pgColor + ';border:1px solid var(--border);border-left:3px solid ' + pgColor + '">' +
             '<div style="display:flex;align-items:center;padding:10px 12px;gap:10px">' +
               thumbnail +
               '<div style="flex:1;min-width:0">' +
@@ -1640,9 +1625,8 @@
                 '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
                 '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
               '</div>' +
-              cancelBtn +
+              actionBtns +
             '</div>' +
-            editForm +
           '</div>';
         }).join('');
       } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
@@ -1669,19 +1653,102 @@
       loadSchedule();
     }
 
-    async function updateSchedule(id) {
-      var msg = document.getElementById('schedEdit_msg_' + id).value.trim();
-      var img = document.getElementById('schedEdit_img_' + id).value.trim();
-      var date = document.getElementById('schedEdit_date_' + id).value;
-      var time = document.getElementById('schedEdit_time_' + id).value;
-      if (!msg) { alert('กรุณาใส่ข้อความ'); return; }
-      var body = { message: msg, image_url: img || null };
-      if (date && time) body.scheduled_at = date + 'T' + time + ':00';
-      try {
-        var res = await fetch('/api/schedule/' + id, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        var data = await res.json();
-        if (data.ok) { loadSchedule(); } else { alert(data.error || 'Error'); }
-      } catch(e) { alert('Error: ' + e.message); }
+    var editingScheduleId = null;
+
+    function editScheduledPost(id, message, imageUrl, date, time) {
+      editingScheduleId = id;
+      // Switch to compose tab
+      switchTab('compose', document.querySelector('.sidebar-nav-item'));
+      // Pre-fill message
+      var msgEl = document.getElementById('message');
+      msgEl.value = message || '';
+      msgEl.dispatchEvent(new Event('input'));
+      // Pre-fill image
+      var prevEl = document.getElementById('imagePreview');
+      if (imageUrl) {
+        uploadedImageUrl = imageUrl;
+        document.getElementById('postType').value = 'image';
+        prevEl.innerHTML = '<div class="preview-item" style="position:relative;display:inline-block"><img src="' + insEsc(imageUrl) + '" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border)"><button onclick="removeEditImage()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:0.7rem">✕</button></div>';
+      } else {
+        uploadedImageUrl = null;
+        document.getElementById('postType').value = 'text';
+        prevEl.innerHTML = '';
+      }
+      // Show schedule picker with pre-filled date/time
+      var picker = document.getElementById('schedulePicker');
+      picker.style.display = 'block';
+      if (date) document.getElementById('schedDate').value = date;
+      if (time) document.getElementById('schedTime').value = time;
+      // Change button to update mode
+      var postBtn = document.getElementById('postBtn');
+      postBtn.style.display = 'none';
+      var schedToggle = document.getElementById('scheduleToggle');
+      schedToggle.style.display = 'none';
+      // Add/update the update button
+      var updateBtn = document.getElementById('schedUpdateBtn');
+      if (!updateBtn) {
+        updateBtn = document.createElement('button');
+        updateBtn.id = 'schedUpdateBtn';
+        updateBtn.className = 'btn btn-accent';
+        updateBtn.style.cssText = 'font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)';
+        postBtn.parentElement.insertBefore(updateBtn, postBtn);
+      }
+      updateBtn.style.display = '';
+      updateBtn.innerHTML = '✅ อัพเดตโพส';
+      updateBtn.onclick = async function() {
+        var newMsg = document.getElementById('message').value.trim();
+        if (!newMsg && !uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+        var newDate = document.getElementById('schedDate').value;
+        var newTime = document.getElementById('schedTime').value;
+        var body = { message: newMsg, image_url: uploadedImageUrl || null };
+        if (newDate && newTime) body.scheduled_at = newDate + 'T' + newTime + ':00';
+        try {
+          var res = await fetch('/api/schedule/' + editingScheduleId, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          var data = await res.json();
+          if (data.ok) {
+            toast('ok','อัพเดตโพสสำเร็จ!');
+            exitEditMode();
+            loadSchedule();
+          } else { toast('err', data.error || 'Error'); }
+        } catch(e) { toast('err','Error: ' + e.message); }
+      };
+      // Add cancel edit button
+      var cancelEditBtn = document.getElementById('schedCancelEditBtn');
+      if (!cancelEditBtn) {
+        cancelEditBtn = document.createElement('button');
+        cancelEditBtn.id = 'schedCancelEditBtn';
+        cancelEditBtn.className = 'btn btn-ghost';
+        cancelEditBtn.style.cssText = 'font-size:0.85rem;padding:12px 18px';
+        cancelEditBtn.innerHTML = '↩️ ยกเลิกแก้ไข';
+        cancelEditBtn.onclick = function() { exitEditMode(); };
+        postBtn.parentElement.appendChild(cancelEditBtn);
+      }
+      cancelEditBtn.style.display = '';
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function removeEditImage() {
+      uploadedImageUrl = null;
+      document.getElementById('imagePreview').innerHTML = '';
+      document.getElementById('postType').value = 'text';
+    }
+
+    function exitEditMode() {
+      editingScheduleId = null;
+      document.getElementById('message').value = '';
+      document.getElementById('charCount').textContent = '0';
+      document.getElementById('imagePreview').innerHTML = '';
+      uploadedImageUrl = null;
+      document.getElementById('postType').value = 'text';
+      document.getElementById('schedulePicker').style.display = 'none';
+      document.getElementById('postBtn').style.display = '';
+      document.getElementById('scheduleToggle').style.display = '';
+      var updateBtn = document.getElementById('schedUpdateBtn');
+      if (updateBtn) updateBtn.style.display = 'none';
+      var cancelEditBtn = document.getElementById('schedCancelEditBtn');
+      if (cancelEditBtn) cancelEditBtn.style.display = 'none';
+      switchTab('schedule', document.querySelector('.sidebar-nav-item'));
     }
 
     // Drafts
