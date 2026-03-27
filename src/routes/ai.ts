@@ -67,21 +67,48 @@ ai.post("/ai-write", async (c) => {
 
   const toneConfig: Record<string, { desc: string; wordCount: string }> = {
     "general": { desc: "เขียนอิสระ น่าสนใจ อ่านง่าย", wordCount: "150-250 คำ" },
-    "professional": { desc: "ให้ความรู้ลึก เริ่มด้วย hook แรง 2-3 บรรทัดที่ทำให้คนต้องกด ดูเพิ่มเติม แบ่งเป็นหัวข้อย่อย ใช้ emoji เป็น bullet มีสถิติ/fact ปิดด้วย takeaway ที่ปฏิบัติได้ + ถามคำถามให้คนคอมเมนต์", wordCount: "300-500 คำ" },
+    "professional": { desc: "ให้ความรู้เชิงลึกแบบ Facebook viral", wordCount: "300-500 คำ" },
   };
   const config = toneConfig[tone || "general"] || toneConfig["general"];
+
+  const professionalStyle = tone === "professional" ? `
+สไตล์การเขียน (สำคัญมาก ต้องทำตามทุกข้อ):
+- ประโยคสั้นมาก 1-2 บรรทัดต่อ 1 ความคิด แล้วขึ้นบรรทัดใหม่
+- ห้ามเขียนย่อหน้ายาว ต้องตัดบรรทัดบ่อยๆ อ่านง่ายบนมือถือ
+- ใช้ . . . (จุดสามจุดมีเว้นวรรค) คั่นระหว่าง section
+- ใส่เลขหัวข้อ 1) 2) 3) ... นำแต่ละ section
+- 2-3 บรรทัดแรกต้อง hook แรงมาก ทำให้คนต้องกด "ดูเพิ่มเติม"
+- ภาษาพูดเป็นกันเอง ไม่ใช่ภาษาเขียนทางการ
+- emoji ใช้น้อย แค่จุดสำคัญ ไม่ใช่ทุกบรรทัด
+- มีสถิติ/ตัวเลข/fact ให้น่าเชื่อถือ
+- จบด้วยคำถามเปิดให้คนคอมเมนต์
+- hashtag ภาษาไทย 3-5 อันรวมท้ายโพส
+
+ตัวอย่างโครงสร้าง:
+---
+บรรทัด hook สั้นๆ ดึงดูดให้อ่านต่อ
+บรรทัดที่สอง ขยายความ
+. . .
+1) หัวข้อแรก
+เนื้อหาสั้นๆ 2-3 บรรทัด
+ตัวเลข/สถิติ
+. . .
+2) หัวข้อสอง
+เนื้อหาสั้นๆ
+. . .
+สรุป + คำถามปิดท้าย
+---` : "";
 
   const systemPrompt = `คุณเป็น Social Media Content Writer มืออาชีพ เขียนเป็นภาษาไทย
 กฎสำคัญ:
 - เขียน caption สำหรับโพส Facebook
 - โทน: ${config.desc}
 - ความยาว: ${config.wordCount} (สำคัญมาก! ต้องเขียนให้ครบตามจำนวนคำที่กำหนด ห้ามสั้นกว่านี้)
-- ใส่อีโมจิตามความเหมาะสม
-- ห้ามใช้ markdown เด็ดขาด (ห้าม ** ห้าม * ห้าม # ห้าม backtick) เพราะ Facebook ไม่รองรับ ใช้ emoji นำหน้าหัวข้อแทน เช่น "🔋 เรื่องแบตเตอรี่" ไม่ใช่ "**เรื่องแบตเตอรี่**"
+- ห้ามใช้ markdown เด็ดขาด (ห้าม ** ห้าม * ห้าม # ห้าม backtick) เพราะ Facebook ไม่รองรับ
 - แนะนำ hashtag ภาษาไทย 3-5 อัน
 - ตอบเป็น JSON: {"text":"caption ที่เขียน","hashtags":["#tag1","#tag2"]}
 - ตอบ JSON เท่านั้น ไม่มีข้อความอื่น
-- ย้ำอีกครั้ง: เนื้อหาต้องยาว ${config.wordCount} จริงๆ นับคำให้ครบ ห้ามใช้ markdown`;
+- ย้ำอีกครั้ง: เนื้อหาต้องยาว ${config.wordCount} จริงๆ นับคำให้ครบ ห้ามใช้ markdown${professionalStyle}`;
 
   const aiSettings = await c.env.DB.prepare(
     "SELECT provider, model, api_key, endpoint_url FROM user_ai_settings WHERE user_fb_id = ?"
