@@ -2416,14 +2416,31 @@
     function showAiImagePreview(imageUrl) {
       var overlay = document.createElement('div');
       overlay.id = 'aiPreviewOverlay';
-      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
-      overlay.innerHTML = '<img src="'+insEsc(imageUrl)+'" style="max-width:90%;max-height:70vh;border-radius:12px;border:2px solid rgba(255,255,255,0.1)">' +
-        '<div style="margin-top:16px;display:flex;gap:12px">' +
-        '<button onclick="acceptAiImage(\''+insEsc(imageUrl)+'\')" style="padding:10px 24px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">✅ ใช้รูปนี้</button>' +
-        '<button onclick="rejectAiImage()" style="padding:10px 24px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">🔄 สร้างใหม่</button>' +
-        '<button onclick="closeAiPreview()" style="padding:10px 24px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;font-size:0.9rem;font-weight:600;cursor:pointer">✕ ไม่ใช้</button>' +
-        '</div>';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+      overlay.innerHTML = '<div style="max-width:500px;width:100%">' +
+        '<img id="aiPreviewImg" src="'+insEsc(imageUrl)+'" style="width:100%;max-height:60vh;object-fit:contain;border-radius:12px;border:2px solid rgba(255,255,255,0.1)">' +
+        '<div id="aiImgInfo" style="margin-top:8px;text-align:center;font-size:0.72rem;color:rgba(255,255,255,0.5)">กำลังโหลดข้อมูลรูป...</div>' +
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center">' +
+        '<button onclick="acceptAiImage(\''+insEsc(imageUrl)+'\')" style="flex:1;min-width:100px;padding:10px 16px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">✅ ใช้รูปนี้</button>' +
+        '<button onclick="rejectAiImage()" style="flex:1;min-width:100px;padding:10px 16px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">🔄 สร้างใหม่</button>' +
+        '<button onclick="closeAiPreview()" style="flex:1;min-width:80px;padding:10px 16px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer">✕ ไม่ใช้</button>' +
+        '</div></div>';
       document.body.appendChild(overlay);
+      overlay.onclick = function(e) { if (e.target === overlay) closeAiPreview(); };
+      // Load image info
+      var img = new Image();
+      img.onload = function() {
+        fetch(imageUrl, { method: 'HEAD' }).then(function(r) {
+          var size = r.headers.get('content-length');
+          var sizeStr = size ? (size > 1048576 ? (size/1048576).toFixed(1)+' MB' : (size/1024).toFixed(0)+' KB') : '';
+          var el = document.getElementById('aiImgInfo');
+          if (el) el.textContent = img.naturalWidth + ' x ' + img.naturalHeight + ' px' + (sizeStr ? ' | ' + sizeStr : '');
+        }).catch(function() {
+          var el = document.getElementById('aiImgInfo');
+          if (el) el.textContent = img.naturalWidth + ' x ' + img.naturalHeight + ' px';
+        });
+      };
+      img.src = imageUrl;
     }
     function acceptAiImage(imageUrl) {
       uploadedImages.push({ data: imageUrl, name: 'ai-generated.jpg', url: imageUrl, sizeInfo: 'AI', isVideo: false });
