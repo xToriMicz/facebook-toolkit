@@ -24,11 +24,10 @@
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
   <style>
     /* Progress Bar */
-    .progress-bar { width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0;display:none }
+    .progress-bar { width:100%;height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0;display:none }
     .progress-bar.active { display:block }
-    .progress-bar .bar { height:100%;background:linear-gradient(90deg,#8b5cf6,#6366f1,#8b5cf6);background-size:200% 100%;border-radius:2px;animation:progress-shimmer 1.5s ease-in-out infinite }
-    .progress-bar .bar.done { animation:none;background:#22c55e;width:100%!important }
-    @keyframes progress-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .progress-bar .bar { height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);border-radius:3px;transition:width 0.5s ease }
+    .progress-bar .bar.done { background:#22c55e;width:100%!important }
     :root {
       --bg: #0c0c14;
       --bg-card: #141420;
@@ -464,7 +463,7 @@
             </div>
           </div>
           <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 800 ตัวอักษร, เขียนอิสระ</div>
-          <div class="progress-bar" id="aiWriteProgress"><div class="bar" style="width:70%"></div></div>
+          <div class="progress-bar" id="aiWriteProgress"><div class="bar"></div></div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
           </div>
@@ -497,11 +496,11 @@
               <textarea id="aiImagePrompt" rows="3" placeholder="AI จะสร้าง prompt จากข้อความของคุณ — แก้ไขได้ก่อนกดสร้าง" style="width:100%;padding:6px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;resize:vertical"></textarea>
               <button id="aiImageConfirmBtn" onclick="confirmGenerateImage()" style="margin-top:4px;padding:5px 12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">🎨 สร้างรูปจาก Prompt นี้</button>
             </div>
-            <div class="progress-bar" id="aiImageProgress"><div class="bar" style="width:70%"></div></div>
+            <div class="progress-bar" id="aiImageProgress"><div class="bar"></div></div>
             <div id="aiImageStatus" style="display:none;margin-top:6px;font-size:0.72rem;color:var(--text-muted)"></div>
           </div>
           <div class="multi-preview" id="imagePreview"></div>
-          <div class="progress-bar" id="postProgress"><div class="bar" style="width:70%"></div></div>
+          <div class="progress-bar" id="postProgress"><div class="bar"></div></div>
           <div class="actions">
             <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
             <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
@@ -2406,7 +2405,18 @@
       } catch(e) { /* ignore */ }
     }
 
-    function showProgress(id) { var el=document.getElementById(id); if(el){el.classList.add('active');var bar=el.querySelector('.bar');if(bar)bar.classList.remove('done');} }
+    var _progressTimers = {};
+    function showProgress(id) {
+      var el=document.getElementById(id); if(!el)return;
+      el.classList.add('active');
+      var bar=el.querySelector('.bar'); if(!bar)return;
+      bar.classList.remove('done'); bar.style.width='0%';
+      var pct=0; clearInterval(_progressTimers[id]);
+      _progressTimers[id]=setInterval(function(){
+        if(pct<30)pct+=3; else if(pct<60)pct+=1.5; else if(pct<85)pct+=0.5; else if(pct<95)pct+=0.1;
+        bar.style.width=Math.min(pct,95)+'%';
+      },300);
+    }
 
     // Prompt Logs
     function togglePromptLogs() {
@@ -2456,7 +2466,7 @@
       var promptText = logEl.querySelector('[style*="word-break"]').textContent;
       navigator.clipboard.writeText(promptText).then(function(){ toast('ok','Copied!'); });
     }
-    function hideProgress(id,success) { var el=document.getElementById(id); if(el){var bar=el.querySelector('.bar');if(bar&&success){bar.classList.add('done');setTimeout(function(){el.classList.remove('active');},1500);}else{el.classList.remove('active');}} }
+    function hideProgress(id,success) { clearInterval(_progressTimers[id]); var el=document.getElementById(id); if(!el)return; var bar=el.querySelector('.bar'); if(bar&&success){bar.style.width='100%';bar.classList.add('done');setTimeout(function(){el.classList.remove('active');bar.style.width='0%';bar.classList.remove('done');},2000);} else{el.classList.remove('active');if(bar)bar.style.width='0%';} }
 
     function toggleTextOverlay() {
       var checked = document.getElementById('aiTextOverlay').checked;
