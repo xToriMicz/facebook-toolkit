@@ -1228,7 +1228,7 @@
         if (!items.length) { el.innerHTML = ''; return; }
         el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">📅 โพสที่ตั้งเวลาไว้</div>' +
           items.map(function(p) {
-            var dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+            var dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
             var preview = insEsc((p.message || '').substring(0, 50));
             var full = insEsc(p.message || '');
             var imgUrls = p.image_urls ? (typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls) : (p.image_url ? [p.image_url] : []);
@@ -1362,7 +1362,7 @@
         const icon = LOG_ICONS[l.action] || '📌';
         const label = LOG_LABELS[l.action] || l.action;
         const css = LOG_CSS[l.action] || 'settings';
-        const time = new Date(l.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        const time = new Date(l.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
         return '<div class="log-item"><div class="log-icon '+css+'">'+icon+'</div><div class="log-body"><div class="log-action">'+label+'</div>'+(l.details?'<div class="log-detail">'+l.details+'</div>':'')+'</div><div class="log-time">'+time+'</div></div>';
       }).join('');
     }
@@ -1462,7 +1462,7 @@
         el.innerHTML = tickets.map(t => {
           const icon = TYPE_ICONS[t.type] || '📌';
           const status = t.status || 'open';
-          const time = new Date(t.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+          const time = new Date(t.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
           return '<div class="ticket-item">' +
             '<div class="ticket-type '+t.type+'">'+icon+'</div>' +
             '<div class="ticket-body">' +
@@ -2002,7 +2002,7 @@
     }
     function insShowTimestamp(ts) {
       var el = document.getElementById('insTimestamp');
-      if (ts) { el.textContent = 'อัพเดตล่าสุด: ' + new Date(ts).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }); }
+      if (ts) { el.textContent = 'อัพเดตล่าสุด: ' + new Date(ts).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12:false }); }
       else { el.textContent = ''; }
     }
     function insRenderAll() {
