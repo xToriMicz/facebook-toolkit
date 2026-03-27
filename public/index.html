@@ -667,15 +667,8 @@
 
       <div id="tabSchedule" class="hidden">
         <div class="card">
-          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">📅 ตั้งเวลาโพส</h3>
-          <textarea id="scheduleMsg" class="compose-area" placeholder="เขียนข้อความที่ต้องการโพส..." style="min-height:80px"></textarea>
-          <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
-            <input type="date" id="scheduleDate" style="flex:1;min-width:140px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem">
-            <input type="time" id="scheduleTime" style="flex:1;min-width:120px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem">
-          </div>
-          <button class="btn btn-accent" onclick="createSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาโพส</button>
-          <div class="toast" id="scheduleStatus"></div>
-          <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">Bulk Schedule จากฉบับร่าง</h4>
+          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">⏰ ตั้งเวลา/Bulk</h3>
+          <h4 style="margin:0 0 8px;font-size:0.85rem;color:var(--text-muted)">Bulk Schedule จากฉบับร่าง</h4>
           <div id="bulkDraftList" style="margin-bottom:16px"><div class="empty-state">โหลดฉบับร่าง...</div></div>
           <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
             <input type="datetime-local" id="bulkStartTime" style="flex:1;min-width:180px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
