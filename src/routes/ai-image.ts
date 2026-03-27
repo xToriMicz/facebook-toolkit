@@ -5,6 +5,7 @@ import { callAI } from "../ai-providers";
 const aiImage = new Hono<{ Bindings: Env }>();
 
 const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+const GEMINI_IMAGE_MODEL_PRO = "gemini-3-pro-image-preview";
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const VALID_ASPECTS = new Set(["1:1", "9:16", "16:9", "4:5", "3:4", "4:3", "2:3", "3:2", "5:4"]);
 
@@ -46,8 +47,10 @@ async function generateImage(
   apiKey: string,
   prompt: string,
   aspectRatio: string,
+  usePro: boolean = false,
 ): Promise<{ data: string; mimeType: string }> {
-  const url = `${GEMINI_API_BASE}/${GEMINI_IMAGE_MODEL}:generateContent`;
+  const model = usePro ? GEMINI_IMAGE_MODEL_PRO : GEMINI_IMAGE_MODEL;
+  const url = `${GEMINI_API_BASE}/${model}:generateContent`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
@@ -115,11 +118,13 @@ aiImage.post("/ai-image/generate", async (c) => {
   }
 
   const body = await c.req.json() as {
-    text?: string; prompt?: string; aspect_ratio?: string; mode?: string;
+    text?: string; prompt?: string; aspect_ratio?: string; mode?: string; overlay_text?: string;
   };
 
   const mode = body.mode || "auto";
   const aspectRatio = body.aspect_ratio && VALID_ASPECTS.has(body.aspect_ratio) ? body.aspect_ratio : "1:1";
+  const overlayText = body.overlay_text ? sanitize(body.overlay_text).slice(0, 200) : null;
+  const usePro = !!overlayText; // Use Pro model when text overlay requested
 
   // Get Gemini API key
   const geminiKey = await getGeminiKey(c.env.KV, session.fb_id);
@@ -142,13 +147,18 @@ aiImage.post("/ai-image/generate", async (c) => {
       imagePrompt = await textToImagePrompt(sanitize(body.text), c.env, session.fb_id);
     }
 
-    // Generate image
-    const image = await generateImage(geminiKey, imagePrompt, aspectRatio);
+    // Add overlay text to prompt if requested
+    if (overlayText) {
+      imagePrompt += `. Include prominent Thai text overlay on the image that reads: "${overlayText}". The text should be large, clear, easy to read, with good contrast against the background. Use a modern bold font style.`;
+    }
+
+    // Generate image (Pro model if text overlay)
+    const image = await generateImage(geminiKey, imagePrompt, aspectRatio, usePro);
 
     // Upload to R2
     const { url, key } = await uploadToR2(c.env.ASSETS, image.data, image.mimeType);
 
-    return c.json({ ok: true, image_url: url, key, prompt: imagePrompt, aspect_ratio: aspectRatio });
+    return c.json({ ok: true, image_url: url, key, prompt: imagePrompt, aspect_ratio: aspectRatio, model: usePro ? "pro" : "flash" });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
