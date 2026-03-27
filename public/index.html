@@ -427,16 +427,10 @@
         <div class="card">
           <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?" aria-label="เขียนโพส"></textarea>
 
-          <!-- Post Type + Affiliate Mode -->
-          <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
-            <select id="postType" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
-              <option value="text">📝 ข้อความ</option>
-              <option value="image">🖼️ รูป+ข้อความ</option>
-              <option value="link">🔗 Link preview</option>
-            </select>
-            <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer">
-              <input type="checkbox" id="affiliateMode" onchange="toggleAffiliate()"> 🏷️ Affiliate
-            </label>
+          <!-- Post Type + Affiliate Mode (hidden) -->
+          <div style="display:none">
+            <select id="postType"><option value="text" selected></option></select>
+            <input type="checkbox" id="affiliateMode">
           </div>
 
           <!-- Affiliate Link (hidden by default) -->
