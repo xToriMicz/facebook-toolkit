@@ -499,7 +499,8 @@
               </div>
               <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
                 <label>⏰ เวลา</label>
-                <input type="time" id="schedTime" lang="en-GB" style="width:100%;padding:10px 12px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem">
+                <select id="schedTimeHour" style="padding:10px 8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px 0 0 8px;font-family:inherit;font-size:0.9rem"></select><span style="padding:10px 4px;background:var(--bg-card);color:var(--text);border-top:1px solid var(--border);border-bottom:1px solid var(--border);font-size:0.9rem;font-weight:600">:</span><select id="schedTimeMin" style="padding:10px 8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:0 8px 8px 0;font-family:inherit;font-size:0.9rem"></select>
+                <input type="hidden" id="schedTime">
               </div>
               <button class="btn btn-accent" onclick="submitScheduled()" style="padding:10px 20px;font-size:0.9rem;white-space:nowrap">✅ ยืนยันตั้งเวลา</button>
             </div>
@@ -1186,6 +1187,23 @@
     }
 
     // Schedule
+    // 24h time dropdowns
+    (function(){
+      var hSel=document.getElementById('schedTimeHour'), mSel=document.getElementById('schedTimeMin');
+      for(var h=0;h<24;h++) hSel.innerHTML+='<option value="'+String(h).padStart(2,'0')+'">'+String(h).padStart(2,'0')+'</option>';
+      for(var m=0;m<60;m+=5) mSel.innerHTML+='<option value="'+String(m).padStart(2,'0')+'">'+String(m).padStart(2,'0')+'</option>';
+      function syncTime(){document.getElementById('schedTime').value=hSel.value+':'+mSel.value;}
+      hSel.onchange=syncTime; mSel.onchange=syncTime;
+      hSel.value='09'; mSel.value='00'; syncTime();
+    })();
+    function setSchedTime(timeStr){
+      if(!timeStr)return;
+      var p=timeStr.split(':');
+      var h=document.getElementById('schedTimeHour'), m=document.getElementById('schedTimeMin');
+      if(h&&p[0])h.value=p[0];
+      if(m&&p[1]){var mv=Math.round(parseInt(p[1])/5)*5;m.value=String(mv%60).padStart(2,'0');}
+      document.getElementById('schedTime').value=timeStr;
+    }
     function toggleSchedule() {
       const el = document.getElementById('schedulePicker');
       const show = el.style.display === 'none';
@@ -1194,7 +1212,7 @@
         // Default: tomorrow 9:00
         const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
         document.getElementById('schedDate').value = tmr.toISOString().split('T')[0];
-        document.getElementById('schedTime').value = '09:00';
+        setSchedTime('09:00');
         loadScheduled();
       }
     }
@@ -1698,7 +1716,7 @@
       var picker = document.getElementById('schedulePicker');
       picker.style.display = 'block';
       if (date) document.getElementById('schedDate').value = date;
-      if (time) document.getElementById('schedTime').value = time;
+      if (time) setSchedTime(time);
       // Change button to update mode
       var postBtn = document.getElementById('postBtn');
       postBtn.style.display = 'none';
