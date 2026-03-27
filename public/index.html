@@ -1251,9 +1251,9 @@
       const countEl = document.getElementById('charCount');
       const hintEl = document.getElementById('charHint');
       countEl.textContent = len;
-      if (words === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
-      else if (words <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
-      else if (words <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
+      if (len === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
+      else if (len <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
+      else if (len <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
       else { countEl.style.color = '#ef4444'; hintEl.textContent = '✗ ยาวเกิน'; hintEl.style.color = '#ef4444'; }
     }
 
