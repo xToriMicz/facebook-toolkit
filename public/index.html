@@ -1253,7 +1253,7 @@
     function updateCharColor() {
       const len = document.getElementById('message').value.length;
       const style = document.getElementById('aiTone').value;
-      const guide = STYLE_GUIDE[style] || STYLE_GUIDE.sales;
+      const guide = STYLE_GUIDE[style] || STYLE_GUIDE.general;
       const countEl = document.getElementById('charCount');
       const hintEl = document.getElementById('charHint');
       countEl.textContent = len;
