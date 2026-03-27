@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS scheduled_posts (
   page_id TEXT NOT NULL,
   message TEXT NOT NULL,
   image_url TEXT,
+  image_urls TEXT,
   scheduled_at TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
   fb_post_id TEXT,

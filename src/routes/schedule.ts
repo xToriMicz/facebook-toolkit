@@ -8,7 +8,7 @@ schedule.post("/schedule", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const { page_id, message, image_url, scheduled_at } = await c.req.json();
+  const { page_id, message, image_url, image_urls, scheduled_at } = await c.req.json();
   if (!message || !scheduled_at) return c.json({ error: "message and scheduled_at required" }, 400);
 
   const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
@@ -19,9 +19,21 @@ schedule.post("/schedule", async (c) => {
   ).bind(session.fb_id, targetPageId).first();
   if (!page) return c.json({ error: "Page not found for this user" }, 400);
 
+  // Normalize: image_urls array takes priority, fallback to image_url as single-item array
+  const normalizedUrls = Array.isArray(image_urls) && image_urls.length > 0
+    ? image_urls
+    : (image_url ? [image_url] : null);
+
   const { meta } = await c.env.DB.prepare(
-    "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
-  ).bind(session.fb_id, targetPageId, message, image_url || null, scheduled_at).run();
+    "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, image_urls, scheduled_at) VALUES (?, ?, ?, ?, ?, ?)"
+  ).bind(
+    session.fb_id,
+    targetPageId,
+    message,
+    image_url || (normalizedUrls ? normalizedUrls[0] : null),
+    normalizedUrls ? JSON.stringify(normalizedUrls) : null,
+    scheduled_at
+  ).run();
 
   return c.json({ ok: true, id: meta.last_row_id }, 201);
 });
@@ -46,9 +58,21 @@ schedule.post("/schedule/bulk", async (c) => {
   const results: { id: number | null; message: string; scheduled_at: string }[] = [];
   for (const post of posts) {
     if (!post.message || !post.scheduled_at) continue;
+
+    const normalizedUrls = Array.isArray(post.image_urls) && post.image_urls.length > 0
+      ? post.image_urls
+      : (post.image_url ? [post.image_url] : null);
+
     const { meta } = await c.env.DB.prepare(
-      "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, scheduled_at) VALUES (?, ?, ?, ?, ?)"
-    ).bind(session.fb_id, targetPageId, post.message, post.image_url || null, post.scheduled_at).run();
+      "INSERT INTO scheduled_posts (user_fb_id, page_id, message, image_url, image_urls, scheduled_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).bind(
+      session.fb_id,
+      targetPageId,
+      post.message,
+      post.image_url || (normalizedUrls ? normalizedUrls[0] : null),
+      normalizedUrls ? JSON.stringify(normalizedUrls) : null,
+      post.scheduled_at
+    ).run();
     results.push({ id: meta.last_row_id as number, message: post.message.slice(0, 40), scheduled_at: post.scheduled_at });
   }
 
@@ -70,7 +94,7 @@ schedule.put("/schedule/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  const { message, image_url, scheduled_at } = await c.req.json();
+  const { message, image_url, image_urls, scheduled_at } = await c.req.json();
 
   const existing = await c.env.DB.prepare(
     "SELECT id FROM scheduled_posts WHERE id = ? AND status = 'pending' AND user_fb_id = ?"
@@ -81,6 +105,16 @@ schedule.put("/schedule/:id", async (c) => {
   const values: any[] = [];
   if (message !== undefined) { updates.push("message = ?"); values.push(message); }
   if (image_url !== undefined) { updates.push("image_url = ?"); values.push(image_url || null); }
+  if (image_urls !== undefined) {
+    const normalizedUrls = Array.isArray(image_urls) && image_urls.length > 0 ? image_urls : null;
+    updates.push("image_urls = ?");
+    values.push(normalizedUrls ? JSON.stringify(normalizedUrls) : null);
+    // Sync image_url with first URL for backward compatibility
+    if (image_url === undefined) {
+      updates.push("image_url = ?");
+      values.push(normalizedUrls ? normalizedUrls[0] : null);
+    }
+  }
   if (scheduled_at !== undefined) { updates.push("scheduled_at = ?"); values.push(scheduled_at); }
   if (updates.length === 0) return c.json({ error: "Nothing to update" }, 400);
 
@@ -117,22 +151,63 @@ export async function processScheduledPosts(env: Env) {
       continue;
     }
     try {
-      // Decrypt token (supports both encrypted and plaintext for migration)
       const pageToken = await decryptToken(post.page_token, encKey);
       let result: any;
-      if (post.image_url) {
+
+      // Parse image_urls from DB (JSON array string), fallback to image_url
+      const urls: string[] = post.image_urls
+        ? JSON.parse(post.image_urls)
+        : (post.image_url ? [post.image_url] : []);
+
+      if (urls.length > 1) {
+        // Multi-photo flow: upload unpublished photos → attach to feed post
+        const photoResults = await Promise.all(urls.map(async (url: string) => {
+          const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, published: false, access_token: pageToken }),
+          });
+          return await res.json() as any;
+        }));
+
+        const validIds = photoResults.filter((d: any) => d.id).map((d: any) => d.id);
+        const errors = photoResults.filter((d: any) => d.error);
+
+        if (validIds.length < 2) {
+          const errMsg = `Multi-photo upload failed: ${errors[0]?.error?.message || "unknown"} (${validIds.length}/${urls.length} uploaded)`;
+          await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(errMsg.slice(0, 500), post.id).run();
+          continue;
+        }
+
+        // Post to feed with attached_media
+        const parts = [
+          `message=${encodeURIComponent(post.message || "")}`,
+          `access_token=${encodeURIComponent(pageToken)}`
+        ];
+        validIds.forEach((id: string, i: number) => {
+          parts.push(`attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`);
+        });
+
+        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
+          method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: parts.join("&"),
+        });
+        result = await res.json();
+      } else if (urls.length === 1) {
+        // Single photo
         const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: post.image_url, message: post.message, access_token: pageToken }),
+          body: JSON.stringify({ url: urls[0], message: post.message, access_token: pageToken }),
         });
         result = await res.json();
       } else {
+        // Text only
         const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: post.message, access_token: pageToken }),
         });
         result = await res.json();
       }
+
       if (result.error) {
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(JSON.stringify(result.error).slice(0, 500), post.id).run();
       } else {
