@@ -66,11 +66,11 @@ ai.post("/ai-write", async (c) => {
   if (topic.length > 2000) return c.json({ error: "topic too long (max 2000)" }, 400);
 
   const toneMap: Record<string, string> = {
-    "สนุก": "สนุกสนาน ใช้อีโมจิ เป็นกันเอง", "จริงจัง": "จริงจัง น่าเชื่อถือ เป็นทางการ",
-    "ขายของ": "กระตุ้นให้ซื้อ มี CTA ชัดเจน เน้นประโยชน์", "ให้ความรู้": "ให้ข้อมูลที่เป็นประโยชน์ อธิบายง่าย",
+    "general": "เขียนอิสระ น่าสนใจ อ่านง่าย ไม่เกิน 250 คำ",
+    "professional": "ให้ความรู้ลึก 300-500 คำ เริ่มด้วย hook แรง แบ่งหัวข้อย่อย มีสถิติ/fact ปิดด้วย takeaway + ถามคำถาม",
   };
   const formatMap: Record<string, string> = { "สั้น": "1-2 บรรทัด สั้นกระชับ", "ปานกลาง": "3-5 บรรทัด", "ยาว": "6-10 บรรทัด ละเอียด" };
-  const toneDesc = toneMap[tone || "สนุก"] || toneMap["สนุก"];
+  const toneDesc = toneMap[tone || "general"] || toneMap["general"];
   const formatDesc = formatMap[format || "ปานกลาง"] || formatMap["ปานกลาง"];
 
   const systemPrompt = `คุณเป็น Social Media Content Writer มืออาชีพ เขียนเป็นภาษาไทย

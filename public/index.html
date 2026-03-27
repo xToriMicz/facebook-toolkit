@@ -457,13 +457,8 @@
             <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">ตัวอักษร</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               <select id="aiTone" onchange="onStyleChange()" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
-                <option value="fun">🎉 สนุก</option>
-                <option value="sales" selected>💰 ขายของ</option>
-                <option value="affiliate">🤝 Affiliate</option>
-                <option value="professional">📋 จริงจัง</option>
-                <option value="story">📖 เล่าเรื่อง</option>
-                <option value="poll">❓ ถามคำถาม</option>
-                <option value="testimonial">⭐ รีวิว</option>
+                <option value="general" selected>📝 ทั่วไป</option>
+                <option value="professional">📋 ให้ความรู้</option>
               </select>
               <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
             </div>
@@ -1244,13 +1239,8 @@
 
     // Content Style Guidelines
     const STYLE_GUIDE = {
-      fun: { min:40, ideal:80, max:150, tips:'💡 แนะนำ: 40-80 ตัวอักษร, ใช้ emoji, จบด้วยคำถาม', prompt:'เขียนโพส Facebook สนุกสนาน ภาษาไทย ใช้ emoji ไม่เกิน 3 ตัว จบด้วยคำถาม 40-80 ตัวอักษร' },
-      sales: { min:80, ideal:150, max:250, tips:'💡 แนะนำ: 80-150 ตัวอักษร, Hook→Benefit→CTA→Link', prompt:'เขียนโพส Facebook ขายสินค้า ภาษาไทย hook ดึงดูด benefit 2-3 ข้อ CTA ชัดเจน urgency' },
-      affiliate: { min:150, ideal:200, max:280, tips:'💡 แนะนำ: 150-200 ตัวอักษร, PAS framework, เปิดเผย affiliate', prompt:'เขียนโพส Facebook affiliate review ภาษาไทย PAS framework ประสบการณ์จริง บอกว่าเป็น affiliate' },
-      professional: { min:80, ideal:150, max:200, tips:'💡 แนะนำ: 80-150 ตัวอักษร, Fact→Insight→Takeaway', prompt:'เขียนโพส Facebook ให้ความรู้ ภาษาไทย เริ่ม fact/สถิติ insight takeaway ปฏิบัติได้' },
-      story: { min:150, ideal:250, max:400, tips:'💡 แนะนำ: 150-250 ตัวอักษร, Hook→Tension→Turning→Lesson', prompt:'เขียนโพส Facebook storytelling ภาษาไทย hook tension turning point บทเรียน ถามผู้อ่าน' },
-      poll: { min:30, ideal:60, max:100, tips:'💡 แนะนำ: 30-60 ตัวอักษร, คำถามสั้น + 2 ตัวเลือก emoji', prompt:'เขียนโพส Facebook poll ภาษาไทย คำถามสั้น 2 ตัวเลือก emoji บอกให้เหตุผลในคอมเมนต์' },
-      testimonial: { min:60, ideal:120, max:200, tips:'💡 แนะนำ: 60-120 ตัวอักษร, quote ลูกค้า + ดาว + ขอบคุณ', prompt:'เขียนโพส Facebook testimonial ภาษาไทย quote ลูกค้า ชื่อ ดาว 5 ดาว ขอบคุณ' },
+      general: { min:40, ideal:150, max:250, tips:'💡 แนะนำ: ไม่เกิน 250 คำ, เขียนอิสระ', prompt:'เขียนโพส Facebook ภาษาไทย สไตล์อิสระ เขียนแบบไหนก็ได้ที่เหมาะกับหัวข้อ อ่านง่าย น่าสนใจ ไม่เกิน 250 คำ' },
+      professional: { min:300, ideal:400, max:500, tips:'💡 แนะนำ: 300-500 คำ, Hook แรง → เนื้อหาลึก → Takeaway', prompt:'เขียนโพส Facebook ให้ความรู้แบบ SEO ภาษาไทย 300-500 คำ เริ่มด้วย hook 2 บรรทัดที่ทำให้คนต้องกด "ดูเพิ่มเติม" จากนั้นให้ความรู้ลึกๆ แบ่งเป็นหัวข้อย่อย ใช้ emoji เป็น bullet points มีสถิติหรือ fact ปิดด้วย takeaway ที่ปฏิบัติได้ + ถามคำถามให้คนคอมเมนต์' },
     };
 
     function onStyleChange() {
