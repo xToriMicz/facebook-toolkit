@@ -470,9 +470,9 @@
           </div>
           <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: 80-150 ตัวอักษร, Hook→Benefit→CTA</div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-            📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง (เลือกหลายรูปได้)
+            📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
           </div>
-          <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+          <input type="file" id="fileInput" accept="image/*,video/mp4,video/quicktime,video/webm" multiple onchange="handleFiles(this.files)">
           <div style="margin-top:8px;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px">
             <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">🎨 Nano Banana Pro — สร้าง Prompt</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -963,53 +963,78 @@
       dz.classList.add('has-file');
       for(const file of files) {
         done++;
+        const isVideo = file.type.startsWith('video/');
         dz.textContent = '⏳ กำลังอัพโหลด '+done+'/'+total+'...';
-        // Compress
-        const { blob, thumbUrl, origSize, compSize } = await compressImage(file);
-        const sizeInfo = formatBytes(origSize)+'→'+formatBytes(compSize);
-        // Preview with objectURL (fast)
-        uploadedImages.push({ data: thumbUrl, name: file.name, url: null, sizeInfo });
+        let blob, thumbUrl, origSize, compSize, sizeInfo;
+        if (isVideo) {
+          // Video: no compress, upload original
+          if (file.size > 100*1024*1024) { toast('err','วิดีโอใหญ่เกินไป (max 100MB)'); continue; }
+          blob = file; thumbUrl = URL.createObjectURL(file); origSize = file.size; compSize = file.size;
+          sizeInfo = formatBytes(origSize)+' (video)';
+        } else {
+          // Image: compress via canvas
+          const c = await compressImage(file);
+          blob = c.blob; thumbUrl = c.thumbUrl; origSize = c.origSize; compSize = c.compSize;
+          sizeInfo = formatBytes(origSize)+'→'+formatBytes(compSize);
+        }
+        // Preview
+        uploadedImages.push({ data: thumbUrl, name: file.name, url: null, sizeInfo, isVideo });
         renderImagePreviews();
-        // Upload compressed blob
+        // Upload
         const form = new FormData();
-        form.append('file', new File([blob], file.name, { type: 'image/jpeg' }));
+        form.append('file', new File([blob], file.name, { type: isVideo ? file.type : 'image/jpeg' }));
         try {
-          const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
+          const endpoint = isVideo ? '/api/upload-video' : '/api/upload';
+          const r = await fetch(endpoint, { method:'POST', credentials:'same-origin', body:form });
           const d = await r.json();
-          if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;img.data=d.url;uploadedImageUrl=d.url;} renderImagePreviews(); }
-          else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
-        } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ: '+(e.message||'')); }
+          if(d.ok) { const img=uploadedImages.find(i=>i.name===file.name); if(img){img.url=d.url;img.data=isVideo?thumbUrl:d.url;uploadedImageUrl=d.url;} renderImagePreviews(); }
+          else { toast('err', d.error || 'อัพโหลดไม่สำเร็จ'); }
+        } catch(e) { toast('err','อัพโหลดไม่สำเร็จ: '+(e.message||'')); }
       }
-      dz.textContent = '✅ '+uploadedImages.length+' รูป';
+      const vidCount = uploadedImages.filter(i=>i.isVideo).length;
+      const imgCount = uploadedImages.length - vidCount;
+      dz.textContent = '✅ '+(imgCount?imgCount+' รูป':'')+(imgCount&&vidCount?' + ':'')+(vidCount?vidCount+' วิดีโอ':'');
     }
     async function handleFile(file){if(file)await handleFiles([file]);}
     function renderImagePreviews(){
       const el=document.getElementById('imagePreview');
-      el.innerHTML=uploadedImages.map((img,i)=>
-        '<div class="multi-thumb"><img loading="lazy" src="'+img.data+'" style="width:80px;height:80px;object-fit:cover"><button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button>'+(img.sizeInfo?'<div style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:2px">'+img.sizeInfo+'</div>':'')+'</div>'
-      ).join('');
+      el.innerHTML=uploadedImages.map((img,i)=>{
+        const media = img.isVideo
+          ? '<video src="'+img.data+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px" muted></video><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.2rem">▶</div>'
+          : '<img loading="lazy" src="'+img.data+'" style="width:80px;height:80px;object-fit:cover">';
+        return '<div class="multi-thumb" style="position:relative">'+media+'<button class="multi-thumb-remove" onclick="removeImage('+i+')">×</button>'+(img.sizeInfo?'<div style="font-size:0.55rem;color:var(--text-muted);text-align:center;margin-top:2px">'+img.sizeInfo+'</div>':'')+'</div>';
+      }).join('');
       uploadedImageData=uploadedImages.length?uploadedImages[0].data:null;
     }
     function removeImage(idx){
       if(uploadedImages[idx]&&uploadedImages[idx].data.startsWith('blob:'))URL.revokeObjectURL(uploadedImages[idx].data);
       uploadedImages.splice(idx,1);renderImagePreviews();
-      if(!uploadedImages.length){dz.classList.remove('has-file');dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง (เลือกหลายรูปได้)';uploadedImageUrl=null;uploadedImageData=null;}
+      if(!uploadedImages.length){dz.classList.remove('has-file');dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง';uploadedImageUrl=null;uploadedImageData=null;}
       else{dz.textContent='✅ '+uploadedImages.length+' รูป';uploadedImageUrl=uploadedImages[0].url;}
     }
 
     async function submitPost() {
       const msg = document.getElementById('message').value.trim();
-      if(!msg && !uploadedImageUrl) { toast('err','Write something or upload an image'); return; }
+      if(!msg && !uploadedImageUrl) { toast('err','เขียนข้อความหรืออัพโหลดรูป/วิดีโอ'); return; }
       if(!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
       const btn=document.getElementById('postBtn'); btn.disabled=true; btn.innerHTML='⏳ กำลังโพส...';
       try {
-        const imageUrls = uploadedImages.filter(i=>i.url).map(i=>i.url);
-        const body = imageUrls.length > 1
-          ? {message:msg, image_urls:imageUrls, page_id:selectedPage.id}
-          : {message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id};
-        const r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
-        const d=await r.json();
-        if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูป หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; document.getElementById('charCount').textContent='0'; loadHistory(); }
+        const videoFile = uploadedImages.find(i=>i.isVideo && i.url);
+        const imageFiles = uploadedImages.filter(i=>!i.isVideo && i.url);
+        let r, d;
+        if (videoFile) {
+          // Video post: use /api/post with video_url
+          r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({message:msg, video_url:videoFile.url, page_id:selectedPage.id})});
+        } else {
+          // Image/text post
+          const imageUrls = imageFiles.map(i=>i.url);
+          const body = imageUrls.length > 1
+            ? {message:msg, image_urls:imageUrls, page_id:selectedPage.id}
+            : {message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id};
+          r=await fetch('/api/post',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+        }
+        d=await r.json();
+        if(d.ok) { toast('ok','โพสสำเร็จ!');showNotify('โพสลงเพจเรียบร้อย!'); document.getElementById('message').value=''; document.getElementById('imagePreview').innerHTML=''; dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; uploadedImageUrl=null; uploadedImageData=null; uploadedImages=[]; document.getElementById('charCount').textContent='0'; loadHistory(); }
         else { const detail = d.photo_errors ? ' ('+d.photo_errors.join(', ')+')' : ''; toast('err',(d.error||'โพสไม่สำเร็จ')+detail); console.error('Post error:', d); }
       } catch(e) { toast('err','Error: '+e.message); }
       btn.disabled=false; btn.innerHTML='📤 โพสลงเพจ';

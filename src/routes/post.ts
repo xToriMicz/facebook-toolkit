@@ -15,10 +15,11 @@ post.post("/post", async (c) => {
   const message = body.message ? sanitize(body.message) : "";
   const image_url = body.image_url;
   const image_urls = body.image_urls;
+  const video_url = body.video_url;
   const page_id = body.page_id;
   const affiliate_link = body.affiliate_link ? sanitize(body.affiliate_link) : null;
-  console.log("[post] received:", JSON.stringify({ message: message?.slice(0, 50), image_url, image_urls, page_id }));
-  if (!message && !image_url && !image_urls?.length) return c.json({ error: "message or image required" }, 400);
+  console.log("[post] received:", JSON.stringify({ message: message?.slice(0, 50), image_url, image_urls, video_url, page_id }));
+  if (!message && !image_url && !image_urls?.length && !video_url) return c.json({ error: "message, image or video required" }, 400);
   if (message && message.length > 5000) return c.json({ error: "message too long (max 5000)" }, 400);
 
   const targetPageId = page_id || await getUserPageId(c.env.KV, session.fb_id);
@@ -34,6 +35,26 @@ post.post("/post", async (c) => {
 
   try {
     let result: any;
+
+    // Video post: use /{page_id}/videos endpoint
+    if (video_url) {
+      console.log("[post] video URL:", video_url);
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/videos`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_url: video_url, description: message || "", access_token: page.page_token }),
+      });
+      result = await res.json();
+      console.log("[post] FB video response:", JSON.stringify(result).slice(0, 300));
+      if (!result.error) {
+        const fbPostId = result.id || null;
+        await c.env.DB.prepare(
+          "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
+        ).bind(message || "", video_url, fbPostId, targetPageId, session.fb_id, new Date().toISOString()).run();
+        return c.json({ ok: true, result, page_name: page.page_name });
+      }
+      return c.json({ error: result.error?.message || "Video post failed", fb_error: result.error }, 400);
+    }
+
     const urls = image_urls || (image_url ? [image_url] : []);
 
     if (urls.length > 1) {
@@ -111,8 +132,9 @@ post.post("/upload", async (c) => {
   const formData = await c.req.formData();
   const file = formData.get("file") as File;
   if (!file) return c.json({ error: "No file" }, 400);
-  if (!file.type.startsWith("image/")) return c.json({ error: "Only image files allowed" }, 400);
-  if (file.size > 10 * 1024 * 1024) return c.json({ error: "File too large (max 10MB)" }, 400);
+  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) return c.json({ error: "Only image or video files allowed" }, 400);
+  const maxSize = file.type.startsWith("video/") ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxSize) return c.json({ error: `File too large (max ${file.type.startsWith("video/") ? "100MB" : "10MB"})` }, 400);
 
   const key = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "")}`;
   await c.env.ASSETS.put(key, await file.arrayBuffer(), {
