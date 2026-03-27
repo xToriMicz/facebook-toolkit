@@ -448,7 +448,7 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
-            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">คำ</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
+            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">ตัวอักษร</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
             <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
               <select id="aiTone" onchange="onStyleChange()" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
                 <option value="general" selected>📝 ทั่วไป</option>
@@ -457,7 +457,7 @@
               <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
             </div>
           </div>
-          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 250 คำ, เขียนอิสระ</div>
+          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 800 ตัวอักษร, เขียนอิสระ</div>
           <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
             📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
           </div>
@@ -1093,7 +1093,7 @@
     }
     function applyTemplate() {
       const sel=document.getElementById('tplSelect');
-      if(sel&&sel.value){document.getElementById('message').value=sel.value;document.getElementById('charCount').textContent=countWords(sel.value);sel.selectedIndex=0;}
+      if(sel&&sel.value){document.getElementById('message').value=sel.value;document.getElementById('charCount').textContent=sel.value.length;sel.selectedIndex=0;}
     }
 
     async function loadTemplates() {
@@ -1233,8 +1233,8 @@
 
     // Content Style Guidelines
     const STYLE_GUIDE = {
-      general: { min:40, ideal:150, max:250, tips:'💡 แนะนำ: ไม่เกิน 250 คำ, เขียนอิสระ', prompt:'เขียนโพส Facebook ภาษาไทย สไตล์อิสระ เขียนแบบไหนก็ได้ที่เหมาะกับหัวข้อ อ่านง่าย น่าสนใจ ไม่เกิน 250 คำ' },
-      professional: { min:300, ideal:400, max:500, tips:'💡 แนะนำ: 300-500 คำ, Hook แรง → เนื้อหาลึก → Takeaway', prompt:'เขียนโพส Facebook ให้ความรู้แบบ SEO ภาษาไทย 300-500 คำ เริ่มด้วย hook 2 บรรทัดที่ทำให้คนต้องกด "ดูเพิ่มเติม" จากนั้นให้ความรู้ลึกๆ แบ่งเป็นหัวข้อย่อย ใช้ emoji เป็น bullet points มีสถิติหรือ fact ปิดด้วย takeaway ที่ปฏิบัติได้ + ถามคำถามให้คนคอมเมนต์' },
+      general: { min:100, ideal:500, max:800, tips:'💡 แนะนำ: ไม่เกิน 800 ตัวอักษร, เขียนอิสระ', prompt:'เขียนโพส Facebook ภาษาไทย สไตล์อิสระ เขียนแบบไหนก็ได้ที่เหมาะกับหัวข้อ อ่านง่าย น่าสนใจ ไม่เกิน 250 คำ' },
+      professional: { min:800, ideal:1500, max:2500, tips:'💡 แนะนำ: 800-2,500 ตัวอักษร, Hook แรง → เนื้อหาลึก → Takeaway', prompt:'เขียนโพส Facebook ให้ความรู้แบบ SEO ภาษาไทย 300-500 คำ เริ่มด้วย hook 2 บรรทัดที่ทำให้คนต้องกด "ดูเพิ่มเติม" จากนั้นให้ความรู้ลึกๆ แบ่งเป็นหัวข้อย่อย ใช้ emoji เป็น bullet points มีสถิติหรือ fact ปิดด้วย takeaway ที่ปฏิบัติได้ + ถามคำถามให้คนคอมเมนต์' },
     };
 
     function onStyleChange() {
@@ -1244,15 +1244,13 @@
       updateCharColor();
     }
 
-    function countWords(text) { return text.trim() ? text.trim().split(/\s+/).length : 0; }
     function updateCharColor() {
-      const text = document.getElementById('message').value;
-      const words = countWords(text);
+      const len = document.getElementById('message').value.length;
       const style = document.getElementById('aiTone').value;
       const guide = STYLE_GUIDE[style] || STYLE_GUIDE.general;
       const countEl = document.getElementById('charCount');
       const hintEl = document.getElementById('charHint');
-      countEl.textContent = words;
+      countEl.textContent = len;
       if (words === 0) { countEl.style.color = 'var(--text-muted)'; hintEl.textContent = ''; }
       else if (words <= guide.ideal) { countEl.style.color = '#22c55e'; hintEl.textContent = '✓ ดี'; hintEl.style.color = '#22c55e'; }
       else if (words <= guide.max) { countEl.style.color = '#f59e0b'; hintEl.textContent = '⚠ ยาวไปนิด'; hintEl.style.color = '#f59e0b'; }
@@ -1583,7 +1581,7 @@
         const text = d.text || '';
         const tags = (d.hashtags || []).join(' ');
         ta.value = text + (tags ? '\n\n' + tags : '');
-        document.getElementById('charCount').textContent = countWords(ta.value);
+        document.getElementById('charCount').textContent = ta.value.length;
         updateCharColor();
       } catch(e) { toast('err', 'AI error: ' + e.message); }
       btn.disabled = false; btn.textContent = '✨ AI เขียนให้';
