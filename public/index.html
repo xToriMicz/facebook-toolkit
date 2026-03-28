@@ -2241,15 +2241,15 @@
       }else if(freq==='many'){
         var perDay=freqValue;
         var curDate=new Date(start);
+        var endH=parseInt(timeEnd.split(':')[0]);
         for(var i=0;i<count;i++){
           var slot=i%perDay;
           var dayOffset=Math.floor(i/perDay);
           var d=new Date(curDate.getTime()+dayOffset*86400000);
-          var startH=parseInt(timeStart.split(':')[0]);
-          var endH=parseInt(timeEnd.split(':')[0]);
-          var h=startH+Math.floor(slot*(endH-startH)/perDay);
+          var minH=dayOffset===0?start.getHours():parseInt(timeStart.split(':')[0]);
+          var h=minH+Math.floor(slot*(endH-minH)/perDay);
           d.setHours(h,0,0,0);
-          results.push(d.toISOString());
+          if(d>now)results.push(d.toISOString());
         }
       }else if(freq==='interval'){
         var intervalMs=freqValue*3600000;
