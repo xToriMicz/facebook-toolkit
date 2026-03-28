@@ -518,9 +518,9 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
               <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary)">📋 Prompt Logs</div>
               <div style="display:flex;gap:6px">
-                <button onclick="loadPromptLogs('all')" class="log-filter-btn active" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ทั้งหมด</button>
-                <button onclick="loadPromptLogs('text')" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ข้อความ</button>
-                <button onclick="loadPromptLogs('image')" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">รูป</button>
+                <button onclick="loadPromptLogs('all',this)" class="log-filter-btn active" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ทั้งหมด</button>
+                <button onclick="loadPromptLogs('text',this)" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ข้อความ</button>
+                <button onclick="loadPromptLogs('image',this)" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">รูป</button>
               </div>
             </div>
             <div id="promptLogsList" style="max-height:300px;overflow-y:auto"></div>
@@ -2182,12 +2182,26 @@
       var start=new Date(dateStart+'T'+timeStart+':00');
       var end=new Date(dateEnd+'T'+timeEnd+':00');
       var results=[];
-      if(freq==='auto'||freq==='1perday'){
+      if(freq==='1perday'){
         var days=Math.max(1,Math.ceil((end-start)/(86400000)));
         for(var i=0;i<count;i++){
           var day=new Date(start.getTime()+((i%days)/days)*(end-start));
           var h=parseInt(timeStart.split(':')[0])+Math.floor(Math.random()*(parseInt(timeEnd.split(':')[0])-parseInt(timeStart.split(':')[0])));
-          var m=Math.floor(Math.random()/0.2)*10;
+          var m=Math.floor(Math.random()*6)*10;
+          day.setHours(h,m,0,0);
+          results.push(day.toISOString());
+        }
+      }else if(freq==='auto'){
+        // Thailand peak hours: 07-09, 11-13, 17-20
+        var peakHours=[7,8,9,11,12,13,17,18,19,20];
+        var startH=parseInt(timeStart.split(':')[0]),endH=parseInt(timeEnd.split(':')[0]);
+        var validPeaks=peakHours.filter(function(h){return h>=startH&&h<endH;});
+        if(!validPeaks.length)validPeaks=[startH];
+        var days=Math.max(1,Math.ceil((end-start)/(86400000)));
+        for(var i=0;i<count;i++){
+          var day=new Date(start.getTime()+(Math.floor(i*days/count))*86400000);
+          var h=validPeaks[i%validPeaks.length];
+          var m=Math.floor(Math.random()*6)*10;
           day.setHours(h,m,0,0);
           results.push(day.toISOString());
         }
@@ -2679,11 +2693,12 @@
       el.style.display = show ? '' : 'none';
       if (show) loadPromptLogs('all');
     }
-    async function loadPromptLogs(type) {
+    async function loadPromptLogs(type, btn) {
       var el = document.getElementById('promptLogsList');
       var btns = document.querySelectorAll('.log-filter-btn');
-      btns.forEach(function(b){ b.classList.remove('active'); b.style.background='var(--bg)'; });
-      event.target.classList.add('active'); event.target.style.background='var(--accent)'; event.target.style.color='#fff';
+      btns.forEach(function(b){ b.classList.remove('active'); b.style.background='var(--bg)'; b.style.color='var(--text-secondary)'; });
+      if(btn){btn.classList.add('active'); btn.style.background='var(--accent)'; btn.style.color='#fff';}
+      else{var first=document.querySelector('.log-filter-btn');if(first){first.classList.add('active');first.style.background='var(--accent)';first.style.color='#fff';}}
       try {
         var url = '/api/prompt-logs?limit=20';
         if (type && type !== 'all') url += '&type=' + type;
