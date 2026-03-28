@@ -594,6 +594,7 @@
             <button class="log-filter-btn" onclick="filterLogs('post_scheduled',this)">⏰ ตั้งเวลา</button>
             <button class="log-filter-btn" onclick="filterLogs('ai_write',this)">🤖 AI</button>
             <button class="log-filter-btn" onclick="filterLogs('settings_changed',this)">⚙️ ตั้งค่า</button>
+            <button class="log-filter-btn" onclick="filterLogs('auto_reply',this)">💬 Auto Reply</button>
           </div>
           <div id="logList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
@@ -705,6 +706,32 @@
             <label>FAL.ai API Key</label>
             <div style="display:flex;gap:6px"><input id="falKey" type="password" placeholder="fal_..." style="flex:1"><button onclick="saveApiKey('fal_api_key','falKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
             <div id="falStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+        </div>
+
+        <!-- Auto Reply Comment Settings -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-title"><span class="card-title-icon">💬</span> Auto Reply Comment</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;color:var(--text)">AI ตอบคอมเม้นอัตโนมัติ</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+              <input type="checkbox" id="autoReplyToggle" onchange="toggleAutoReply()" style="opacity:0;width:0;height:0">
+              <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:26px;transition:all 0.3s;border:1px solid var(--border)"></span>
+              <span id="autoReplySlider" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--text-muted);transition:all 0.3s"></span>
+            </label>
+          </div>
+          <div id="autoReplyStatus" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px"></div>
+
+          <!-- Auto Reply History Preview -->
+          <div id="autoReplyHistorySection" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <span style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">ประวัติตอบล่าสุด</span>
+              <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
+            </div>
+            <div id="autoReplyHistoryList" style="max-height:300px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
@@ -1048,7 +1075,7 @@
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
-      if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); }
+      if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); loadAutoReplySettings(); }
       if(tab==='tickets') loadTickets();
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
@@ -1483,9 +1510,9 @@
     // Activity Logs
     let allLogs = [];
     let currentLogFilter = 'all';
-    const LOG_ICONS = { login:'🔑', logout:'🔴', post_created:'📝', post_scheduled:'⏰', draft_saved:'💾', ai_write:'🤖', page_switched:'📄', settings_changed:'⚙️' };
-    const LOG_LABELS = { login:'เข้าสู่ระบบ', logout:'ออกจากระบบ', post_created:'โพสลงเพจ', post_scheduled:'ตั้งเวลาโพส', draft_saved:'บันทึกแบบร่าง', ai_write:'AI เขียน', page_switched:'เปลี่ยนเพจ', settings_changed:'เปลี่ยนการตั้งค่า' };
-    const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_scheduled:'schedule', draft_saved:'settings', ai_write:'ai', page_switched:'settings', settings_changed:'settings' };
+    const LOG_ICONS = { login:'🔑', logout:'🔴', post_created:'📝', post_scheduled:'⏰', draft_saved:'💾', ai_write:'🤖', page_switched:'📄', settings_changed:'⚙️', auto_reply:'💬', auto_hide_spam:'🚫' };
+    const LOG_LABELS = { login:'เข้าสู่ระบบ', logout:'ออกจากระบบ', post_created:'โพสลงเพจ', post_scheduled:'ตั้งเวลาโพส', draft_saved:'บันทึกแบบร่าง', ai_write:'AI เขียน', page_switched:'เปลี่ยนเพจ', settings_changed:'เปลี่ยนการตั้งค่า', auto_reply:'AI ตอบคอมเม้น', auto_hide_spam:'ซ่อน Spam' };
+    const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_scheduled:'schedule', draft_saved:'settings', ai_write:'ai', page_switched:'settings', settings_changed:'settings', auto_reply:'ai', auto_hide_spam:'settings' };
 
     async function loadLogs() {
       const el = document.getElementById('logList');
@@ -1513,7 +1540,7 @@
 
     function renderLogs(type) {
       const el = document.getElementById('logList');
-      let logs = type === 'all' ? allLogs : allLogs.filter(l => l.action === type);
+      let logs = type === 'all' ? allLogs : type === 'auto_reply' ? allLogs.filter(l => l.action === 'auto_reply' || l.action === 'auto_hide_spam') : allLogs.filter(l => l.action === type);
       const search = (document.getElementById('logSearch')||{}).value||'';
       if (search.length >= 2) { const q=search.toLowerCase(); logs=logs.filter(l=>(l.details||'').toLowerCase().includes(q)||(l.action||'').includes(q)); }
       const dateVal = (document.getElementById('logDate')||{}).value||'';
@@ -1724,6 +1751,88 @@
           if(d.endpoint) document.getElementById('aiEndpoint').value = d.endpoint;
         }
       }).catch(()=>{});
+    }
+
+    // Auto Reply Settings
+    async function loadAutoReplySettings() {
+      try {
+        var r = await fetch('/api/auto-reply/settings', { credentials: 'same-origin' });
+        var d = await r.json();
+        var toggle = document.getElementById('autoReplyToggle');
+        var slider = document.getElementById('autoReplySlider');
+        var status = document.getElementById('autoReplyStatus');
+        var histSection = document.getElementById('autoReplyHistorySection');
+        toggle.checked = d.enabled;
+        if (d.enabled) {
+          slider.style.transform = 'translateX(22px)';
+          slider.style.background = 'var(--success)';
+          status.textContent = '🟢 เปิดอยู่ — AI จะตอบคอมเม้นทุก 5 นาที';
+          status.style.color = 'var(--success)';
+          histSection.style.display = '';
+          loadAutoReplyHistory();
+        } else {
+          slider.style.transform = 'translateX(0)';
+          slider.style.background = 'var(--text-muted)';
+          status.textContent = '⚫ ปิดอยู่';
+          status.style.color = 'var(--text-muted)';
+          histSection.style.display = 'none';
+        }
+      } catch(e) {}
+    }
+
+    async function toggleAutoReply() {
+      var toggle = document.getElementById('autoReplyToggle');
+      var slider = document.getElementById('autoReplySlider');
+      var status = document.getElementById('autoReplyStatus');
+      var histSection = document.getElementById('autoReplyHistorySection');
+      var enabled = toggle.checked;
+      try {
+        var r = await fetch('/api/auto-reply/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: enabled }) });
+        var d = await r.json();
+        if (d.ok) {
+          if (enabled) {
+            slider.style.transform = 'translateX(22px)';
+            slider.style.background = 'var(--success)';
+            status.textContent = '🟢 เปิดแล้ว — AI จะตอบคอมเม้นทุก 5 นาที';
+            status.style.color = 'var(--success)';
+            histSection.style.display = '';
+            loadAutoReplyHistory();
+            showNotify('เปิด Auto Reply สำเร็จ!');
+          } else {
+            slider.style.transform = 'translateX(0)';
+            slider.style.background = 'var(--text-muted)';
+            status.textContent = '⚫ ปิดแล้ว';
+            status.style.color = 'var(--text-muted)';
+            histSection.style.display = 'none';
+            showNotify('ปิด Auto Reply แล้ว');
+          }
+        }
+      } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--danger)'; }
+    }
+
+    async function loadAutoReplyHistory() {
+      var el = document.getElementById('autoReplyHistoryList');
+      try {
+        var r = await fetch('/api/auto-reply/history?limit=20', { credentials: 'same-origin' });
+        var d = await r.json();
+        var replies = d.replies || [];
+        if (!replies.length) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ยังไม่มีประวัติ</div>'; return; }
+        var TYPE_ICONS = { question:'❓', praise:'👍', experience:'💬', disagree:'🤔', tag_friend:'👥', emoji:'😊', spam:'🚫', unclear:'❔' };
+        var TYPE_LABELS = { question:'ถามข้อมูล', praise:'ชม', experience:'แชร์ประสบการณ์', disagree:'ไม่เห็นด้วย', tag_friend:'แท็กเพื่อน', emoji:'emoji', spam:'spam', unclear:'ไม่ชัดเจน' };
+        el.innerHTML = replies.map(function(r) {
+          var icon = TYPE_ICONS[r.comment_type] || '💬';
+          var label = TYPE_LABELS[r.comment_type] || r.comment_type;
+          var time = new Date(r.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+          var statusBadge = r.status === 'replied' ? '<span style="color:var(--success);font-size:0.62rem">✅ ตอบแล้ว</span>' : r.status === 'hidden' ? '<span style="color:var(--warning);font-size:0.62rem">🚫 ซ่อน</span>' : '<span style="color:var(--danger);font-size:0.62rem">❌ ล้มเหลว</span>';
+          return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.78rem">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+            '<span style="font-size:0.68rem;color:var(--text-muted)">' + icon + ' ' + label + ' — ' + (r.comment_from || 'ไม่ทราบ') + '</span>' +
+            '<span style="font-size:0.65rem;color:var(--text-muted)">' + time + '</span></div>' +
+            '<div style="color:var(--text-secondary);font-size:0.72rem;margin-bottom:2px">💭 ' + insEsc((r.comment_text || '').slice(0, 100)) + '</div>' +
+            (r.reply_text ? '<div style="color:var(--text);font-size:0.72rem;padding:4px 8px;background:rgba(79,110,247,0.06);border-radius:6px;margin-top:2px">→ ' + insEsc(r.reply_text.slice(0, 150)) + '</div>' : '') +
+            '<div style="margin-top:2px">' + statusBadge + '</div></div>';
+        }).join('');
+      } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.72rem">โหลดไม่สำเร็จ</div>'; }
     }
 
     // Slide-in notification (top-right)
