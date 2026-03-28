@@ -169,9 +169,9 @@ export async function processAutoReplies(env: Env) {
         : page.page_token;
       if (!pageToken) continue;
 
-      // Get recent posts (last 7 days)
+      // Get recent posts (last 24h only — matches comment since parameter)
       const { results: posts } = await env.DB.prepare(
-        "SELECT fb_post_id FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-7 days') ORDER BY created_at DESC LIMIT 20"
+        "SELECT fb_post_id FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 10"
       ).bind(fbId, page.page_id).all();
 
       for (const post of posts as any[]) {
