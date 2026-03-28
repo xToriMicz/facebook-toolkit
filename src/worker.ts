@@ -16,7 +16,7 @@ import shopee from "./routes/shopee-trends";
 import aiImage from "./routes/ai-image";
 import promptLogs from "./routes/prompt-logs";
 import bulk from "./routes/bulk";
-import autoReply, { processAutoReplies } from "./routes/auto-reply";
+import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-reply";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -203,6 +203,13 @@ export default {
     if (!lastRefresh || now - parseInt(lastRefresh) > 1800000) {
       ctx.waitUntil(
         refreshAllEngagement(env).then(() => env.KV.put("cron:engagement:last", String(now), { expirationTtl: 3600 }))
+      );
+    }
+    // Cleanup old comment_replies once per day (check KV throttle)
+    const lastCleanup = await env.KV.get("cron:reply-cleanup:last");
+    if (!lastCleanup || now - parseInt(lastCleanup) > 86400000) {
+      ctx.waitUntil(
+        cleanupOldReplies(env).then(() => env.KV.put("cron:reply-cleanup:last", String(now), { expirationTtl: 86400 }))
       );
     }
   },

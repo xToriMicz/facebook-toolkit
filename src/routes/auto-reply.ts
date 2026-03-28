@@ -271,6 +271,14 @@ export async function processAutoReplies(env: Env) {
   }
 }
 
+// ── Cron: Cleanup old comment_replies (>90 days) ──
+
+export async function cleanupOldReplies(env: Env) {
+  await env.DB.prepare(
+    "DELETE FROM comment_replies WHERE created_at < datetime('now', '-90 days')"
+  ).run();
+}
+
 // ── API Routes ──
 
 // GET /api/auto-reply/settings?page_id=xxx
@@ -318,15 +326,26 @@ autoReply.post("/auto-reply/settings", async (c) => {
   return c.json({ ok: true, page_id, enabled, reply_mode: mode });
 });
 
-// GET /api/auto-reply/history
+// GET /api/auto-reply/history?date=YYYY-MM-DD
 autoReply.get("/auto-reply/history", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
   const limit = Math.min(50, +(c.req.query("limit") || "20"));
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM comment_replies WHERE user_fb_id = ? ORDER BY created_at DESC LIMIT ?"
-  ).bind(session.fb_id, limit).all();
+  const date = c.req.query("date");
+
+  // Validate date format if provided
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return c.json({ error: "Invalid date format, use YYYY-MM-DD" }, 400);
+  }
+
+  const { results } = date
+    ? await c.env.DB.prepare(
+        "SELECT * FROM comment_replies WHERE user_fb_id = ? AND date(created_at) = ? ORDER BY created_at DESC LIMIT ?"
+      ).bind(session.fb_id, date, limit).all()
+    : await c.env.DB.prepare(
+        "SELECT * FROM comment_replies WHERE user_fb_id = ? ORDER BY created_at DESC LIMIT ?"
+      ).bind(session.fb_id, limit).all();
 
   return c.json({ replies: results, total: results.length });
 });
