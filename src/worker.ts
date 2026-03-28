@@ -15,6 +15,7 @@ import trends from "./routes/trends";
 import shopee from "./routes/shopee-trends";
 import aiImage from "./routes/ai-image";
 import promptLogs from "./routes/prompt-logs";
+import bulk from "./routes/bulk";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -84,6 +85,7 @@ app.route("/api", trends);
 app.route("/api", shopee);
 app.route("/api", aiImage);
 app.route("/api", promptLogs);
+app.route("/api", bulk);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
