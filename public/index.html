@@ -2199,13 +2199,15 @@
         if(r.scheduled_at){
           var d=new Date(r.scheduled_at);
           schedDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-          schedTime=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+          var roundedMin=Math.round(d.getMinutes()/30)*30;
+          if(roundedMin>=60)roundedMin=0;
+          schedTime=String(d.getHours()).padStart(2,'0')+':'+String(roundedMin).padStart(2,'0');
         }
         var schedEdit='<div style="display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap" onclick="event.stopPropagation()">'+
           '<span style="font-size:0.65rem;color:var(--text-muted)">⏰</span>'+
           '<input type="date" value="'+schedDate+'" onchange="window._bulkUpdateSchedule('+idx+',this.value,null)" style="padding:2px 6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.65rem;font-family:inherit;color-scheme:dark">'+
           '<select onchange="window._bulkUpdateSchedule('+idx+',null,this.value)" style="padding:2px 6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.65rem;font-family:inherit;color-scheme:dark">'+
-          (function(){var opts='';for(var h=0;h<24;h++){for(var m=0;m<60;m+=15){var v=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');opts+='<option value="'+v+'"'+(v===schedTime?' selected':'')+'>'+v+'</option>';}}return opts;})()+
+          (function(){var opts='';for(var h=0;h<24;h++){for(var m=0;m<60;m+=30){var v=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');opts+='<option value="'+v+'"'+(v===schedTime?' selected':'')+'>'+v+'</option>';}}return opts;})()+
           '</select>'+
           '</div>';
         return '<div style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.bulk-full\');if(f)f.style.display=f.style.display===\'block\'?\'none\':\'block\'">'+
