@@ -169,16 +169,16 @@ export async function processAutoReplies(env: Env) {
         : page.page_token;
       if (!pageToken) continue;
 
-      // Get recent posts (last 3 days — buffer for downtime recovery)
+      // Get recent posts (last 24h only — matches comment since parameter)
       const { results: posts } = await env.DB.prepare(
-        "SELECT fb_post_id FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
+        "SELECT fb_post_id FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-1 day') ORDER BY created_at DESC LIMIT 10"
       ).bind(fbId, page.page_id).all();
 
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
 
-        // Fetch only recent comments (since 72h ago) — buffer for downtime recovery
-        const since = Math.floor(Date.now() / 1000) - 259200;
+        // Fetch only recent comments (since 24h ago) to avoid replying to old ones
+        const since = Math.floor(Date.now() / 1000) - 86400;
         let comments: any[];
         try {
           const res = await fetch(
