@@ -711,15 +711,111 @@
       <div id="tabSchedule" class="hidden">
         <div class="card">
           <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">⏰ ตั้งเวลา/Bulk</h3>
-          <h4 style="margin:0 0 8px;font-size:0.85rem;color:var(--text-muted)">Bulk Schedule จากฉบับร่าง</h4>
-          <div id="bulkDraftList" style="margin-bottom:16px"><div class="empty-state">โหลดฉบับร่าง...</div></div>
-          <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <input type="datetime-local" id="bulkStartTime" style="flex:1;min-width:180px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
-            <select id="bulkInterval" style="padding:8px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
-              <option value="60">ทุก 1 ชม.</option><option value="120">ทุก 2 ชม.</option><option value="180" selected>ทุก 3 ชม.</option><option value="360">ทุก 6 ชม.</option><option value="720">ทุก 12 ชม.</option><option value="1440">ทุกวัน</option>
-            </select>
+
+          <!-- Bulk AI Generator -->
+          <div style="padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">🤖 Bulk AI Generator</div>
+
+            <!-- Step 1: Keywords -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;display:block">1. ใส่ keyword (บรรทัดละ 1, สูงสุด 10)</label>
+              <textarea id="bulkKeywords" rows="5" placeholder="น้ำมันแพง&#10;รถ EV 2026&#10;ประหยัดค่าเดินทาง&#10;รถยนต์ไฟฟ้า&#10;ค่าน้ำมัน" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px"><span id="bulkKeywordCount">0</span>/10 keywords</div>
+            </div>
+
+            <!-- Step 2: Content Type -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">2. ประเภทเนื้อหา</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="text" checked> ✍️ Text only
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="text_image"> ✍️+🎨 Text + Image
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="image"> 🎨 Image only
+                </label>
+              </div>
+            </div>
+
+            <!-- Step 3: Date Range -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">3. ช่วงวัน + เวลา</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+                <div style="flex:1;min-width:130px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">วันเริ่ม</div>
+                  <input type="date" id="bulkDateStart" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                </div>
+                <div style="flex:1;min-width:130px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">วันจบ</div>
+                  <input type="date" id="bulkDateEnd" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="flex:1;min-width:100px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">เวลาเริ่ม</div>
+                  <select id="bulkTimeStart" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark"></select>
+                </div>
+                <div style="flex:1;min-width:100px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">เวลาจบ</div>
+                  <select id="bulkTimeEnd" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark"></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Frequency -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">4. ความถี่</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="1perday" checked> 1 โพส/วัน
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="many"> หลายโพส/วัน
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="interval"> ทุก X ชม.
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="auto"> 🤖 Auto
+                </label>
+              </div>
+              <div id="bulkFreqDetail" style="display:none;margin-top:6px">
+                <input type="number" id="bulkFreqValue" min="1" max="12" value="3" style="width:80px;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                <span id="bulkFreqUnit" style="font-size:0.75rem;color:var(--text-muted);margin-left:4px">โพส/วัน</span>
+              </div>
+            </div>
+
+            <!-- Generate Button -->
+            <button class="btn btn-accent" onclick="bulkGenerate()" style="width:100%;padding:12px;font-size:0.9rem">🚀 Generate ทั้งหมด</button>
+            <div class="progress-bar" id="bulkProgress"><div class="bar"></div></div>
+            <div id="bulkGenStatus" style="display:none;margin-top:6px;font-size:0.72rem;color:var(--text-muted)"></div>
+
+            <!-- Preview Grid -->
+            <div id="bulkPreview" style="display:none;margin-top:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">Preview</div>
+                <button class="btn btn-accent" onclick="bulkConfirmSchedule()" style="padding:8px 16px;font-size:0.8rem">✅ ยืนยันตั้งเวลาทั้งหมด</button>
+              </div>
+              <div id="bulkPreviewList"></div>
+            </div>
           </div>
-          <button class="btn btn-accent" onclick="bulkSchedule()" style="width:100%;margin-bottom:16px">📅 ตั้งเวลาที่เลือกทั้งหมด</button>
+
+          <!-- Legacy Bulk from Drafts -->
+          <details style="margin-bottom:16px">
+            <summary style="font-size:0.78rem;color:var(--text-muted);cursor:pointer;padding:8px 0">📝 Bulk จากฉบับร่าง (เดิม)</summary>
+            <div style="margin-top:8px">
+              <div id="bulkDraftList" style="margin-bottom:8px"><div class="empty-state">โหลดฉบับร่าง...</div></div>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <input type="datetime-local" id="bulkStartTime" style="flex:1;min-width:180px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+                <select id="bulkInterval" style="padding:8px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+                  <option value="60">ทุก 1 ชม.</option><option value="120">ทุก 2 ชม.</option><option value="180" selected>ทุก 3 ชม.</option><option value="360">ทุก 6 ชม.</option><option value="720">ทุก 12 ชม.</option><option value="1440">ทุกวัน</option>
+                </select>
+              </div>
+              <button class="btn btn-accent" onclick="bulkSchedule()" style="width:100%;margin-bottom:8px">📅 ตั้งเวลาที่เลือกทั้งหมด</button>
+            </div>
+          </details>
           <div class="toast" id="bulkStatus"></div>
 
           <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">รายการที่ตั้งเวลาไว้</h4>
@@ -1975,6 +2071,159 @@
           '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (dr.message || '').slice(0, 60) + '</div>' +
           '<div style="font-size:0.7rem;color:var(--text-muted)">' + new Date(dr.updated_at).toLocaleString('th-TH',{hour12:false}) + '</div></div></label>').join('');
       } catch(e) { el.innerHTML = '<div class="empty-state">Error</div>'; }
+    }
+
+    // Bulk AI Generator
+    (function(){
+      // Populate time dropdowns
+      var ts=document.getElementById('bulkTimeStart'), te=document.getElementById('bulkTimeEnd');
+      for(var h=0;h<24;h++){var v=String(h).padStart(2,'0')+':00'; ts.innerHTML+='<option value="'+v+'">'+v+'</option>'; te.innerHTML+='<option value="'+v+'">'+v+'</option>';}
+      ts.value='08:00'; te.value='20:00';
+      // Default dates: tomorrow + 7 days
+      var tmr=new Date();tmr.setDate(tmr.getDate()+1);
+      var end=new Date();end.setDate(end.getDate()+8);
+      document.getElementById('bulkDateStart').value=tmr.toISOString().split('T')[0];
+      document.getElementById('bulkDateEnd').value=end.toISOString().split('T')[0];
+      // Keyword counter
+      document.getElementById('bulkKeywords').addEventListener('input',function(){
+        var lines=this.value.trim().split('\n').filter(Boolean);
+        document.getElementById('bulkKeywordCount').textContent=Math.min(lines.length,10);
+      });
+      // Frequency detail toggle
+      document.querySelectorAll('input[name="bulkFreq"]').forEach(function(r){
+        r.addEventListener('change',function(){
+          var det=document.getElementById('bulkFreqDetail');
+          var unit=document.getElementById('bulkFreqUnit');
+          if(this.value==='many'){det.style.display='';unit.textContent='โพส/วัน';document.getElementById('bulkFreqValue').value=3;}
+          else if(this.value==='interval'){det.style.display='';unit.textContent='ชม.';document.getElementById('bulkFreqValue').value=3;}
+          else{det.style.display='none';}
+        });
+      });
+      // Radio highlight
+      document.querySelectorAll('input[name="bulkType"],input[name="bulkFreq"]').forEach(function(r){
+        r.addEventListener('change',function(){
+          this.closest('div').querySelectorAll('label').forEach(function(l){l.style.borderColor='var(--border)';});
+          this.closest('label').style.borderColor='var(--accent)';
+        });
+      });
+    })();
+
+    var _bulkResults = [];
+    async function bulkGenerate() {
+      var keywords = document.getElementById('bulkKeywords').value.trim().split('\n').filter(Boolean).slice(0,10);
+      if(!keywords.length){toast('err','ใส่ keyword อย่างน้อย 1 อัน');return;}
+      if(!selectedPage){toast('err','กรุณาเลือกเพจก่อน');return;}
+      var type=document.querySelector('input[name="bulkType"]:checked').value;
+      var freq=document.querySelector('input[name="bulkFreq"]:checked').value;
+      var freqValue=parseInt(document.getElementById('bulkFreqValue').value)||3;
+      var dateStart=document.getElementById('bulkDateStart').value;
+      var dateEnd=document.getElementById('bulkDateEnd').value;
+      var timeStart=document.getElementById('bulkTimeStart').value;
+      var timeEnd=document.getElementById('bulkTimeEnd').value;
+      if(!dateStart||!dateEnd){toast('err','กรุณาเลือกวันเริ่ม-จบ');return;}
+      var statusEl=document.getElementById('bulkGenStatus');
+      statusEl.style.display='block';
+      showProgress('bulkProgress');
+      _bulkResults=[];
+      var previewEl=document.getElementById('bulkPreviewList');
+      previewEl.innerHTML='';
+      document.getElementById('bulkPreview').style.display='none';
+      for(var i=0;i<keywords.length;i++){
+        statusEl.textContent='⏳ กำลังสร้าง '+(i+1)+'/'+keywords.length+': '+keywords[i]+'...';
+        try{
+          // Generate text
+          var text='';
+          if(type==='text'||type==='text_image'){
+            var r=await fetch('/api/ai-write',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:keywords[i],tone:document.getElementById('aiTone')?document.getElementById('aiTone').value:'general',format:'ปานกลาง'})});
+            var d=await r.json();
+            text=(d.text||'')+((d.hashtags||[]).length?'\n\n'+(d.hashtags||[]).join(' '):'');
+          }
+          // Generate image
+          var imageUrl=null;
+          if(type==='text_image'||type==='image'){
+            var ir=await fetch('/api/ai-image/generate',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:keywords[i],aspect_ratio:'9:16',mode:'auto'})});
+            var id=await ir.json();
+            if(id.ok&&id.image_url)imageUrl=id.image_url;
+          }
+          _bulkResults.push({keyword:keywords[i],text:text,image_url:imageUrl,scheduled_at:null});
+        }catch(e){_bulkResults.push({keyword:keywords[i],text:'Error: '+e.message,image_url:null,scheduled_at:null});}
+      }
+      // Calculate schedule
+      var schedules=calculateBulkSchedule(_bulkResults.length,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue);
+      for(var j=0;j<_bulkResults.length;j++){_bulkResults[j].scheduled_at=schedules[j]||null;}
+      hideProgress('bulkProgress',true);
+      statusEl.textContent='✅ สร้างเสร็จ '+_bulkResults.length+' โพส!';
+      // Render preview
+      document.getElementById('bulkPreview').style.display='';
+      previewEl.innerHTML=_bulkResults.map(function(r,idx){
+        var thumb=r.image_url?'<img src="'+insEsc(r.image_url)+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+        var dt=r.scheduled_at?new Date(r.scheduled_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+        return '<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--border);align-items:start">'+thumb+
+          '<div style="flex:1;min-width:0"><div style="font-size:0.72rem;color:var(--accent);font-weight:500">'+insEsc(r.keyword)+'</div>'+
+          '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+insEsc((r.text||'').slice(0,120))+'</div>'+
+          '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">⏰ '+dt+'</div></div>'+
+          '<button onclick="_bulkResults.splice('+idx+',1);bulkRenderPreview()" style="padding:2px 6px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:none;color:#ef4444;font-size:0.65rem;cursor:pointer;flex-shrink:0">✕</button></div>';
+      }).join('');
+    }
+    function bulkRenderPreview(){
+      var el=document.getElementById('bulkPreviewList');
+      el.innerHTML=_bulkResults.map(function(r,idx){
+        var thumb=r.image_url?'<img src="'+insEsc(r.image_url)+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+        var dt=r.scheduled_at?new Date(r.scheduled_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+        return '<div style="display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--border);align-items:start">'+thumb+
+          '<div style="flex:1;min-width:0"><div style="font-size:0.72rem;color:var(--accent);font-weight:500">'+insEsc(r.keyword)+'</div>'+
+          '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px">'+insEsc((r.text||'').slice(0,120))+'</div>'+
+          '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">⏰ '+dt+'</div></div>'+
+          '<button onclick="_bulkResults.splice('+idx+',1);bulkRenderPreview()" style="padding:2px 6px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:none;color:#ef4444;font-size:0.65rem;cursor:pointer;flex-shrink:0">✕</button></div>';
+      }).join('');
+      if(!_bulkResults.length)document.getElementById('bulkPreview').style.display='none';
+    }
+    function calculateBulkSchedule(count,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue){
+      var start=new Date(dateStart+'T'+timeStart+':00');
+      var end=new Date(dateEnd+'T'+timeEnd+':00');
+      var results=[];
+      if(freq==='auto'||freq==='1perday'){
+        var days=Math.max(1,Math.ceil((end-start)/(86400000)));
+        for(var i=0;i<count;i++){
+          var day=new Date(start.getTime()+((i%days)/days)*(end-start));
+          var h=parseInt(timeStart.split(':')[0])+Math.floor(Math.random()*(parseInt(timeEnd.split(':')[0])-parseInt(timeStart.split(':')[0])));
+          var m=Math.floor(Math.random()/0.2)*10;
+          day.setHours(h,m,0,0);
+          results.push(day.toISOString());
+        }
+      }else if(freq==='many'){
+        var perDay=freqValue;
+        var curDate=new Date(start);
+        for(var i=0;i<count;i++){
+          var slot=i%perDay;
+          var dayOffset=Math.floor(i/perDay);
+          var d=new Date(curDate.getTime()+dayOffset*86400000);
+          var startH=parseInt(timeStart.split(':')[0]);
+          var endH=parseInt(timeEnd.split(':')[0]);
+          var h=startH+Math.floor(slot*(endH-startH)/perDay);
+          d.setHours(h,0,0,0);
+          results.push(d.toISOString());
+        }
+      }else if(freq==='interval'){
+        var intervalMs=freqValue*3600000;
+        for(var i=0;i<count;i++){
+          results.push(new Date(start.getTime()+i*intervalMs).toISOString());
+        }
+      }
+      return results.sort();
+    }
+    async function bulkConfirmSchedule(){
+      if(!_bulkResults.length){toast('err','ไม่มีโพสให้ตั้งเวลา');return;}
+      if(!selectedPage){toast('err','กรุณาเลือกเพจก่อน');return;}
+      var posts=_bulkResults.filter(function(r){return r.scheduled_at;}).map(function(r){
+        return{message:r.text||'',image_url:r.image_url||null,scheduled_at:r.scheduled_at};
+      });
+      try{
+        var r=await fetch('/api/schedule/bulk',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({posts:posts,page_id:selectedPage.id})});
+        var d=await r.json();
+        if(d.ok){toast('ok','ตั้งเวลา '+d.scheduled+' โพสสำเร็จ!');_bulkResults=[];document.getElementById('bulkPreview').style.display='none';loadSchedule();}
+        else{toast('err',d.error||'Error');}
+      }catch(e){toast('err','Error: '+e.message);}
     }
 
     async function bulkSchedule() {
