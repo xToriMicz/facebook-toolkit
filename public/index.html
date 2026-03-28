@@ -1853,18 +1853,38 @@
         if (!replies.length) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ยังไม่มีประวัติ</div>'; return; }
         var TYPE_ICONS = { question:'❓', praise:'👍', experience:'💬', disagree:'🤔', tag_friend:'👥', emoji:'😊', spam:'🚫', unclear:'❔' };
         var TYPE_LABELS = { question:'ถามข้อมูล', praise:'ชม', experience:'แชร์ประสบการณ์', disagree:'ไม่เห็นด้วย', tag_friend:'แท็กเพื่อน', emoji:'emoji', spam:'spam', unclear:'ไม่ชัดเจน' };
-        el.innerHTML = replies.map(function(r) {
-          var icon = TYPE_ICONS[r.comment_type] || '💬';
-          var label = TYPE_LABELS[r.comment_type] || r.comment_type;
-          var time = new Date(r.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
-          var statusBadge = r.status === 'replied' ? '<span style="color:var(--success);font-size:0.62rem">✅ ตอบแล้ว</span>' : r.status === 'hidden' ? '<span style="color:var(--warning);font-size:0.62rem">🚫 ซ่อน</span>' : '<span style="color:var(--danger);font-size:0.62rem">❌ ล้มเหลว</span>';
-          return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.78rem">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-            '<span style="font-size:0.68rem;color:var(--text-muted)">' + icon + ' ' + label + ' — ' + (r.comment_from || 'ไม่ทราบ') + '</span>' +
-            '<span style="font-size:0.65rem;color:var(--text-muted)">' + time + '</span></div>' +
-            '<div style="color:var(--text-secondary);font-size:0.72rem;margin-bottom:2px">💭 ' + insEsc((r.comment_text || '').slice(0, 100)) + '</div>' +
-            (r.reply_text ? '<div style="color:var(--text);font-size:0.72rem;padding:4px 8px;background:rgba(79,110,247,0.06);border-radius:6px;margin-top:2px">→ ' + insEsc(r.reply_text.slice(0, 150)) + '</div>' : '') +
-            '<div style="margin-top:2px;display:flex;justify-content:space-between;align-items:center">' + statusBadge + (r.post_id ? '<a href="https://facebook.com/' + r.post_id + '" target="_blank" rel="noopener" style="font-size:0.62rem;color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">🔗 เปิดใน Facebook</a>' : '') + '</div></div>';
+        // Group by post_id
+        var groups = {};
+        var groupOrder = [];
+        replies.forEach(function(r) {
+          var pid = r.post_id || 'unknown';
+          if (!groups[pid]) { groups[pid] = { post_id: pid, post_message: r.post_message || '', items: [] }; groupOrder.push(pid); }
+          groups[pid].items.push(r);
+        });
+        el.innerHTML = groupOrder.map(function(pid, gi) {
+          var g = groups[pid];
+          var postTitle = g.post_message ? insEsc(g.post_message.slice(0, 50)) + (g.post_message.length > 50 ? '...' : '') : 'โพส';
+          var fbLink = pid !== 'unknown' ? '<a href="https://facebook.com/' + pid + '" target="_blank" rel="noopener" style="font-size:0.62rem;color:var(--accent);text-decoration:none;flex-shrink:0" onclick="event.stopPropagation()">🔗 เปิดใน Facebook</a>' : '';
+          var groupId = 'arGroup' + gi;
+          return '<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">' +
+            '<div onclick="var c=document.getElementById(\'' + groupId + '\');var a=this.querySelector(\'.ar-arrow\');if(c.style.display===\'none\'){c.style.display=\'block\';a.textContent=\'▼\'}else{c.style.display=\'none\';a.textContent=\'▶\'}" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);cursor:pointer">' +
+            '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1"><span class="ar-arrow" style="font-size:0.6rem;color:var(--text-muted);flex-shrink:0">▼</span><span style="font-size:0.75rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ' + postTitle + '</span><span style="font-size:0.62rem;color:var(--text-muted);flex-shrink:0">' + g.items.length + ' คอมเม้น</span></div>' +
+            fbLink + '</div>' +
+            '<div id="' + groupId + '" style="padding:0 12px 8px">' +
+            g.items.map(function(r) {
+              var icon = TYPE_ICONS[r.comment_type] || '💬';
+              var label = TYPE_LABELS[r.comment_type] || r.comment_type;
+              var time = new Date(r.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+              var statusBadge = r.status === 'replied' ? '<span style="color:var(--success);font-size:0.62rem">✅ ตอบแล้ว</span>' : r.status === 'hidden' ? '<span style="color:var(--warning);font-size:0.62rem">🚫 ซ่อน</span>' : '<span style="color:var(--danger);font-size:0.62rem">❌ ล้มเหลว</span>';
+              return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.78rem">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+                '<span style="font-size:0.68rem;color:var(--text-muted)">' + icon + ' ' + label + ' — ' + (r.comment_from || 'ไม่ทราบ') + '</span>' +
+                '<span style="font-size:0.65rem;color:var(--text-muted)">' + time + '</span></div>' +
+                '<div style="color:var(--text-secondary);font-size:0.72rem;margin-bottom:2px">💭 ' + insEsc((r.comment_text || '').slice(0, 100)) + '</div>' +
+                (r.reply_text ? '<div style="color:var(--text);font-size:0.72rem;padding:4px 8px;background:rgba(79,110,247,0.06);border-radius:6px;margin-top:2px">→ ' + insEsc(r.reply_text.slice(0, 150)) + '</div>' : '') +
+                '<div style="margin-top:2px">' + statusBadge + '</div></div>';
+            }).join('') +
+            '</div></div>';
         }).join('');
       } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.72rem">โหลดไม่สำเร็จ</div>'; }
     }
