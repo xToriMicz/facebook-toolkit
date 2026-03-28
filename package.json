@@ -4,13 +4,17 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "esbuild": "^0.27.4"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "scripts": {
-    "deploy": "BRANCH=$(git branch --show-current); if [ \"$BRANCH\" != 'main' ]; then echo '❌ deploy ต้องจาก main เท่านั้น (ตอนนี้อยู่ '$BRANCH')'; exit 1; fi; git pull origin main && npx wrangler deploy"
+    "dev": "npx wrangler dev",
+    "build": "./scripts/build.sh",
+    "build:dev": "./scripts/build.sh --no-minify",
+    "deploy": "BRANCH=$(git branch --show-current); if [ \"$BRANCH\" != 'main' ]; then echo '❌ deploy ต้องจาก main เท่านั้น (ตอนนี้อยู่ '$BRANCH')'; exit 1; fi; git pull origin main && npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "hono": "^4.12.8"
