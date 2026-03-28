@@ -1763,18 +1763,13 @@
 
     async function loadAutoReplySettings() {
       var el = document.getElementById('autoReplyPageList');
+      if (!selectedPage) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กรุณาเลือกเพจก่อน</div>'; return; }
       try {
-        var [pagesRes, settingsRes] = await Promise.all([
-          fetch('/api/pages', { credentials: 'same-origin' }),
-          fetch('/api/auto-reply/settings', { credentials: 'same-origin' })
-        ]);
-        var pagesData = await pagesRes.json();
+        var settingsRes = await fetch('/api/auto-reply/settings?page_id=' + selectedPage.id, { credentials: 'same-origin' });
         var settingsData = await settingsRes.json();
-        var pages = pagesData.pages || pagesData || [];
+        var pages = [{ id: selectedPage.id, name: selectedPage.name }];
         var settings = {};
-        (settingsData.pages || []).forEach(function(s) { settings[s.page_id] = s; });
-
-        if (!pages.length) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ยังไม่มีเพจ</div>'; return; }
+        settings[settingsData.page_id || selectedPage.id] = settingsData;
 
         el.innerHTML = pages.map(function(p) {
           var pageId = p.id || p.page_id;
@@ -1820,10 +1815,11 @@
 
     async function loadAutoReplyHistory() {
       var el = document.getElementById('autoReplyHistoryList');
+      if (!selectedPage) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กรุณาเลือกเพจก่อน</div>'; return; }
       try {
         var r = await fetch('/api/auto-reply/history?limit=50', { credentials: 'same-origin' });
         var d = await r.json();
-        var replies = d.replies || [];
+        var replies = (d.replies || []).filter(function(r) { return r.page_id === selectedPage.id; });
         // Update stats
         var now = new Date();
         var todayStr = now.toISOString().slice(0, 10);
