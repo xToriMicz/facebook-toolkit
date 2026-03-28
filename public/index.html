@@ -709,24 +709,16 @@
           </div>
         </div>
 
-        <!-- Auto Reply Comment Settings -->
+        <!-- Auto Reply Comment Settings (per page) -->
         <div class="card" style="margin-top:12px">
           <div class="card-title"><span class="card-title-icon">💬</span> Auto Reply Comment</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
-            <div>
-              <div style="font-size:0.85rem;font-weight:600;color:var(--text)">AI ตอบคอมเม้นอัตโนมัติ</div>
-              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที</div>
-            </div>
-            <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
-              <input type="checkbox" id="autoReplyToggle" onchange="toggleAutoReply()" style="opacity:0;width:0;height:0">
-              <span style="position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:26px;transition:all 0.3s;border:1px solid var(--border)"></span>
-              <span id="autoReplySlider" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--text-muted);transition:all 0.3s"></span>
-            </label>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">AI วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที — ตั้งค่าแยกแต่ละเพจ</div>
+          <div id="autoReplyPageList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กำลังโหลด...</div>
           </div>
-          <div id="autoReplyStatus" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px"></div>
 
           <!-- Auto Reply History Preview -->
-          <div id="autoReplyHistorySection" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div id="autoReplyHistorySection" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <span style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">ประวัติตอบล่าสุด</span>
               <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
@@ -1753,61 +1745,64 @@
       }).catch(()=>{});
     }
 
-    // Auto Reply Settings
+    // Auto Reply Settings (per page)
+    var MODE_LABELS = { all:'ตอบทุก comment', random:'ตอบ 60-80% (สุ่ม)', question_only:'ตอบเฉพาะคำถาม', off:'ปิด' };
+
     async function loadAutoReplySettings() {
+      var el = document.getElementById('autoReplyPageList');
       try {
-        var r = await fetch('/api/auto-reply/settings', { credentials: 'same-origin' });
-        var d = await r.json();
-        var toggle = document.getElementById('autoReplyToggle');
-        var slider = document.getElementById('autoReplySlider');
-        var status = document.getElementById('autoReplyStatus');
-        var histSection = document.getElementById('autoReplyHistorySection');
-        toggle.checked = d.enabled;
-        if (d.enabled) {
-          slider.style.transform = 'translateX(22px)';
-          slider.style.background = 'var(--success)';
-          status.textContent = '🟢 เปิดอยู่ — AI จะตอบคอมเม้นทุก 5 นาที';
-          status.style.color = 'var(--success)';
-          histSection.style.display = '';
-          loadAutoReplyHistory();
-        } else {
-          slider.style.transform = 'translateX(0)';
-          slider.style.background = 'var(--text-muted)';
-          status.textContent = '⚫ ปิดอยู่';
-          status.style.color = 'var(--text-muted)';
-          histSection.style.display = 'none';
-        }
+        var [pagesRes, settingsRes] = await Promise.all([
+          fetch('/api/pages', { credentials: 'same-origin' }),
+          fetch('/api/auto-reply/settings', { credentials: 'same-origin' })
+        ]);
+        var pagesData = await pagesRes.json();
+        var settingsData = await settingsRes.json();
+        var pages = pagesData.pages || pagesData || [];
+        var settings = {};
+        (settingsData.pages || []).forEach(function(s) { settings[s.page_id] = s; });
+
+        if (!pages.length) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ยังไม่มีเพจ</div>'; return; }
+
+        el.innerHTML = pages.map(function(p) {
+          var pageId = p.id || p.page_id;
+          var pageName = p.name || p.page_name || pageId;
+          var s = settings[pageId] || {};
+          var enabled = s.enabled === 1 || s.enabled === true;
+          var mode = s.reply_mode || 'all';
+          return '<div style="padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<div style="min-width:0;flex:1">' +
+            '<div style="font-size:0.82rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + insEsc(pageName) + '</div>' +
+            '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:1px">' + (enabled ? '🟢 ' + MODE_LABELS[mode] : '⚫ ปิดอยู่') + '</div>' +
+            '</div>' +
+            '<label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;flex-shrink:0;margin-left:8px">' +
+            '<input type="checkbox" ' + (enabled ? 'checked' : '') + ' onchange="toggleAutoReplyPage(\'' + pageId + '\',this.checked)" style="opacity:0;width:0;height:0">' +
+            '<span style="position:absolute;inset:0;background:' + (enabled ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)') + ';border-radius:24px;transition:all 0.3s;border:1px solid var(--border)"></span>' +
+            '<span style="position:absolute;top:2px;left:' + (enabled ? '22px' : '2px') + ';width:20px;height:20px;border-radius:50%;background:' + (enabled ? 'var(--success)' : 'var(--text-muted)') + ';transition:all 0.3s"></span>' +
+            '</label></div>' +
+            (enabled ? '<div style="margin-top:6px"><select onchange="changeAutoReplyMode(\'' + pageId + '\',this.value)" style="width:100%;padding:6px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;color-scheme:dark">' +
+            ['all','random','question_only','off'].map(function(m) { return '<option value="' + m + '"' + (m === mode ? ' selected' : '') + '>' + MODE_LABELS[m] + '</option>'; }).join('') +
+            '</select></div>' : '') +
+            '</div>';
+        }).join('');
+        loadAutoReplyHistory();
+      } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.72rem">โหลดไม่สำเร็จ</div>'; }
+    }
+
+    async function toggleAutoReplyPage(pageId, enabled) {
+      try {
+        await fetch('/api/auto-reply/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId, enabled: enabled, reply_mode: enabled ? 'all' : 'off' }) });
+        showNotify(enabled ? 'เปิด Auto Reply สำเร็จ!' : 'ปิด Auto Reply แล้ว');
+        loadAutoReplySettings();
       } catch(e) {}
     }
 
-    async function toggleAutoReply() {
-      var toggle = document.getElementById('autoReplyToggle');
-      var slider = document.getElementById('autoReplySlider');
-      var status = document.getElementById('autoReplyStatus');
-      var histSection = document.getElementById('autoReplyHistorySection');
-      var enabled = toggle.checked;
+    async function changeAutoReplyMode(pageId, mode) {
       try {
-        var r = await fetch('/api/auto-reply/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: enabled }) });
-        var d = await r.json();
-        if (d.ok) {
-          if (enabled) {
-            slider.style.transform = 'translateX(22px)';
-            slider.style.background = 'var(--success)';
-            status.textContent = '🟢 เปิดแล้ว — AI จะตอบคอมเม้นทุก 5 นาที';
-            status.style.color = 'var(--success)';
-            histSection.style.display = '';
-            loadAutoReplyHistory();
-            showNotify('เปิด Auto Reply สำเร็จ!');
-          } else {
-            slider.style.transform = 'translateX(0)';
-            slider.style.background = 'var(--text-muted)';
-            status.textContent = '⚫ ปิดแล้ว';
-            status.style.color = 'var(--text-muted)';
-            histSection.style.display = 'none';
-            showNotify('ปิด Auto Reply แล้ว');
-          }
-        }
-      } catch(e) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--danger)'; }
+        await fetch('/api/auto-reply/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId, enabled: mode !== 'off', reply_mode: mode }) });
+        showNotify('เปลี่ยน mode เป็น ' + MODE_LABELS[mode]);
+        loadAutoReplySettings();
+      } catch(e) {}
     }
 
     async function loadAutoReplyHistory() {
