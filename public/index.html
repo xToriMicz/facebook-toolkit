@@ -1858,17 +1858,18 @@
         var groupOrder = [];
         replies.forEach(function(r) {
           var pid = r.post_id || 'unknown';
-          if (!groups[pid]) { groups[pid] = { post_id: pid, post_message: r.post_message || '', items: [] }; groupOrder.push(pid); }
+          if (!groups[pid]) { groups[pid] = { post_id: pid, post_message: r.post_message || '', post_date: r.post_created_at || '', items: [] }; groupOrder.push(pid); }
           groups[pid].items.push(r);
         });
         el.innerHTML = groupOrder.map(function(pid, gi) {
           var g = groups[pid];
           var postTitle = g.post_message ? insEsc(g.post_message.slice(0, 50)) + (g.post_message.length > 50 ? '...' : '') : 'โพส';
+          var postDate = g.post_date ? new Date(g.post_date).toLocaleDateString('th-TH', { day:'numeric', month:'short' }) : '';
           var fbLink = pid !== 'unknown' ? '<a href="https://facebook.com/' + pid + '" target="_blank" rel="noopener" style="font-size:0.62rem;color:var(--accent);text-decoration:none;flex-shrink:0" onclick="event.stopPropagation()">🔗 เปิดใน Facebook</a>' : '';
           var groupId = 'arGroup' + gi;
           return '<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">' +
             '<div onclick="var c=document.getElementById(\'' + groupId + '\');var a=this.querySelector(\'.ar-arrow\');if(c.style.display===\'none\'){c.style.display=\'block\';a.textContent=\'▼\'}else{c.style.display=\'none\';a.textContent=\'▶\'}" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.02);cursor:pointer">' +
-            '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1"><span class="ar-arrow" style="font-size:0.6rem;color:var(--text-muted);flex-shrink:0">▼</span><span style="font-size:0.75rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ' + postTitle + '</span><span style="font-size:0.62rem;color:var(--text-muted);flex-shrink:0">' + g.items.length + ' คอมเม้น</span></div>' +
+            '<div style="display:flex;align-items:center;gap:6px;min-width:0;flex:1"><span class="ar-arrow" style="font-size:0.6rem;color:var(--text-muted);flex-shrink:0">▼</span><span style="font-size:0.75rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📝 ' + postTitle + '</span><span style="font-size:0.62rem;color:var(--text-muted);flex-shrink:0">' + g.items.length + ' คอมเม้น' + (postDate ? ' | 📅 ' + postDate : '') + '</span></div>' +
             fbLink + '</div>' +
             '<div id="' + groupId + '" style="padding:0 12px 8px">' +
             g.items.map(function(r) {

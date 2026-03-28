@@ -360,10 +360,10 @@ autoReply.get("/auto-reply/history", async (c) => {
 
   const { results } = date
     ? await c.env.DB.prepare(
-        "SELECT cr.*, p.message as post_message FROM comment_replies cr LEFT JOIN posts p ON cr.post_id = p.fb_post_id AND cr.user_fb_id = p.user_fb_id WHERE cr.user_fb_id = ? AND date(cr.created_at) = ? ORDER BY cr.created_at DESC LIMIT ?"
+        "SELECT cr.*, p.message as post_message, p.created_at as post_created_at FROM comment_replies cr LEFT JOIN posts p ON cr.post_id = p.fb_post_id AND cr.user_fb_id = p.user_fb_id WHERE cr.user_fb_id = ? AND date(cr.created_at) = ? ORDER BY cr.created_at DESC LIMIT ?"
       ).bind(session.fb_id, date, limit).all()
     : await c.env.DB.prepare(
-        "SELECT cr.*, p.message as post_message FROM comment_replies cr LEFT JOIN posts p ON cr.post_id = p.fb_post_id AND cr.user_fb_id = p.user_fb_id WHERE cr.user_fb_id = ? ORDER BY cr.created_at DESC LIMIT ?"
+        "SELECT cr.*, p.message as post_message, p.created_at as post_created_at FROM comment_replies cr LEFT JOIN posts p ON cr.post_id = p.fb_post_id AND cr.user_fb_id = p.user_fb_id WHERE cr.user_fb_id = ? ORDER BY cr.created_at DESC LIMIT ?"
       ).bind(session.fb_id, limit).all();
 
   return c.json({ replies: results, total: results.length });
