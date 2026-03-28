@@ -2190,6 +2190,11 @@
     function calculateBulkSchedule(count,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue){
       var start=new Date(dateStart+'T'+timeStart+':00');
       var end=new Date(dateEnd+'T'+timeEnd+':00');
+      // ถ้าวันเริ่มเป็นวันนี้ + เวลาเริ่มผ่านไปแล้ว → เริ่มจาก now + 30 นาที
+      var now=new Date();
+      var minStart=new Date(now.getTime()+30*60000);
+      if(start<minStart) start=minStart;
+      if(start>=end){toast('err','เวลาเริ่มต้นผ่านไปแล้ว กรุณาเลือกวัน/เวลาในอนาคต');return[];}
       var results=[];
       if(freq==='1perday'){
         var days=Math.max(1,Math.ceil((end-start)/(86400000)));
@@ -2233,8 +2238,6 @@
           results.push(new Date(start.getTime()+i*intervalMs).toISOString());
         }
       }
-      // Keep schedule as-is — user เลือกวัน/เวลาเอง ไม่แก้ให้
-      // แค่เตือนถ้ามีเวลาที่ผ่านไปแล้ว
       return results.sort();
     }
     async function bulkConfirmSchedule(){
