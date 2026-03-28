@@ -788,6 +788,9 @@
               </div>
             </div>
 
+            <!-- Sync Timer -->
+            <div id="bulkSyncTimer" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-variant-numeric:tabular-nums">🕐 เวลาระบบ: --:--:--</div>
+
             <!-- Generate Button -->
             <button class="btn btn-accent" onclick="bulkGenerate()" style="width:100%;padding:12px;font-size:0.9rem">🚀 Generate ทั้งหมด</button>
             <div class="progress-bar" id="bulkProgress"><div class="bar"></div></div>
@@ -2076,6 +2079,21 @@
 
     // Bulk AI Generator
     (function(){
+      // Sync Timer — real-time clock
+      var _bulkTimerInterval=null;
+      function startBulkSyncTimer(){
+        var el=document.getElementById('bulkSyncTimer');
+        if(!el)return;
+        function tick(){
+          var now=new Date();
+          el.textContent='🕐 เวลาระบบ: '+now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+        }
+        tick();
+        if(_bulkTimerInterval)clearInterval(_bulkTimerInterval);
+        _bulkTimerInterval=setInterval(tick,1000);
+      }
+      startBulkSyncTimer();
+
       // Populate time dropdowns
       var ts=document.getElementById('bulkTimeStart'), te=document.getElementById('bulkTimeEnd');
       for(var h=0;h<24;h++){var v=String(h).padStart(2,'0')+':00'; ts.innerHTML+='<option value="'+v+'">'+v+'</option>'; te.innerHTML+='<option value="'+v+'">'+v+'</option>';}
@@ -2174,9 +2192,22 @@
       var typeName=typeVal?({'text':'Text only','text_image':'Text+Image','image':'Image only'}[typeVal.value]||''):'';
       el.innerHTML=_bulkResults.map(function(r,idx){
         var thumb=r.image_url?'<img src="'+insEsc(r.image_url)+'" style="width:50px;height:50px;border-radius:6px;object-fit:cover;flex-shrink:0;cursor:pointer" onclick="if(this.style.width===\'50px\'){this.style.width=\'200px\';this.style.height=\'auto\';}else{this.style.width=\'50px\';this.style.height=\'50px\';}">':'';
-        var dt=r.scheduled_at?new Date(r.scheduled_at).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
         var preview=insEsc((r.text||'').slice(0,120));
         var full=insEsc(r.text||'');
+        // Editable date + time inputs
+        var schedDate='',schedTime='';
+        if(r.scheduled_at){
+          var d=new Date(r.scheduled_at);
+          schedDate=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+          schedTime=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        }
+        var schedEdit='<div style="display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap" onclick="event.stopPropagation()">'+
+          '<span style="font-size:0.65rem;color:var(--text-muted)">⏰</span>'+
+          '<input type="date" value="'+schedDate+'" onchange="window._bulkUpdateSchedule('+idx+',this.value,null)" style="padding:2px 6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.65rem;font-family:inherit;color-scheme:dark">'+
+          '<select onchange="window._bulkUpdateSchedule('+idx+',null,this.value)" style="padding:2px 6px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;font-size:0.65rem;font-family:inherit;color-scheme:dark">'+
+          (function(){var opts='';for(var h=0;h<24;h++){for(var m=0;m<60;m+=15){var v=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');opts+='<option value="'+v+'"'+(v===schedTime?' selected':'')+'>'+v+'</option>';}}return opts;})()+
+          '</select>'+
+          '</div>';
         return '<div style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.bulk-full\');if(f)f.style.display=f.style.display===\'block\'?\'none\':\'block\'">'+
           '<div style="display:flex;gap:8px;align-items:start">'+thumb+
           '<div style="flex:1;min-width:0">'+
@@ -2187,13 +2218,22 @@
           '</div>'+
           '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px">'+preview+(r.text&&r.text.length>120?' <span style="color:var(--accent)">[กดเพื่อดูเต็ม]</span>':'')+'</div>'+
           '<div class="bulk-full" style="display:none;font-size:0.72rem;color:var(--text);margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;white-space:pre-wrap;max-height:200px;overflow-y:auto">'+full+'</div>'+
-          '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px">⏰ '+dt+'</div>'+
+          schedEdit+
           '</div>'+
           '<button onclick="event.stopPropagation();_bulkResults.splice('+idx+',1);bulkRenderPreview()" style="padding:4px 8px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:none;color:#ef4444;font-size:0.65rem;cursor:pointer;flex-shrink:0">✕</button>'+
           '</div></div>';
       }).join('');
       if(!_bulkResults.length)document.getElementById('bulkPreview').style.display='none';
     }
+    // Update schedule for individual bulk preview post
+    window._bulkUpdateSchedule=function(idx,newDate,newTime){
+      if(idx<0||idx>=_bulkResults.length)return;
+      var r=_bulkResults[idx];
+      var d=r.scheduled_at?new Date(r.scheduled_at):new Date();
+      if(newDate){var parts=newDate.split('-');d.setFullYear(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));}
+      if(newTime){var tp=newTime.split(':');d.setHours(parseInt(tp[0]),parseInt(tp[1]),0,0);}
+      r.scheduled_at=d.toISOString();
+    };
     function calculateBulkSchedule(count,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue){
       var start=new Date(dateStart+'T'+timeStart+':00');
       var end=new Date(dateEnd+'T'+timeEnd+':00');
