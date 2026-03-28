@@ -2233,28 +2233,17 @@
           results.push(new Date(start.getTime()+i*intervalMs).toISOString());
         }
       }
-      // Filter past times — เลื่อนเวลาที่ผ่านไปแล้วไปช่วงถัดไปแทนลบทิ้ง
-      var now=new Date();
-      var minTime=new Date(now.getTime()+30*60000); // อย่างน้อย 30 นาทีข้างหน้า
-      results=results.map(function(t){
-        var d=new Date(t);
-        if(d>minTime) return t;
-        // เลื่อนไปเวลาถัดไปที่ยังไม่ผ่าน (ชม.ถัดไปของวันเดียวกัน หรือวันถัดไป)
-        var next=new Date(minTime);
-        next.setMinutes(Math.ceil(next.getMinutes()/10)*10,0,0);
-        if(next.getHours()>=parseInt(timeEnd.split(':')[0])){
-          next.setDate(next.getDate()+1);
-          next.setHours(parseInt(timeStart.split(':')[0]),0,0,0);
-        }
-        return next.toISOString();
-      });
-      // ลบ duplicate + sort
-      results=[...new Set(results)].sort();
+      // Keep schedule as-is — user เลือกวัน/เวลาเอง ไม่แก้ให้
+      // แค่เตือนถ้ามีเวลาที่ผ่านไปแล้ว
       return results.sort();
     }
     async function bulkConfirmSchedule(){
       if(!_bulkResults.length){toast('err','ไม่มีโพสให้ตั้งเวลา');return;}
       if(!selectedPage){toast('err','กรุณาเลือกเพจก่อน');return;}
+      // เตือนถ้ามีเวลาย้อนหลัง
+      var now=new Date();
+      var pastCount=_bulkResults.filter(function(r){return r.scheduled_at&&new Date(r.scheduled_at)<=now;}).length;
+      if(pastCount>0){toast('err','มี '+pastCount+' โพสที่เวลาผ่านไปแล้ว กรุณาเลือกวัน/เวลาที่ยังไม่ผ่าน');return;}
       var posts=_bulkResults.filter(function(r){return r.scheduled_at;}).map(function(r){
         return{message:r.text||'',image_url:r.image_url||null,scheduled_at:r.scheduled_at};
       });
