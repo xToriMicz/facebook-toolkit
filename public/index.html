@@ -2233,16 +2233,23 @@
           results.push(new Date(start.getTime()+i*intervalMs).toISOString());
         }
       }
-      // Filter out past times — ห้ามตั้งเวลาย้อนหลัง
+      // Filter past times — เลื่อนเวลาที่ผ่านไปแล้วไปช่วงถัดไปแทนลบทิ้ง
       var now=new Date();
-      results=results.filter(function(t){return new Date(t)>now;});
-      // ถ้า filter แล้วเหลือน้อยกว่า count → เลื่อนไปวันถัดไป
-      while(results.length<count){
-        var last=results.length?new Date(results[results.length-1]):new Date(now.getTime()+3600000);
-        var next=new Date(last.getTime()+3600000);
-        if(next.getHours()>=parseInt(timeEnd.split(':')[0])){next.setDate(next.getDate()+1);next.setHours(parseInt(timeStart.split(':')[0]),0,0,0);}
-        results.push(next.toISOString());
-      }
+      var minTime=new Date(now.getTime()+30*60000); // อย่างน้อย 30 นาทีข้างหน้า
+      results=results.map(function(t){
+        var d=new Date(t);
+        if(d>minTime) return t;
+        // เลื่อนไปเวลาถัดไปที่ยังไม่ผ่าน (ชม.ถัดไปของวันเดียวกัน หรือวันถัดไป)
+        var next=new Date(minTime);
+        next.setMinutes(Math.ceil(next.getMinutes()/10)*10,0,0);
+        if(next.getHours()>=parseInt(timeEnd.split(':')[0])){
+          next.setDate(next.getDate()+1);
+          next.setHours(parseInt(timeStart.split(':')[0]),0,0,0);
+        }
+        return next.toISOString();
+      });
+      // ลบ duplicate + sort
+      results=[...new Set(results)].sort();
       return results.sort();
     }
     async function bulkConfirmSchedule(){
