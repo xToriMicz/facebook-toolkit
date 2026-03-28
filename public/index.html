@@ -734,7 +734,11 @@
         <div class="card" style="margin-top:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div class="card-title" style="margin:0"><span class="card-title-icon">📋</span> ประวัติตอบล่าสุด</div>
-            <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" id="arDateFilter" onchange="loadAutoReplyHistory()" style="padding:3px 8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.68rem;font-family:inherit;color-scheme:dark">
+              <button class="btn btn-ghost" onclick="document.getElementById('arDateFilter').value='';loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">ทั้งหมด</button>
+              <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
+            </div>
           </div>
           <div id="autoReplyHistoryList" style="max-height:400px;overflow-y:auto"></div>
         </div>
@@ -1092,7 +1096,7 @@
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
       if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); }
-      if(tab==='autoReply') { loadAutoReplySettings(); loadAutoReplyHistory(); }
+      if(tab==='autoReply') { var dp=document.getElementById('arDateFilter'); if(dp&&!dp.value) dp.value=new Date().toISOString().slice(0,10); loadAutoReplySettings(); loadAutoReplyHistory(); }
       if(tab==='tickets') loadTickets();
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
@@ -1829,7 +1833,10 @@
       var el = document.getElementById('autoReplyHistoryList');
       if (!selectedPage) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กรุณาเลือกเพจก่อน</div>'; return; }
       try {
-        var r = await fetch('/api/auto-reply/history?limit=50', { credentials: 'same-origin' });
+        var datePicker = document.getElementById('arDateFilter');
+        var dateVal = datePicker ? datePicker.value : '';
+        var url = '/api/auto-reply/history?limit=50' + (dateVal ? '&date=' + dateVal : '');
+        var r = await fetch(url, { credentials: 'same-origin' });
         var d = await r.json();
         var replies = (d.replies || []).filter(function(r) { return r.page_id === selectedPage.id; });
         // Update stats
