@@ -1857,7 +1857,7 @@
             '<span style="font-size:0.65rem;color:var(--text-muted)">' + time + '</span></div>' +
             '<div style="color:var(--text-secondary);font-size:0.72rem;margin-bottom:2px">💭 ' + insEsc((r.comment_text || '').slice(0, 100)) + '</div>' +
             (r.reply_text ? '<div style="color:var(--text);font-size:0.72rem;padding:4px 8px;background:rgba(79,110,247,0.06);border-radius:6px;margin-top:2px">→ ' + insEsc(r.reply_text.slice(0, 150)) + '</div>' : '') +
-            '<div style="margin-top:2px">' + statusBadge + '</div></div>';
+            '<div style="margin-top:2px;display:flex;justify-content:space-between;align-items:center">' + statusBadge + (r.post_id ? '<a href="https://facebook.com/' + r.post_id + '" target="_blank" rel="noopener" style="font-size:0.62rem;color:var(--accent);text-decoration:none" onclick="event.stopPropagation()">🔗 เปิดใน Facebook</a>' : '') + '</div></div>';
         }).join('');
       } catch(e) { el.innerHTML = '<div style="color:var(--danger);font-size:0.72rem">โหลดไม่สำเร็จ</div>'; }
     }
