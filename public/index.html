@@ -1020,9 +1020,10 @@
       if(u.new_ip){showNotify('⚠️ เข้าสู่ระบบจาก IP ใหม่: '+u.ip);} }
     function loginFacebook() { window.location.href='/auth/facebook'; }
     function logout() { fetch('/auth/logout',{method:'POST'}).then(()=>{history.replaceState(null,'','/');showLogin();}).catch(()=>showLogin()); }
-    // Clean URL params after login
+    // Clean URL params after login (preserve ?page= for permalink)
     if (window.location.search || window.location.hash) {
-      history.replaceState(null, '', '/');
+      const keepPage = new URLSearchParams(window.location.search).get('page');
+      history.replaceState(null, '', keepPage ? '?page=' + keepPage : '/');
     }
     checkAuth();
 
@@ -1042,7 +1043,9 @@
         opt.textContent = p.name;
         sel.appendChild(opt);
       });
-      const saved = localStorage.getItem('fb-selected-page');
+      // URL param takes priority over localStorage for permalink support
+      const urlPage = new URLSearchParams(window.location.search).get('page');
+      const saved = urlPage || localStorage.getItem('fb-selected-page');
       if (saved && pages.find(p => p.id === saved)) { sel.value = saved; selectPage(saved); }
     }
     function selectPage(id) {
@@ -1051,6 +1054,7 @@
       if (page) {
         selectedPage = page;
         localStorage.setItem('fb-selected-page', id);
+        history.replaceState(null, '', '?page=' + id);
         document.getElementById('pageInfoPic').src = page.picture || '';
         document.getElementById('pageInfoName').textContent = page.name;
         document.getElementById('pageInfoMeta').textContent = (page.category || 'Page') + (page.followers ? ' · ' + page.followers + ' followers' : '');
