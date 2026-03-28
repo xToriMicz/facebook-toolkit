@@ -2204,27 +2204,39 @@
       if(start>=end){toast('err','เวลาเริ่มต้นผ่านไปแล้ว กรุณาเลือกวัน/เวลาในอนาคต');return[];}
       var results=[];
       if(freq==='1perday'){
-        var days=Math.max(1,Math.ceil((end-start)/(86400000)));
+        var curDate=new Date(start);
         for(var i=0;i<count;i++){
-          var day=new Date(start.getTime()+((i%days)/days)*(end-start));
-          var h=parseInt(timeStart.split(':')[0])+Math.floor(Math.random()*(parseInt(timeEnd.split(':')[0])-parseInt(timeStart.split(':')[0])));
+          var minH=i===0?start.getHours():parseInt(timeStart.split(':')[0]);
+          var maxH=parseInt(timeEnd.split(':')[0]);
+          var h=minH+Math.floor(Math.random()*(maxH-minH));
           var m=Math.floor(Math.random()*6)*10;
+          var day=new Date(curDate);
           day.setHours(h,m,0,0);
           results.push(day.toISOString());
+          curDate.setDate(curDate.getDate()+1);
         }
       }else if(freq==='auto'){
         // Thailand peak hours: 07-09, 11-13, 17-20
         var peakHours=[7,8,9,11,12,13,17,18,19,20];
-        var startH=parseInt(timeStart.split(':')[0]),endH=parseInt(timeEnd.split(':')[0]);
-        var validPeaks=peakHours.filter(function(h){return h>=startH&&h<endH;});
-        if(!validPeaks.length)validPeaks=[startH];
-        var days=Math.max(1,Math.ceil((end-start)/(86400000)));
-        for(var i=0;i<count;i++){
-          var day=new Date(start.getTime()+(Math.floor(i*days/count))*86400000);
-          var h=validPeaks[i%validPeaks.length];
-          var m=Math.floor(Math.random()*6)*10;
-          day.setHours(h,m,0,0);
-          results.push(day.toISOString());
+        var minH=start.getHours(); // start ถูกเลื่อนเป็น now+30min แล้ว
+        var endH=parseInt(timeEnd.split(':')[0]);
+        // วันแรก: filter เฉพาะ peak hours ที่ยังไม่ผ่าน
+        var todayPeaks=peakHours.filter(function(h){return h>=minH&&h<endH;});
+        var allPeaks=peakHours.filter(function(h){return h>=parseInt(timeStart.split(':')[0])&&h<endH;});
+        if(!allPeaks.length)allPeaks=[minH];
+        var startDate=new Date(start);startDate.setHours(0,0,0,0);
+        var endDate=new Date(end);endDate.setHours(0,0,0,0);
+        var isFirstDay=true;
+        var curDate=new Date(startDate);
+        while(results.length<count&&curDate<=endDate){
+          var peaks=isFirstDay?todayPeaks:allPeaks;
+          for(var p=0;p<peaks.length&&results.length<count;p++){
+            var day=new Date(curDate);
+            day.setHours(peaks[p],Math.floor(Math.random()*6)*10,0,0);
+            if(day>now)results.push(day.toISOString());
+          }
+          curDate.setDate(curDate.getDate()+1);
+          isFirstDay=false;
         }
       }else if(freq==='many'){
         var perDay=freqValue;
