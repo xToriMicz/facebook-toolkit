@@ -1055,7 +1055,15 @@
         document.getElementById('pageInfoName').textContent = page.name;
         document.getElementById('pageInfoMeta').textContent = (page.category || 'Page') + (page.followers ? ' · ' + page.followers + ' followers' : '');
         info.classList.remove('hidden');
+        // Reload whichever tab is currently visible after page change
         if (!document.getElementById('tabInsights').classList.contains('hidden')) loadInsights();
+        if (!document.getElementById('tabHistory').classList.contains('hidden')) loadHistory();
+        if (!document.getElementById('tabAutoReply').classList.contains('hidden')) { loadAutoReplySettings(); loadAutoReplyHistory(); }
+        if (!document.getElementById('tabSchedule').classList.contains('hidden')) { loadSchedule(); loadBulkDrafts(); }
+        if (!document.getElementById('tabCalendar').classList.contains('hidden')) renderCalendar();
+        if (!document.getElementById('tabActivityLog').classList.contains('hidden')) loadLogs();
+        if (!document.getElementById('tabChallenges').classList.contains('hidden')) loadChallenges();
+        if (!document.getElementById('tabTickets').classList.contains('hidden')) loadTickets();
       } else {
         selectedPage = null;
         info.classList.add('hidden');
