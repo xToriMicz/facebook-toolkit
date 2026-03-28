@@ -177,11 +177,12 @@ export async function processAutoReplies(env: Env) {
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
 
-        // Fetch comments from Facebook
+        // Fetch only recent comments (since 24h ago) to avoid replying to old ones
+        const since = Math.floor(Date.now() / 1000) - 86400;
         let comments: any[];
         try {
           const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time&order=reverse_chronological&limit=25&access_token=${pageToken}`
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time&order=reverse_chronological&limit=25&since=${since}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
           if (data.error) continue;
@@ -193,7 +194,7 @@ export async function processAutoReplies(env: Env) {
         for (const comment of comments) {
           if (!comment.id || !comment.message) continue;
 
-          // Skip if already processed
+          // Skip if already processed in our DB
           const existing = await env.DB.prepare(
             "SELECT id FROM comment_replies WHERE comment_id = ?"
           ).bind(comment.id).first();
@@ -201,6 +202,24 @@ export async function processAutoReplies(env: Env) {
 
           // Skip own page comments (don't reply to ourselves)
           if (comment.from?.id === page.page_id) continue;
+
+          // Check Facebook API for existing replies from our page (catches manual/legacy replies)
+          try {
+            const repliesRes = await fetch(
+              `https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from&limit=50&access_token=${pageToken}`
+            );
+            const repliesData = await repliesRes.json() as any;
+            const alreadyReplied = (repliesData.data || []).some((r: any) => r.from?.id === page.page_id);
+            if (alreadyReplied) {
+              // Record in DB so we don't check again next tick
+              await env.DB.prepare(
+                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'unknown', 'already_replied', ?)"
+              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
+              continue;
+            }
+          } catch {
+            // Non-critical: if check fails, proceed with caution (DB check already passed)
+          }
 
           try {
             // Classify comment
