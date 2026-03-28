@@ -75,10 +75,9 @@
         <div class="sidebar-nav">
           <div class="sidebar-title" style="margin-top:8px">เมนู</div>
           <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
-          <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
-                    <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
+          <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 ประวัติ</button>
+          <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
           <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา/Bulk</button>
-          <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
           <button class="sidebar-nav-item" onclick="switchTab('autoReply',this)">💬 คอมเม้น</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
@@ -98,7 +97,7 @@
       
       <div class="tabs" style="display:none">
         <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> เขียนโพส</button>
-        <button class="tab" onclick="switchTab('history',this)"><span>📋</span> ประวัติ</button>
+        <button class="tab" onclick="switchTab('activityLog',this)"><span>📋</span> ประวัติ</button>
         <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> แม่แบบ</button>
         <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> เทรนด์</button>
       </div>
@@ -220,12 +219,6 @@
           </div>
 
           <div class="toast" id="status"></div>
-        </div>
-      </div>
-
-      <div id="tabHistory" class="hidden"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 16px;flex-wrap:wrap;gap:8px"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">📋 ประวัติ</span><button class="btn btn-ghost" onclick="loadHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button></div>
-        <div class="card">
-          <div id="historyList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
         </div>
       </div>
 
