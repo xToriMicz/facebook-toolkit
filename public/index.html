@@ -2124,12 +2124,19 @@
       if(!dateStart||!dateEnd){toast('err','กรุณาเลือกวันเริ่ม-จบ');return;}
       var statusEl=document.getElementById('bulkGenStatus');
       statusEl.style.display='block';
-      showProgress('bulkProgress');
+      // Bulk ใช้ manual progress ตามจำนวน keyword
+      var progressEl=document.getElementById('bulkProgress');
+      progressEl.classList.add('active');
+      var progressBar=progressEl.querySelector('.bar');
+      if(progressBar){progressBar.classList.remove('done');progressBar.style.width='0%';}
       _bulkResults=[];
       var previewEl=document.getElementById('bulkPreviewList');
       previewEl.innerHTML='';
       document.getElementById('bulkPreview').style.display='none';
       for(var i=0;i<keywords.length;i++){
+        // อัพเดต progress ตามจำนวนที่เสร็จ
+        var pct=Math.round(((i)/keywords.length)*100);
+        if(progressBar)progressBar.style.width=pct+'%';
         statusEl.textContent='⏳ กำลังสร้าง '+(i+1)+'/'+keywords.length+': '+keywords[i]+'...';
         try{
           // Generate text
@@ -2152,7 +2159,7 @@
       // Calculate schedule
       var schedules=calculateBulkSchedule(_bulkResults.length,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue);
       for(var j=0;j<_bulkResults.length;j++){_bulkResults[j].scheduled_at=schedules[j]||null;}
-      hideProgress('bulkProgress',true);
+      if(progressBar){progressBar.style.width='100%';progressBar.classList.add('done');setTimeout(function(){progressEl.classList.remove('active');progressBar.style.width='0%';progressBar.classList.remove('done');},2000);}
       statusEl.textContent='✅ สร้างเสร็จ '+_bulkResults.length+' โพส!';
       // Render preview
       document.getElementById('bulkPreview').style.display='';
