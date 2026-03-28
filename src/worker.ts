@@ -16,6 +16,7 @@ import shopee from "./routes/shopee-trends";
 import aiImage from "./routes/ai-image";
 import promptLogs from "./routes/prompt-logs";
 import bulk from "./routes/bulk";
+import autoReply, { processAutoReplies } from "./routes/auto-reply";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -86,6 +87,7 @@ app.route("/api", shopee);
 app.route("/api", aiImage);
 app.route("/api", promptLogs);
 app.route("/api", bulk);
+app.route("/api", autoReply);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
@@ -193,6 +195,8 @@ export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(processScheduledPosts(env));
+    // Auto-reply: process new comments every cron tick
+    ctx.waitUntil(processAutoReplies(env));
     // Refresh engagement every ~30 min (check KV throttle)
     const lastRefresh = await env.KV.get("cron:engagement:last");
     const now = Date.now();
