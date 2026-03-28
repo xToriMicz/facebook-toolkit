@@ -1,0 +1,66 @@
+      <div id="tabAiSettings" class="hidden">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">⚙️</span> ตั้งค่า AI</div>
+          <div id="aiCurrentStatus" style="padding:10px 14px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:0.85rem;background:rgba(34,197,94,0.06);color:var(--success);border:1px solid rgba(34,197,94,0.12)">
+            🟢 กำลังใช้ AI ของระบบ (ฟรี)
+          </div>
+
+          <div class="field">
+            <label>Provider</label>
+            <select class="page-select" id="aiProvider" onchange="onProviderChange()">
+              <option value="default">ค่าเริ่มต้น (ระบบ)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="openai">OpenAI (GPT)</option>
+              <option value="google">Google (Gemini)</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+
+          <div class="field" id="aiModelField" style="display:none">
+            <label>Model</label>
+            <select class="page-select" id="aiModel"></select>
+          </div>
+
+          <div class="field" id="aiCustomModelField" style="display:none">
+            <label>ชื่อ Model</label>
+            <input id="aiCustomModel" placeholder="เช่น my-model-v1">
+          </div>
+
+          <div class="field" id="aiKeyField" style="display:none">
+            <label>API Key</label>
+            <input id="aiApiKey" type="password" placeholder="sk-... หรือ AIza...">
+          </div>
+
+          <div class="field" id="aiEndpointField" style="display:none">
+            <label>Endpoint URL</label>
+            <input id="aiEndpoint" placeholder="https://api.anthropic.com/v1">
+          </div>
+
+          <div class="actions" id="aiSettingsActions" style="display:none">
+            <button class="btn btn-ghost" onclick="testAiKey()" id="aiTestBtn">🔍 ทดสอบ</button>
+            <button class="btn btn-accent" onclick="saveAiSettings()">💾 บันทึก</button>
+          </div>
+          <div class="toast" id="aiSettingsStatus"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="card-title"><span class="card-title-icon">🔑</span> API Keys</div>
+          <div class="field">
+            <label>Shopee / Apify API Key</label>
+            <div style="display:flex;gap:6px"><input id="apifyKey" type="password" placeholder="apify_api_..." style="flex:1"><button onclick="saveApiKey('apify_api_key','apifyKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="apifyStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+          <div class="field">
+            <label>Gemini / Nano Banana Pro API Key</label>
+            <div style="display:flex;gap:6px"><input id="geminiKey" type="password" placeholder="AIza..." style="flex:1"><button onclick="saveApiKey('gemini_api_key','geminiKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="geminiStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+          <div class="field">
+            <label>FAL.ai API Key</label>
+            <div style="display:flex;gap:6px"><input id="falKey" type="password" placeholder="fal_..." style="flex:1"><button onclick="saveApiKey('fal_api_key','falKey')" class="btn btn-ghost" style="font-size:0.78rem;padding:8px 12px">💾</button></div>
+            <div id="falStatus" style="font-size:0.68rem;margin-top:4px;color:var(--text-muted)"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab: Auto Reply Comment (💬 คอมเม้น) -->

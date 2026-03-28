@@ -1,0 +1,43 @@
+      <div id="tabTickets" class="hidden">
+        <!-- Ticket Form -->
+        <div class="card" style="border-color:rgba(239,68,68,0.12)">
+          <div class="card-title"><span class="card-title-icon">🐛</span> แจ้งบัค / ขอฟีเจอร์</div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>ประเภท</label>
+            <select id="ticketType" class="page-select" style="background-image:none">
+              <option value="bug">🐛 Bug — เจอปัญหา</option>
+              <option value="feature">✨ Feature — ขอฟีเจอร์ใหม่</option>
+              <option value="question">❓ Question — สงสัย/ถาม</option>
+            </select>
+          </div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>หัวข้อ</label>
+            <input id="ticketTitle" placeholder="เช่น กดโพสแล้ว error" style="width:100%;padding:11px 14px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit">
+          </div>
+
+          <div class="field" style="margin-bottom:10px">
+            <label>รายละเอียด</label>
+            <textarea id="ticketBody" class="compose-area" placeholder="อธิบายขั้นตอนที่ทำให้เกิด bug&#10;1. กดปุ่ม...&#10;2. เลือก...&#10;3. เจอ error..." style="min-height:100px"></textarea>
+          </div>
+
+          <div class="field" style="margin-bottom:14px">
+            <label>รูปประกอบ (optional)</label>
+            <div style="display:flex;gap:8px">
+              <input id="ticketImage" placeholder="วาง URL รูปหรือ screenshot" style="flex:1;padding:11px 14px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit">
+              <button onclick="document.getElementById('ticketFileInput').click()" class="btn btn-ghost" style="padding:10px 14px;font-size:0.8rem;white-space:nowrap">📎 แนบไฟล์</button>
+            </div>
+            <input type="file" id="ticketFileInput" accept="image/*" style="display:none" onchange="uploadTicketImage(this.files[0])">
+          </div>
+
+          <button class="btn btn-accent" onclick="submitTicket()" id="ticketSubmitBtn" style="width:100%;font-size:0.95rem;padding:14px">📮 ส่ง Ticket</button>
+          <div class="toast" id="ticketStatus"></div>
+        </div>
+
+        <!-- Ticket List -->
+        <div class="card" style="margin-top:12px">
+          <div class="card-title"><span class="card-title-icon">📋</span> Tickets ของฉัน</div>
+          <div id="ticketList"><div class="empty-state">Loading...</div></div>
+        </div>
+      </div>

@@ -1,0 +1,118 @@
+      <div id="tabSchedule" class="hidden">
+        <div class="card">
+          <h3 style="margin:0 0 12px;font-size:0.95rem;color:var(--text)">⏰ ตั้งเวลา/Bulk</h3>
+
+          <!-- Bulk AI Generator -->
+          <div style="padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">🤖 Bulk AI Generator</div>
+
+            <!-- Step 1: Keywords -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;display:block">1. ใส่ keyword (บรรทัดละ 1, สูงสุด 10)</label>
+              <textarea id="bulkKeywords" rows="5" placeholder="น้ำมันแพง&#10;รถ EV 2026&#10;ประหยัดค่าเดินทาง&#10;รถยนต์ไฟฟ้า&#10;ค่าน้ำมัน" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+              <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px"><span id="bulkKeywordCount">0</span>/10 keywords</div>
+            </div>
+
+            <!-- Step 2: Content Type -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">2. ประเภทเนื้อหา</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--accent);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="text" checked> ✍️ Text only
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="text_image"> ✍️+🎨 Text + Image
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkType" value="image"> 🎨 Image only
+                </label>
+              </div>
+            </div>
+
+            <!-- Step 3: Date Range -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">3. ช่วงวัน + เวลา</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+                <div style="flex:1;min-width:130px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">วันเริ่ม</div>
+                  <input type="date" id="bulkDateStart" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                </div>
+                <div style="flex:1;min-width:130px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">วันจบ</div>
+                  <input type="date" id="bulkDateEnd" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="flex:1;min-width:100px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">เวลาเริ่ม</div>
+                  <select id="bulkTimeStart" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark"></select>
+                </div>
+                <div style="flex:1;min-width:100px">
+                  <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px">เวลาจบ</div>
+                  <select id="bulkTimeEnd" style="width:100%;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark"></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Frequency -->
+            <div style="margin-bottom:12px">
+              <label style="font-size:0.75rem;color:var(--text-muted);margin-bottom:6px;display:block">4. ความถี่</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="1perday" checked> 1 โพส/วัน
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="many"> หลายโพส/วัน
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="interval"> ทุก X ชม.
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);cursor:pointer">
+                  <input type="radio" name="bulkFreq" value="auto"> 🤖 Auto
+                </label>
+              </div>
+              <div id="bulkFreqDetail" style="display:none;margin-top:6px">
+                <input type="number" id="bulkFreqValue" min="1" max="12" value="3" style="width:80px;padding:8px 10px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+                <span id="bulkFreqUnit" style="font-size:0.75rem;color:var(--text-muted);margin-left:4px">โพส/วัน</span>
+              </div>
+            </div>
+
+            <!-- Sync Timer -->
+            <div id="bulkSyncTimer" style="text-align:center;font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-variant-numeric:tabular-nums">🕐 เวลาระบบ: --:--:--</div>
+
+            <!-- Generate Button -->
+            <button class="btn btn-accent" onclick="bulkGenerate()" style="width:100%;padding:12px;font-size:0.9rem">🚀 Generate ทั้งหมด</button>
+            <div class="progress-bar" id="bulkProgress"><div class="bar"></div></div>
+            <div id="bulkGenStatus" style="display:none;margin-top:6px;font-size:0.72rem;color:var(--text-muted)"></div>
+
+            <!-- Preview Grid -->
+            <div id="bulkPreview" style="display:none;margin-top:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">Preview</div>
+                <button class="btn btn-accent" onclick="bulkConfirmSchedule()" style="padding:8px 16px;font-size:0.8rem">✅ ยืนยันตั้งเวลาทั้งหมด</button>
+              </div>
+              <div id="bulkPreviewList"></div>
+            </div>
+          </div>
+
+          <!-- Legacy Bulk from Drafts -->
+          <details style="margin-bottom:16px">
+            <summary style="font-size:0.78rem;color:var(--text-muted);cursor:pointer;padding:8px 0">📝 Bulk จากฉบับร่าง (เดิม)</summary>
+            <div style="margin-top:8px">
+              <div id="bulkDraftList" style="margin-bottom:8px"><div class="empty-state">โหลดฉบับร่าง...</div></div>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                <input type="datetime-local" id="bulkStartTime" style="flex:1;min-width:180px;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+                <select id="bulkInterval" style="padding:8px 10px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit">
+                  <option value="60">ทุก 1 ชม.</option><option value="120">ทุก 2 ชม.</option><option value="180" selected>ทุก 3 ชม.</option><option value="360">ทุก 6 ชม.</option><option value="720">ทุก 12 ชม.</option><option value="1440">ทุกวัน</option>
+                </select>
+              </div>
+              <button class="btn btn-accent" onclick="bulkSchedule()" style="width:100%;margin-bottom:8px">📅 ตั้งเวลาที่เลือกทั้งหมด</button>
+            </div>
+          </details>
+          <div class="toast" id="bulkStatus"></div>
+
+          <h4 style="margin:16px 0 8px;font-size:0.85rem;color:var(--text-muted)">รายการที่ตั้งเวลาไว้</h4>
+          <div id="scheduleList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
+        </div>
+      </div>
+

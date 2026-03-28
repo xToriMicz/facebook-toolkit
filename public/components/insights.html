@@ -1,0 +1,34 @@
+      <div id="tabInsights" class="hidden">
+        <div class="card">
+          <div class="ins-header">
+            <div class="card-title" style="margin-bottom:0"><span class="card-title-icon">📊</span> Page Insights <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(7 วัน)</span></div>
+            <div style="display:flex;gap:4px">
+              <button id="insSyncBtn" onclick="insSyncPosts()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.72rem;cursor:pointer;font-family:inherit">Sync โพส</button>
+              <button id="insRefreshBtn" onclick="insRefreshAndLoad()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--text-muted);font-size:0.75rem;cursor:pointer;font-family:inherit">↻</button>
+            </div>
+          </div>
+          <div id="insError" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:0.8rem;background:rgba(239,68,68,0.08);color:var(--danger);border:1px solid rgba(239,68,68,0.15)"></div>
+          <div id="insTimestamp" style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;text-align:right"></div>
+          <div id="insContent">
+            <div class="ins-stats" id="insStats">
+              <div class="ins-stat"><div class="ins-stat-val" id="insImpressions">—</div><div class="ins-stat-label">Page Views</div><div class="ins-stat-delta" id="insDeltaImp"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insEngaged">—</div><div class="ins-stat-label">Engagements</div><div class="ins-stat-delta" id="insDeltaEng"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insFanAdds">—</div><div class="ins-stat-label">Follows</div><div class="ins-stat-delta" id="insDeltaFan"></div></div>
+              <div class="ins-stat"><div class="ins-stat-val" id="insPostsToday">—</div><div class="ins-stat-label">โพสวันนี้</div></div>
+            </div>
+            <div class="ins-chart-wrap">
+              <div class="ins-chart-title">Page Views & Engagements (7 วัน)</div>
+              <canvas id="insChart" width="600" height="200" style="width:100%;height:auto"></canvas>
+            </div>
+            <div style="margin-bottom:16px">
+              <div class="ins-chart-title">Top 5 Posts</div>
+              <div id="insTopPosts"><div class="empty-state">เลือกเพจเพื่อดูข้อมูล</div></div>
+            </div>
+            <div class="ins-heatmap-wrap">
+              <div class="ins-chart-title">Best Time to Post</div>
+              <div class="ins-heatmap" id="insHeatmap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+

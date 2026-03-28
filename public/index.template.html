@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Toolkit — fb.makeloops.xyz</title>
+  <meta name="description" content="โพสรูปและข้อความลงเพจ Facebook ได้ง่ายๆ จัดการหลายเพจ AI เขียนให้ ตั้งเวลาโพส เทรนด์ไทย">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fb.makeloops.xyz/">
+  <meta property="og:title" content="Facebook Toolkit — จัดการเพจ Facebook จากที่เดียว">
+  <meta property="og:description" content="โพสรูปและข้อความลงเพจ AI เขียนให้ ตั้งเวลาโพส ดูเทรนด์ไทย จัดการหลายเพจ">
+  <meta property="og:image" content="https://fb.makeloops.xyz/og-image.svg">
+  <meta property="og:locale" content="th_TH">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Facebook Toolkit — fb.makeloops.xyz">
+  <meta name="twitter:image" content="https://fb.makeloops.xyz/og-image.svg">
+  <meta name="theme-color" content="#0c0c14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://graph.facebook.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://graph.facebook.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <img src="/favicon.svg" alt="" style="width:32px;height:32px;border-radius:8px">
+      <span>FB Toolkit</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div class="nav-user hidden" id="navUser">
+      <img loading="lazy" class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-name" id="navName"></span>
+      <button class="nav-btn" onclick="switchTab('aiSettings',this)">Settings</button>
+      <button class="nav-btn" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    
+    <div class="login-wrap" id="loginScreen">
+      <img src="/logo.svg" alt="Facebook Toolkit" style="width:80px;height:80px;border-radius:20px;box-shadow:0 8px 32px rgba(79,110,247,0.2)">
+      <h1 class="login-h1">Facebook Toolkit</h1>
+      <p class="login-sub">โพสรูปและข้อความลงเพจ Facebook ได้ง่ายๆ จัดการเพจจากที่เดียว</p>
+      <button class="btn-fb-login" onclick="loginFacebook()">
+        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Login with Facebook
+      </button>
+      <p class="login-fine">We only request permission to post to your Pages. No personal data accessed.</p>
+      <p class="login-fine" style="margin-top:10px;color:#4caf50">🔒 เชื่อมต่อปลอดภัยด้วย HTTPS</p>
+    </div>
+
+    <div class="hidden" id="appScreen" style="max-width:100%">
+    <div class="dashboard-grid">
+
+      <div class="sidebar">
+        <div class="sidebar-title">เพจของคุณ</div>
+        <div class="page-selector-row">
+          <select class="page-select" id="pageSelect" onchange="selectPage(this.value)">
+            <option value="">-- เลือกเพจ --</option>
+          </select>
+        </div>
+        <div class="page-selected-info hidden" id="pageInfo">
+          <img loading="lazy" id="pageInfoPic" src="" alt="">
+          <div>
+            <div class="page-selected-name" id="pageInfoName"></div>
+            <div class="page-selected-meta" id="pageInfoMeta"></div>
+          </div>
+        </div>
+
+        <div class="sidebar-nav">
+          <div class="sidebar-title" style="margin-top:8px">เมนู</div>
+          <button class="sidebar-nav-item active" onclick="switchTab('compose',this)">✏️ เขียนโพส</button>
+          <button class="sidebar-nav-item" onclick="switchTab('history',this)">📋 ประวัติ</button>
+                    <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
+          <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา/Bulk</button>
+          <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
+          <button class="sidebar-nav-item" onclick="switchTab('autoReply',this)">💬 คอมเม้น</button>
+          <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
+          <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
+          <button class="sidebar-nav-item" onclick="switchTab('challenges',this)">🏆 Challenge</button>
+          <button class="sidebar-nav-item" onclick="switchTab('aiSettings',this)">⚙️ ตั้งค่า AI</button>
+          <button class="sidebar-nav-item" onclick="switchTab('tickets',this)" style="color:#ef4444;border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-top:8px">🐛 แจ้งบัค</button>
+          <a href="/howto.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📖 คู่มือ Affiliate</a>
+          <a href="/case-study-th.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📚 กรณีศึกษา</a>
+          <a href="/howto-affiliate.html" class="sidebar-nav-item" style="text-decoration:none;display:block;font-size:0.82rem;padding-left:28px">└ 🤝 Affiliate ละเอียด</a>
+          <a href="/docs.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📚 Documentation</a>
+          <a href="/changelog.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📋 Changelog</a>
+          <a href="/case-study.html" class="sidebar-nav-item" style="text-decoration:none;display:block">📋 Case Studies</a>
+        </div>
+      </div>
+
+      <div class="main-content">
+      
+      <div class="tabs" style="display:none">
+        <button class="tab active" onclick="switchTab('compose',this)"><span>✏️</span> เขียนโพส</button>
+        <button class="tab" onclick="switchTab('history',this)"><span>📋</span> ประวัติ</button>
+        <button class="tab" onclick="switchTab('templates',this)"><span>📑</span> แม่แบบ</button>
+        <button class="tab" onclick="switchTab('trends',this)"><span>🔥</span> เทรนด์</button>
+      </div>
+
+      <\!-- @include compose.html -->
+      <\!-- @include history.html -->
+      <\!-- @include log.html -->
+      <\!-- @include calendar.html -->
+      <\!-- @include trends.html -->
+      <\!-- @include templates.html -->
+      <\!-- @include settings.html -->
+      <\!-- @include comment.html -->
+      <\!-- @include schedule.html -->
+      <\!-- @include drafts.html -->
+      <\!-- @include insights.html -->
+      <\!-- @include challenge.html -->
+      <\!-- @include tickets.html -->
+    </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="commentsModal" onclick="if(event.target===this)document.getElementById('commentsModal').classList.remove('open')">
+    <div class="modal-card" style="max-width:520px;padding:24px;max-height:80vh;overflow-y:auto">
+      <h3 style="margin:0 0 12px">💬 Comments</h3>
+      <div id="commentsList"><div class="empty-state"><div style="display:flex;flex-direction:column;gap:10px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:50px;width:100%"></div><div class="skel" style="height:14px;width:40%"></div></div></div></div>
+      <div style="display:flex;gap:8px;margin-top:12px" id="replyBox">
+        <input id="replyInput" placeholder="ตอบกลับ..." style="flex:1;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit">
+        <button class="btn btn-accent" onclick="sendReply()">ส่ง</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <div class="foot-links">
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+    </div>
+    <p class="foot-copy">Facebook Toolkit &copy; 2026 fb.makeloops.xyz</p>
+  </footer>
+
+  <div class="modal-bg" id="previewModal" onclick="if(event.target===this)closePreview()">
+    <div class="modal-card">
+      <div class="modal-hdr">
+        <img loading="lazy" id="prevPagePic" src="" alt="">
+        <div><div class="modal-hdr-name" id="prevPageName"></div><div class="modal-hdr-time">Just now</div></div>
+      </div>
+      <div class="modal-body" id="prevMsg"></div>
+      <img loading="lazy" class="modal-img hidden" id="prevImg" src="" alt="">
+      <div class="modal-foot">
+        <button class="btn btn-accent" onclick="confirmPost()">Confirm Post</button>
+        <button class="btn btn-ghost" onclick="closePreview()">Edit</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

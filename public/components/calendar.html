@@ -1,0 +1,16 @@
+      <div id="tabCalendar" class="hidden">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+            <select id="calPageFilter" onchange="renderCalendar()" style="padding:4px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit"><option value="">ทุกเพจ</option></select>
+          </div>
+          <div class="cal-header">
+            <button onclick="calNav(-1)">◀</button>
+            <span class="cal-month" id="calMonth"></span>
+            <button onclick="calNav(1)">▶</button>
+            <button onclick="calToday()" style="margin-left:8px;font-size:0.7rem">วันนี้</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div id="calDetail"></div>
+        </div>
+      </div>
+

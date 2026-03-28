@@ -1,0 +1,120 @@
+      <div id="tabCompose">
+        <div class="card">
+          <textarea class="compose-area" id="message" placeholder="เขียนอะไรดี?" aria-label="เขียนโพส"></textarea>
+
+          <!-- Post Type + Affiliate Mode (hidden) -->
+          <div style="display:none">
+            <select id="postType"><option value="text" selected></option></select>
+            <input type="checkbox" id="affiliateMode">
+          </div>
+
+          <!-- Affiliate Link (hidden by default) -->
+          <div id="affiliateSection" style="display:none;margin:6px 0">
+            <input type="text" id="affiliateLink" placeholder="🔗 ลิงค์สินค้า affiliate" style="width:100%;padding:8px 10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;font-family:inherit;margin-bottom:4px">
+            <div style="font-size:0.7rem;color:#f59e0b;line-height:1.5">
+              ⚠️ Facebook อาจลด reach โพสที่มี link ภายนอก<br>
+              💡 แนะนำ: ใส่ link ใน comment แรกแทน เพื่อ reach สูงขึ้น
+            </div>
+          </div>
+
+          <!-- Algorithm Tips -->
+          <div style="font-size:0.68rem;color:var(--text-muted);margin:4px 0;line-height:1.6" id="algoTips">
+            💡 <span id="tipText">Reels ได้ reach สูงกว่า image 2-3 เท่า (algorithm boost 50%)</span>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0">
+            <div class="char-count"><span id="charCount" style="transition:color 0.2s">0</span> <span id="charLabel">ตัวอักษร</span> <span id="charHint" style="margin-left:6px;font-size:0.68rem"></span></div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <select id="aiTone" onchange="onStyleChange()" style="padding:5px 8px;background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.75rem;font-family:inherit">
+                <option value="general" selected>📝 ทั่วไป</option>
+                <option value="professional">📋 ให้ความรู้</option>
+              </select>
+              <button class="btn" id="aiGenBtn" onclick="generateAI()" style="padding:5px 12px;font-size:0.78rem;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">✨ AI เขียนให้</button>
+            </div>
+          </div>
+          <div id="styleHint" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;padding:6px 10px;background:var(--bg-input);border-radius:6px;border:1px solid var(--border)">💡 แนะนำ: ไม่เกิน 800 ตัวอักษร, เขียนอิสระ</div>
+          <div class="progress-bar" id="aiWriteProgress"><div class="bar"></div></div>
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง
+          </div>
+          <input type="file" id="fileInput" accept="image/*,video/mp4,video/quicktime,video/webm" multiple onchange="handleFiles(this.files)">
+          <!-- AI Image Generation -->
+          <div style="margin-top:12px;padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px">🎨 AI สร้างรูป</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+              <select id="aiImageRatio" style="padding:8px 12px;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit">
+                <option value="9:16" selected>9:16 แนวตั้ง</option>
+                <option value="1:1">1:1 สี่เหลี่ยม</option>
+                <option value="4:5">4:5 Instagram</option>
+                <option value="16:9">16:9 แนวนอน</option>
+              </select>
+              <button onclick="generateAiImageAuto()" style="padding:8px 16px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Auto</button>
+              <button onclick="generateAiImageSemi()" style="padding:8px 16px;border:1px solid #a855f7;border-radius:8px;background:none;color:#a855f7;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">✏️ Semi-Auto</button>
+            </div>
+            <!-- Text overlay option -->
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer">
+                <input type="checkbox" id="aiTextOverlay" onchange="toggleTextOverlay()"> 🔤 วาดตัวหนังสือบนรูป
+              </label>
+              <span id="aiTextOverlayNote" style="display:none;font-size:0.7rem;color:var(--text-muted)">(ใช้ Gemini Pro)</span>
+            </div>
+            <div id="aiTextOverlayArea" style="display:none;margin-top:8px">
+              <input id="aiOverlayText" placeholder="ข้อความที่จะวาดบนรูป เช่น น้ำมันแพง ประหยัดยังไง?" style="width:100%;padding:10px 12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit">
+            </div>
+            <!-- Semi-Auto: prompt edit area -->
+            <div id="aiImagePromptArea" style="display:none;margin-top:6px">
+              <textarea id="aiImagePrompt" rows="3" placeholder="AI จะสร้าง prompt จากข้อความของคุณ — แก้ไขได้ก่อนกดสร้าง" style="width:100%;padding:6px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;resize:vertical"></textarea>
+              <button id="aiImageConfirmBtn" onclick="confirmGenerateImage()" style="margin-top:4px;padding:5px 12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">🎨 สร้างรูปจาก Prompt นี้</button>
+            </div>
+            <div class="progress-bar" id="aiImageProgress"><div class="bar"></div></div>
+            <div id="aiImageStatus" style="display:none;margin-top:6px;font-size:0.72rem;color:var(--text-muted)"></div>
+          </div>
+          <div class="multi-preview" id="imagePreview"></div>
+          <div class="progress-bar" id="postProgress"><div class="bar"></div></div>
+          <div class="actions">
+            <button class="btn btn-accent" id="postBtn" onclick="submitPost()" style="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)">📤 โพสเลย</button>
+            <button class="btn btn-ghost" onclick="toggleSchedule()" id="scheduleToggle" style="font-size:0.95rem;padding:14px 24px">📅 ตั้งเวลา</button>
+            <button class="btn btn-ghost" onclick="saveDraftFromCompose()" style="font-size:0.85rem;padding:12px 18px">📝 บันทึกร่าง</button>
+            <button class="btn btn-ghost" onclick="togglePromptLogs()" style="font-size:0.85rem;padding:12px 18px">📋 Logs</button>
+          </div>
+
+          <!-- Prompt Logs -->
+          <div id="promptLogsSection" style="display:none;margin-top:12px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-size:0.82rem;font-weight:600;color:var(--text-secondary)">📋 Prompt Logs</div>
+              <div style="display:flex;gap:6px">
+                <button onclick="loadPromptLogs('all',this)" class="log-filter-btn active" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ทั้งหมด</button>
+                <button onclick="loadPromptLogs('text',this)" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">ข้อความ</button>
+                <button onclick="loadPromptLogs('image',this)" class="log-filter-btn" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text-secondary);font-size:0.7rem;cursor:pointer">รูป</button>
+              </div>
+            </div>
+            <div id="promptLogsList" style="max-height:300px;overflow-y:auto"></div>
+          </div>
+
+          <div id="composeDrafts" style="margin-top:12px"></div>
+
+          <div id="schedulePicker" style="display:none;margin-top:14px;padding:16px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+              <div class="field" style="flex:1;min-width:140px;margin-bottom:0">
+                <label>📅 วันที่</label>
+                <input type="date" id="schedDate" style="width:100%;padding:10px 12px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.9rem">
+              </div>
+              <div class="field" style="flex:1;min-width:120px;margin-bottom:0">
+                <label>⏰ เวลา</label>
+                <div style="display:flex;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                  <select id="schedTimeHour" style="padding:10px 12px;background:var(--bg-card);color:var(--text);border:none;font-family:inherit;font-size:0.9rem;text-align:center;cursor:pointer;min-width:52px;color-scheme:dark"></select>
+                  <span style="color:var(--text);font-size:1.1rem;font-weight:700;padding:0 2px">:</span>
+                  <select id="schedTimeMin" style="padding:10px 12px;background:var(--bg-card);color:var(--text);border:none;font-family:inherit;font-size:0.9rem;text-align:center;cursor:pointer;min-width:52px;color-scheme:dark"></select>
+                  <span style="padding:0 10px 0 4px;color:var(--text-muted);font-size:0.7rem">น.</span>
+                </div>
+                <input type="hidden" id="schedTime">
+              </div>
+              <button class="btn btn-accent" onclick="submitScheduled()" style="padding:10px 20px;font-size:0.9rem;white-space:nowrap">✅ ยืนยันตั้งเวลา</button>
+            </div>
+            <div id="scheduledList" style="margin-top:12px"></div>
+          </div>
+
+          <div class="toast" id="status"></div>
+        </div>
+      </div>
+

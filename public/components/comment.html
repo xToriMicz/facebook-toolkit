@@ -1,0 +1,31 @@
+      <div id="tabAutoReply" class="hidden">
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--accent)" id="arStatTotal">—</div><div style="font-size:0.68rem;color:var(--sec)">💬 ตอบทั้งหมด</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--success)" id="arStatToday">—</div><div style="font-size:0.68rem;color:var(--sec)">📅 วันนี้</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:#a78bfa" id="arStatWeek">—</div><div style="font-size:0.68rem;color:var(--sec)">📆 สัปดาห์นี้</div></div>
+        </div>
+
+        <!-- Per-page Settings -->
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">💬</span> Auto Reply — ตั้งค่าแต่ละเพจ</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">AI วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที</div>
+          <div id="autoReplyPageList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <!-- Reply History -->
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="card-title" style="margin:0"><span class="card-title-icon">📋</span> ประวัติตอบล่าสุด</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="date" id="arDateFilter" onchange="loadAutoReplyHistory()" style="padding:3px 8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.68rem;font-family:inherit;color-scheme:dark">
+              <button class="btn btn-ghost" onclick="document.getElementById('arDateFilter').value='';loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">ทั้งหมด</button>
+              <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
+            </div>
+          </div>
+          <div id="autoReplyHistoryList" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
+
