@@ -169,20 +169,35 @@ export async function processAutoReplies(env: Env) {
         : page.page_token;
       if (!pageToken) continue;
 
-      // Get recent posts (last 3 days — buffer for downtime recovery)
+      // Get recent posts (last 3 days, newest first)
       const { results: posts } = await env.DB.prepare(
-        "SELECT fb_post_id FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
+        "SELECT fb_post_id, created_at FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
       ).bind(fbId, page.page_id).all();
 
+      const nowMs = Date.now();
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
 
-        // Fetch only recent comments (since 72h ago) — buffer for downtime recovery
-        const since = Math.floor(Date.now() / 1000) - 259200;
+        // Smart since: ดึง comment ตามอายุโพส
+        // วันนี้ → ดึงทั้งหมด, เมื่อวาน → since เมื่อวาน, 2-3 วัน → since 3 วัน
+        const postAgeMs = nowMs - new Date(post.created_at).getTime();
+        const postAgeDays = postAgeMs / 86400000;
+        let sinceParam = "";
+        if (postAgeDays <= 1) {
+          // โพสวันนี้ — ดึง comment ทั้งหมด (ไม่ใส่ since)
+          sinceParam = "";
+        } else if (postAgeDays <= 2) {
+          // โพสเมื่อวาน — since เมื่อวาน
+          sinceParam = `&since=${Math.floor(nowMs / 1000) - 86400}`;
+        } else {
+          // โพส 2-3 วัน — since 3 วัน
+          sinceParam = `&since=${Math.floor(nowMs / 1000) - 259200}`;
+        }
+
         let comments: any[];
         try {
           const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time&order=reverse_chronological&limit=25&since=${since}&access_token=${pageToken}`
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time&order=reverse_chronological&limit=25${sinceParam}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
           if (data.error) continue;
