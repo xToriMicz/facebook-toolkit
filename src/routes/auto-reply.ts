@@ -139,15 +139,17 @@ function sleep(ms: number): Promise<void> {
 export async function processAutoReplies(env: Env) {
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
-  // Get all users with auto-reply enabled
+  // Get all enabled page settings (per-page, exclude mode 'off')
   const { results: settings } = await env.DB.prepare(
-    "SELECT user_fb_id FROM auto_reply_settings WHERE enabled = 1"
+    "SELECT ars.user_fb_id, ars.page_id, ars.reply_mode, up.page_token FROM auto_reply_settings ars JOIN user_pages up ON ars.user_fb_id = up.user_fb_id AND ars.page_id = up.page_id WHERE ars.enabled = 1 AND ars.reply_mode != 'off'"
   ).all();
 
   if (!settings.length) return;
 
   for (const setting of settings as any[]) {
     const fbId = setting.user_fb_id;
+    const replyMode: string = setting.reply_mode || "all";
+    const page = { page_id: setting.page_id, page_token: setting.page_token };
 
     // Get user's AI settings
     const aiSettings = await env.DB.prepare(
@@ -161,12 +163,7 @@ export async function processAutoReplies(env: Env) {
 
     if (!apiKey) continue;
 
-    // Get user's pages
-    const { results: pages } = await env.DB.prepare(
-      "SELECT page_id, page_token FROM user_pages WHERE user_fb_id = ?"
-    ).bind(fbId).all() as { results: { page_id: string; page_token: string }[] };
-
-    for (const page of pages) {
+    {
       const pageToken = page.page_token.startsWith("enc:")
         ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(page.page_token, encKey); } catch { return null; } })()
         : page.page_token;
@@ -222,6 +219,22 @@ export async function processAutoReplies(env: Env) {
               continue;
             }
 
+            // Check reply mode before generating
+            if (replyMode === "question_only" && classification.type !== "question" && classification.type !== "disagree") {
+              // Log as skipped but don't reply
+              await env.DB.prepare(
+                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
+              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              continue;
+            }
+            if (replyMode === "random" && Math.random() > 0.7) {
+              // 30% chance to skip (reply 60-80%)
+              await env.DB.prepare(
+                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
+              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              continue;
+            }
+
             // Generate reply
             const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint);
             if (!replyText) continue;
@@ -260,16 +273,25 @@ export async function processAutoReplies(env: Env) {
 
 // ── API Routes ──
 
-// GET /api/auto-reply/settings
+// GET /api/auto-reply/settings?page_id=xxx
 autoReply.get("/auto-reply/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const row = await c.env.DB.prepare(
-    "SELECT enabled FROM auto_reply_settings WHERE user_fb_id = ?"
-  ).bind(session.fb_id).first<{ enabled: number }>();
+  const pageId = c.req.query("page_id");
+  if (pageId) {
+    // Single page setting
+    const row = await c.env.DB.prepare(
+      "SELECT enabled, reply_mode FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
+    ).bind(session.fb_id, pageId).first<{ enabled: number; reply_mode: string }>();
+    return c.json({ page_id: pageId, enabled: row?.enabled === 1, reply_mode: row?.reply_mode || "all" });
+  }
 
-  return c.json({ enabled: row?.enabled === 1 });
+  // All pages settings
+  const { results } = await c.env.DB.prepare(
+    "SELECT ars.page_id, ars.enabled, ars.reply_mode, up.page_name FROM auto_reply_settings ars LEFT JOIN user_pages up ON ars.page_id = up.page_id AND ars.user_fb_id = up.user_fb_id WHERE ars.user_fb_id = ?"
+  ).bind(session.fb_id).all();
+  return c.json({ pages: results });
 });
 
 // POST /api/auto-reply/settings
@@ -277,12 +299,23 @@ autoReply.post("/auto-reply/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const { enabled } = await c.req.json() as { enabled: boolean };
-  await c.env.DB.prepare(
-    "INSERT INTO auto_reply_settings (user_fb_id, enabled) VALUES (?, ?) ON CONFLICT(user_fb_id) DO UPDATE SET enabled = excluded.enabled"
-  ).bind(session.fb_id, enabled ? 1 : 0).run();
+  const { enabled, page_id, reply_mode } = await c.req.json() as { enabled: boolean; page_id: string; reply_mode?: string };
+  if (!page_id) return c.json({ error: "page_id required" }, 400);
 
-  return c.json({ ok: true, enabled });
+  const validModes = ["all", "random", "question_only", "off"];
+  const mode = reply_mode && validModes.includes(reply_mode) ? reply_mode : "all";
+
+  // Verify user owns this page
+  const page = await c.env.DB.prepare(
+    "SELECT page_id FROM user_pages WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, page_id).first();
+  if (!page) return c.json({ error: "Page not found" }, 400);
+
+  await c.env.DB.prepare(
+    "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode) VALUES (?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode"
+  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode).run();
+
+  return c.json({ ok: true, page_id, enabled, reply_mode: mode });
 });
 
 // GET /api/auto-reply/history
