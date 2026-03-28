@@ -30,7 +30,8 @@ async function textToImagePrompt(text: string, env: Env, fbId: string): Promise<
 
 Rules:
 - Create a photorealistic or high-quality illustration style image (NOT infographic, NOT clip art, NOT flat icons)
-- People in images must be Thai/Asian, set in Thailand context (Thai streets, Thai shops, Thai scenery)
+- People in images must be Thai/Asian, set in Thailand context
+- Choose urban (Bangkok, city) or rural (countryside, village) setting based on the content topic
 - Focus on emotion, atmosphere, and visual storytelling
 - Include lighting, color mood, and composition details
 - Good example: "A Thai man looking worried at a gas station pump showing high prices in Bangkok, warm sunset lighting, cinematic composition, shallow depth of field"
