@@ -411,6 +411,7 @@
                     <button class="sidebar-nav-item" onclick="switchTab('calendar',this)">📅 ปฏิทิน</button>
           <button class="sidebar-nav-item" onclick="switchTab('schedule',this)">⏰ ตั้งเวลา/Bulk</button>
           <button class="sidebar-nav-item" onclick="switchTab('activityLog',this)">📋 Activity Log</button>
+          <button class="sidebar-nav-item" onclick="switchTab('autoReply',this)">💬 คอมเม้น</button>
           <button class="sidebar-nav-item" onclick="switchTab('trends',this)">🔥 เทรนด์</button>
           <button class="sidebar-nav-item" onclick="switchTab('insights',this)">📊 Insights</button>
           <button class="sidebar-nav-item" onclick="switchTab('challenges',this)">🏆 Challenge</button>
@@ -709,22 +710,33 @@
           </div>
         </div>
 
-        <!-- Auto Reply Comment Settings (per page) -->
-        <div class="card" style="margin-top:12px">
-          <div class="card-title"><span class="card-title-icon">💬</span> Auto Reply Comment</div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">AI วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที — ตั้งค่าแยกแต่ละเพจ</div>
+      </div>
+
+      <!-- Tab: Auto Reply Comment (💬 คอมเม้น) -->
+      <div id="tabAutoReply" class="hidden">
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--accent)" id="arStatTotal">—</div><div style="font-size:0.68rem;color:var(--sec)">💬 ตอบทั้งหมด</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:var(--success)" id="arStatToday">—</div><div style="font-size:0.68rem;color:var(--sec)">📅 วันนี้</div></div>
+          <div class="card" style="padding:14px;text-align:center;margin:0"><div style="font-size:1.2rem;font-weight:800;color:#a78bfa" id="arStatWeek">—</div><div style="font-size:0.68rem;color:var(--sec)">📆 สัปดาห์นี้</div></div>
+        </div>
+
+        <!-- Per-page Settings -->
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">💬</span> Auto Reply — ตั้งค่าแต่ละเพจ</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px">AI วิเคราะห์ 8 ประเภท + ตอบทุก 5 นาที</div>
           <div id="autoReplyPageList" style="display:flex;flex-direction:column;gap:8px">
             <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">กำลังโหลด...</div>
           </div>
+        </div>
 
-          <!-- Auto Reply History Preview -->
-          <div id="autoReplyHistorySection" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <span style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">ประวัติตอบล่าสุด</span>
-              <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
-            </div>
-            <div id="autoReplyHistoryList" style="max-height:300px;overflow-y:auto"></div>
+        <!-- Reply History -->
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="card-title" style="margin:0"><span class="card-title-icon">📋</span> ประวัติตอบล่าสุด</div>
+            <button class="btn btn-ghost" onclick="loadAutoReplyHistory()" style="font-size:0.68rem;padding:2px 8px">↻</button>
           </div>
+          <div id="autoReplyHistoryList" style="max-height:400px;overflow-y:auto"></div>
         </div>
       </div>
 
@@ -1055,7 +1067,7 @@
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav-item').forEach(t=>t.classList.remove('active'));
       if(el) el.classList.add('active');
-      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabChallenges','tabTickets'].forEach(id => {
+      ['tabCompose','tabHistory','tabTemplates','tabTrends','tabCalendar','tabActivityLog','tabAutoReply','tabAiSettings','tabSchedule','tabDrafts','tabInsights','tabChallenges','tabTickets'].forEach(id => {
         const e = document.getElementById(id);
         if(e) e.classList.add('hidden');
       });
@@ -1067,7 +1079,8 @@
       if(tab==='trends') loadTrends();
       if(tab==='calendar') renderCalendar();
       if(tab==='activityLog') loadLogs();
-      if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); loadAutoReplySettings(); }
+      if(tab==='aiSettings') { loadAiSettings(); loadApiKeyStatus(); }
+      if(tab==='autoReply') { loadAutoReplySettings(); loadAutoReplyHistory(); }
       if(tab==='tickets') loadTickets();
       if(tab==='schedule') { loadSchedule(); loadBulkDrafts(); }
       if(tab==='drafts') loadDrafts();
@@ -1808,9 +1821,20 @@
     async function loadAutoReplyHistory() {
       var el = document.getElementById('autoReplyHistoryList');
       try {
-        var r = await fetch('/api/auto-reply/history?limit=20', { credentials: 'same-origin' });
+        var r = await fetch('/api/auto-reply/history?limit=50', { credentials: 'same-origin' });
         var d = await r.json();
         var replies = d.replies || [];
+        // Update stats
+        var now = new Date();
+        var todayStr = now.toISOString().slice(0, 10);
+        var weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+        var replied = replies.filter(function(r) { return r.status === 'replied'; });
+        var totalEl = document.getElementById('arStatTotal');
+        var todayEl = document.getElementById('arStatToday');
+        var weekEl = document.getElementById('arStatWeek');
+        if (totalEl) totalEl.textContent = replied.length;
+        if (todayEl) todayEl.textContent = replied.filter(function(r) { return (r.created_at || '').startsWith(todayStr); }).length;
+        if (weekEl) weekEl.textContent = replied.filter(function(r) { return (r.created_at || '') >= weekAgo; }).length;
         if (!replies.length) { el.innerHTML = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ยังไม่มีประวัติ</div>'; return; }
         var TYPE_ICONS = { question:'❓', praise:'👍', experience:'💬', disagree:'🤔', tag_friend:'👥', emoji:'😊', spam:'🚫', unclear:'❔' };
         var TYPE_LABELS = { question:'ถามข้อมูล', praise:'ชม', experience:'แชร์ประสบการณ์', disagree:'ไม่เห็นด้วย', tag_friend:'แท็กเพื่อน', emoji:'emoji', spam:'spam', unclear:'ไม่ชัดเจน' };
