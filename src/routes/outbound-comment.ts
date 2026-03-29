@@ -379,9 +379,6 @@ outbound.get("/outbound/test-feed/:pageId", async (c) => {
   }
 
   return c.json({ target: targetPageId, has_user_token: !!userToken, has_page_token: !!pageToken, results });
-  } catch (e: any) {
-    return c.json({ error: e.message }, 500);
-  }
 });
 
 // GET /api/outbound/targets — list target pages
