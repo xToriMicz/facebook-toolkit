@@ -82,9 +82,29 @@ export async function bulkGenerate() {
   var timeStart=document.getElementById('bulkTimeStart').value;
   var timeEnd=document.getElementById('bulkTimeEnd').value;
   if(!dateStart||!dateEnd){toast('err','กรุณาเลือกวันเริ่ม-จบ');return;}
+
+  // คำนวณจำนวน posts ที่ต้องการจากวัน + frequency
+  var totalDays = Math.max(1, Math.ceil((new Date(dateEnd) - new Date(dateStart)) / 86400000) + 1);
+  var postsNeeded = totalDays; // default: 1 โพส/วัน
+  if(freq==='many') postsNeeded = totalDays * freqValue;
+  else if(freq==='interval') postsNeeded = Math.max(1, Math.floor(totalDays * 24 / freqValue));
+  else if(freq==='auto') postsNeeded = Math.max(totalDays, keywords.length);
+
+  // สร้าง keyword list ให้ครบจำนวน posts — ถ้า keywords น้อยกว่า posts ให้วน + เพิ่มมุมใหม่
+  var expandedKeywords = [];
+  for(var k=0; k<postsNeeded; k++){
+    var baseKeyword = keywords[k % keywords.length];
+    if(k < keywords.length){
+      expandedKeywords.push({keyword: baseKeyword, variation: null});
+    } else {
+      // สร้างมุมใหม่จาก keyword เดิม
+      var angles = ['มุมมองใหม่', 'เจาะลึก', 'เปรียบเทียบ', 'อัพเดตล่าสุด', 'สรุปสั้น', 'เทรนด์', 'ข้อดีข้อเสีย', 'คำแนะนำ'];
+      expandedKeywords.push({keyword: baseKeyword, variation: angles[(k - keywords.length) % angles.length]});
+    }
+  }
+
   var statusEl=document.getElementById('bulkGenStatus');
   statusEl.style.display='block';
-  // Bulk ใช้ manual progress ตามจำนวน keyword
   var progressEl=document.getElementById('bulkProgress');
   progressEl.classList.add('active');
   var progressBar=progressEl.querySelector('.bar');
@@ -93,28 +113,28 @@ export async function bulkGenerate() {
   var previewEl=document.getElementById('bulkPreviewList');
   previewEl.innerHTML='';
   document.getElementById('bulkPreview').style.display='none';
-  for(var i=0;i<keywords.length;i++){
-    // อัพเดต progress ตามจำนวนที่เสร็จ
-    var pct=Math.round(((i)/keywords.length)*100);
+  for(var i=0;i<expandedKeywords.length;i++){
+    var pct=Math.round(((i)/expandedKeywords.length)*100);
     if(progressBar)progressBar.style.width=pct+'%';
-    statusEl.textContent='⏳ กำลังสร้าง '+(i+1)+'/'+keywords.length+': '+keywords[i]+'...';
+    var kw = expandedKeywords[i];
+    var topicText = kw.variation ? kw.keyword + ' (' + kw.variation + ')' : kw.keyword;
+    statusEl.textContent='⏳ กำลังสร้าง '+(i+1)+'/'+expandedKeywords.length+': '+topicText+'...';
     try{
-      // Generate text
       var text='';
       if(type==='text'||type==='text_image'){
-        var r=await fetch('/api/ai-write',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:keywords[i],tone:document.getElementById('aiTone')?document.getElementById('aiTone').value:'general',format:'ปานกลาง'})});
+        var promptExtra = kw.variation ? ' เขียนในมุม: ' + kw.variation + ' ห้ามซ้ำกับโพสก่อนหน้า' : '';
+        var r=await fetch('/api/ai-write',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:kw.keyword + promptExtra,tone:document.getElementById('aiTone')?document.getElementById('aiTone').value:'general',format:'ปานกลาง'})});
         var d=await r.json();
         text=(d.text||'')+((d.hashtags||[]).length?'\n\n'+(d.hashtags||[]).join(' '):'');
       }
-      // Generate image
       var imageUrl=null;
       if(type==='text_image'||type==='image'){
-        var ir=await fetch('/api/ai-image/generate',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:keywords[i],aspect_ratio:'9:16',mode:'auto'})});
+        var ir=await fetch('/api/ai-image/generate',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:kw.keyword,aspect_ratio:'9:16',mode:'auto'})});
         var id=await ir.json();
         if(id.ok&&id.image_url)imageUrl=id.image_url;
       }
-      state._bulkResults.push({keyword:keywords[i],text:text,image_url:imageUrl,scheduled_at:null});
-    }catch(e){state._bulkResults.push({keyword:keywords[i],text:'Error: '+e.message,image_url:null,scheduled_at:null});}
+      state._bulkResults.push({keyword:topicText,text:text,image_url:imageUrl,scheduled_at:null});
+    }catch(e){state._bulkResults.push({keyword:topicText,text:'Error: '+e.message,image_url:null,scheduled_at:null});}
   }
   // Calculate schedule
   var schedules=calculateBulkSchedule(state._bulkResults.length,dateStart,dateEnd,timeStart,timeEnd,freq,freqValue);
