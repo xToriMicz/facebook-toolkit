@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../helpers";
 import { getSessionFromReq, getDecryptedPageToken } from "../helpers";
 import { callAI } from "../ai-providers";
+import { createNotification } from "./notifications";
 
 const outbound = new Hono<{ Bindings: Env }>();
 
@@ -305,8 +306,20 @@ async function sendComment(commentId: number, env: Env): Promise<{ ok: boolean; 
     // Update last_commented_at on target page
     await env.DB.prepare("UPDATE target_pages SET last_commented_at = ? WHERE user_fb_id = ? AND target_page_id = ?")
       .bind(new Date().toISOString(), row.user_fb_id, row.target_page_id).run();
+    await createNotification(env.DB, row.user_fb_id, {
+      page_id: row.page_id, type: "outbound", priority: "important",
+      title: "🎯 คอมเม้นเพจอื่นแล้ว",
+      detail: row.comment_text?.slice(0, 100),
+      link: `?page=${row.page_id}&tab=outbound`,
+    });
     return { ok: true, fbCommentId: data.id };
   } catch (e: any) {
+    await createNotification(env.DB, row.user_fb_id, {
+      page_id: row.page_id, type: "error", priority: "urgent",
+      title: "❌ คอมเม้นเพจอื่นล้มเหลว",
+      detail: e.message?.slice(0, 100),
+      link: `?page=${row.page_id}&tab=outbound`,
+    }).catch(() => {});
     await env.DB.prepare("UPDATE outbound_comments SET status = 'failed', error_message = ? WHERE id = ?")
       .bind(e.message, commentId).run();
     return { ok: false, error: e.message };

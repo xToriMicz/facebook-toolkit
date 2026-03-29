@@ -218,11 +218,32 @@ export async function processScheduledPosts(env: Env) {
             "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
           ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, new Date().toISOString()).run();
         } catch {
-          // posts table insert is non-critical — scheduled_posts status already updated
+          // posts table insert is non-critical
         }
+        // Notification: scheduled post success
+        try {
+          const { createNotification } = await import("./notifications");
+          await createNotification(env.DB, post.user_fb_id, {
+            page_id: post.page_id, type: "scheduled", priority: "important",
+            title: "⏰ โพสตั้งเวลาส่งแล้ว",
+            detail: (post.message || "").slice(0, 100),
+            link: `?page=${post.page_id}&tab=activityLog`,
+            source_id: fbPostId,
+          });
+        } catch { /* non-critical */ }
       }
     } catch (e) {
       await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(String(e).slice(0, 500), post.id).run();
+      // Notification: scheduled post failed
+      try {
+        const { createNotification } = await import("./notifications");
+        await createNotification(env.DB, post.user_fb_id, {
+          page_id: post.page_id, type: "error", priority: "urgent",
+          title: "❌ โพสตั้งเวลาล้มเหลว",
+          detail: String(e).slice(0, 100),
+          link: `?page=${post.page_id}&tab=schedule`,
+        });
+      } catch { /* non-critical */ }
     }
   }
 }
