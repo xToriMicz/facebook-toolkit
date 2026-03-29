@@ -208,9 +208,9 @@ export async function processOutboundComments(env: Env) {
           const commentText = filterComment(result.text);
           if (!commentText) continue;
 
-          // Save as PENDING (approval queue) — not auto-send
+          // Full auto: save as approved → sendApprovedComments จะส่งเอง
           await env.DB.prepare(
-            "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)"
+            "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)"
           ).bind(fbId, target.page_id, target.target_page_id, post.id, (post.message || "").slice(0, 500), postType, commentText, new Date().toISOString()).run();
 
           draftsThisRun++;
