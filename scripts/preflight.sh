@@ -85,6 +85,35 @@ else
   echo -e "${GREEN}✅ No secrets found${NC}"
 fi
 
+# 8. Tab Integrity Check — ทุก tab ใน HTML ต้องอยู่ใน router.js
+echo -e "${YELLOW}🔍 Checking tab integrity (HTML ↔ router.js)...${NC}"
+TAB_INTEGRITY_OK=true
+# Get tab IDs from built index.html
+TABS_HTML=$(grep -oE 'id="tab[A-Za-z]+"' "$ROOT_DIR/public/index.html" | sed 's/id=//;s/"//g' | sort -u)
+# Get tab IDs from router.js hide list
+TABS_ROUTER=$(grep -oE '"tab[A-Za-z]+"' "$ROOT_DIR/public/js/router.js" | tr -d '"' | sort -u)
+# Find tabs in HTML but missing from router
+MISSING_IN_ROUTER=$(comm -23 <(echo "$TABS_HTML") <(echo "$TABS_ROUTER"))
+if [ -n "$MISSING_IN_ROUTER" ]; then
+  TAB_INTEGRITY_OK=false
+  for tab in $MISSING_IN_ROUTER; do
+    echo -e "${RED}❌ Tab $tab อยู่ใน HTML แต่ไม่อยู่ใน router.js (จะไม่ถูก hide เมื่อ switch tab)${NC}"
+  done
+  ERRORS=$((ERRORS + 1))
+fi
+# Check switchTab cases — each sidebar button tab should have a load handler
+SIDEBAR_TABS=$(grep -oE "switchTab\('[a-zA-Z]+'" "$ROOT_DIR/public/index.template.html" | grep -oE "'[^']+'" | tr -d "'" | sort -u)
+for tab in $SIDEBAR_TABS; do
+  if ! grep -q "===\"$tab\"" "$ROOT_DIR/public/js/router.js" 2>/dev/null; then
+    TAB_INTEGRITY_OK=false
+    echo -e "${RED}❌ switchTab('$tab') ใน sidebar แต่ไม่มี case ใน router.js${NC}"
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+if [ "$TAB_INTEGRITY_OK" = true ]; then
+  echo -e "${GREEN}✅ Tab integrity OK — $(echo "$TABS_HTML" | wc -w | tr -d ' ') tabs ตรงกัน${NC}"
+fi
+
 echo ""
 if [ $ERRORS -gt 0 ]; then
   echo -e "${RED}=========================================${NC}"
