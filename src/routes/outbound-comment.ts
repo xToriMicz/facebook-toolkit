@@ -305,7 +305,53 @@ outbound.get("/outbound/targets", async (c) => {
   return c.json({ targets: results });
 });
 
-// POST /api/outbound/targets — add target page
+// POST /api/outbound/resolve — resolve Facebook URL/username → page ID + name
+outbound.post("/outbound/resolve", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const { url } = await c.req.json() as { url: string };
+  if (!url) return c.json({ error: "url required" }, 400);
+
+  // Extract username/ID from various FB URL formats
+  let identifier = url.trim();
+  // https://www.facebook.com/poohpatoong → poohpatoong
+  // https://www.facebook.com/profile.php?id=123456 → 123456
+  // https://facebook.com/pages/xxx/123456 → 123456
+  const urlMatch = identifier.match(/facebook\.com\/(?:profile\.php\?id=(\d+)|pages\/[^/]+\/(\d+)|([a-zA-Z0-9_.]+))/);
+  if (urlMatch) {
+    identifier = urlMatch[1] || urlMatch[2] || urlMatch[3];
+  }
+  // Clean up: remove trailing slashes, query params
+  identifier = identifier.replace(/[/?#].*$/, "").trim();
+
+  if (!identifier) return c.json({ error: "Could not parse Facebook URL" }, 400);
+
+  // Get page token for Graph API call
+  const userPage = await c.env.DB.prepare(
+    "SELECT page_token FROM user_pages WHERE user_fb_id = ? LIMIT 1"
+  ).bind(session.fb_id).first<{ page_token: string }>();
+
+  if (!userPage) return c.json({ error: "No page token available" }, 400);
+
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = userPage.page_token.startsWith("enc:")
+    ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(userPage.page_token, encKey); } catch { return null; } })()
+    : userPage.page_token;
+
+  if (!pageToken) return c.json({ error: "Invalid page token" }, 400);
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${identifier}?fields=id,name,picture&access_token=${pageToken}`);
+    const data = await res.json() as any;
+    if (data.error) return c.json({ error: data.error.message }, 400);
+    return c.json({ id: data.id, name: data.name, picture: data.picture?.data?.url || "" });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// POST /api/outbound/targets — add target page (accepts URL or page_id)
 outbound.post("/outbound/targets", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
