@@ -206,15 +206,34 @@ export async function processAutoReplies(env: Env) {
         : page.page_token;
       if (!pageToken) continue;
 
-      // Get recent posts (last 3 days, newest first) — include message for AI context
-      const { results: posts } = await env.DB.prepare(
-        "SELECT fb_post_id, created_at, message FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
-      ).bind(fbId, page.page_id).all();
+      // Get recent posts from Graph API (catches posts made outside toolkit)
+      let posts: any[] = [];
+      try {
+        const feedRes = await fetch(
+          `https://graph.facebook.com/v25.0/${page.page_id}/posts?fields=id,message,created_time&limit=10&access_token=${pageToken}`
+        );
+        const feedData = await feedRes.json() as any;
+        if (feedData.data) {
+          posts = feedData.data.map((p: any) => ({ fb_post_id: p.id, message: p.message || "", created_at: p.created_time }));
+          // Sync posts to DB (insert if not exists)
+          for (const p of posts) {
+            await env.DB.prepare(
+              "INSERT OR IGNORE INTO posts (fb_post_id, page_id, user_fb_id, message, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
+            ).bind(p.fb_post_id, page.page_id, fbId, p.message.slice(0, 2000), p.created_at).run();
+          }
+        }
+      } catch {
+        // Fallback to DB if Graph API fails
+        const { results: dbPosts } = await env.DB.prepare(
+          "SELECT fb_post_id, created_at, message FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
+        ).bind(fbId, page.page_id).all();
+        posts = dbPosts as any[];
+      }
 
       const nowMs = Date.now();
-      // ดึง comment ใหม่ตั้งแต่ 10 นาทีที่แล้ว (2x cron interval)
-      // DB dedup ป้องกัน reply ซ้ำ — ไม่ต้องพึ่ง post age
-      const sinceParam = `&since=${Math.floor(nowMs / 1000) - 600}`;
+      // ดึง comment ย้อนหลัง 24 ชม. — จับ comment จากโพสที่สร้างนอก toolkit ด้วย
+      // DB dedup ป้องกัน reply ซ้ำ — ขยาย window ปลอดภัย
+      const sinceParam = `&since=${Math.floor(nowMs / 1000) - 86400}`;
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
 
