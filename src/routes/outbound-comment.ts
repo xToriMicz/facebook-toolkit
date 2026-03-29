@@ -342,20 +342,43 @@ outbound.get("/outbound/test-feed/:pageId", async (c) => {
   const targetPageId = c.req.param("pageId");
   const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
 
+  // Try User Access Token first (can read other pages), then Page Token
+  const user = await c.env.DB.prepare(
+    "SELECT access_token FROM users WHERE fb_user_id = ?"
+  ).bind(session.fb_id).first<{ access_token: string }>();
+
   const userPage = await c.env.DB.prepare(
     "SELECT page_token FROM user_pages WHERE user_fb_id = ? LIMIT 1"
   ).bind(session.fb_id).first<{ page_token: string }>();
-  if (!userPage) return c.json({ error: "No page token" }, 400);
 
-  const pageToken = userPage.page_token.startsWith("enc:")
-    ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(userPage.page_token, encKey); } catch { return null; } })()
-    : userPage.page_token;
-  if (!pageToken) return c.json({ error: "Invalid token" }, 400);
+  const encKey2 = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+  const pageToken = userPage?.page_token?.startsWith("enc:")
+    ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(userPage.page_token, encKey2); } catch { return null; } })()
+    : userPage?.page_token;
 
-  try {
-    const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed?fields=id,message,created_time,type&limit=3&access_token=${pageToken}`);
-    const data = await res.json() as any;
-    return c.json({ target: targetPageId, response: data });
+  const userToken = user?.access_token?.startsWith("enc:")
+    ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(user.access_token, encKey2); } catch { return null; } })()
+    : user?.access_token;
+
+  const results: any = {};
+
+  // Test with User Token
+  if (userToken) {
+    try {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed?fields=id,message,created_time,type&limit=3&access_token=${userToken}`);
+      results.user_token = await res.json();
+    } catch (e: any) { results.user_token_error = e.message; }
+  }
+
+  // Test with Page Token
+  if (pageToken) {
+    try {
+      const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed?fields=id,message,created_time,type&limit=3&access_token=${pageToken}`);
+      results.page_token = await res.json();
+    } catch (e: any) { results.page_token_error = e.message; }
+  }
+
+  return c.json({ target: targetPageId, has_user_token: !!userToken, has_page_token: !!pageToken, results });
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
