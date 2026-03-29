@@ -221,9 +221,25 @@ export async function processBulkGenerate(env: Env) {
       ).bind(item.plan_id).run();
 
     } catch (e: any) {
-      await env.DB.prepare(
-        "UPDATE bulk_plan_items SET status = 'failed', error_message = ? WHERE id = ?"
-      ).bind((e.message || "Unknown error").slice(0, 500), item.id).run();
+      // Retry logic: retry 2 times then fail
+      const retryCount = (item.retry_count || 0) + 1;
+      if (retryCount < 3) {
+        // Back to pending for retry
+        await env.DB.prepare(
+          "UPDATE bulk_plan_items SET status = 'pending', retry_count = ?, error_message = ? WHERE id = ?"
+        ).bind(retryCount, (e.message || "Unknown error").slice(0, 500), item.id).run();
+      } else {
+        // Max retries reached → fail + notify
+        await env.DB.prepare(
+          "UPDATE bulk_plan_items SET status = 'failed', retry_count = ?, error_message = ? WHERE id = ?"
+        ).bind(retryCount, (e.message || "Unknown error").slice(0, 500), item.id).run();
+        await createNotification(env.DB, item.user_fb_id, {
+          page_id: item.page_id, type: "error", priority: "urgent",
+          title: "❌ Bulk สร้างโพสล้มเหลว",
+          detail: `${item.keyword}: ${(e.message || "").slice(0, 80)}`,
+          link: `?page=${item.page_id}&tab=schedule`,
+        });
+      }
     }
   }
 }

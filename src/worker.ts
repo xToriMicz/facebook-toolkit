@@ -19,7 +19,7 @@ import bulk from "./routes/bulk";
 import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-reply";
 import outbound, { processOutboundComments, sendApprovedComments } from "./routes/outbound-comment";
 import notifications from "./routes/notifications";
-import bulkPlans from "./routes/bulk-plans";
+import bulkPlan from "./routes/bulk-plan";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -93,7 +93,7 @@ app.route("/api", outbound);
 app.route("/api", bulk);
 app.route("/api", autoReply);
 app.route("/api", notifications);
-app.route("/api", bulkPlans);
+app.route("/api", bulkPlan);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
