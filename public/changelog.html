@@ -57,7 +57,8 @@
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:28px">
     <div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Versions</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <a href="#v16" style="padding:5px 14px;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.6</a>
+      <a href="#v17" style="padding:5px 14px;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.7</a>
+      <a href="#v16" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.6</a>
       <a href="#v15" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.5</a>
       <a href="#v14" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.4</a>
       <a href="#v13" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.3</a>
@@ -65,6 +66,28 @@
       <a href="#v11" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.1</a>
       <a href="#v10" style="padding:5px 14px;background:rgba(79,110,247,0.1);color:var(--accent);border-radius:6px;text-decoration:none;font-size:0.82rem;font-weight:600">v1.0</a>
     </div>
+  </div>
+
+  <div class="version" id="v17">
+    <div class="version-header">
+      <span class="version-tag">v1.7</span>
+      <span class="version-date">29 มี.ค. 2026</span>
+    </div>
+    <div class="version-title">Auto Reply v2 + UI Cleanup</div>
+    <ul class="changes">
+      <li class="feat"><span class="tag tag-feat">feat</span> Auto Reply v2 — เพิ่มประเภท greeting, complaint, short_reaction (10 ประเภท)</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> ตั้งค่า Tone — สุภาพ / เป็นกันเอง / กำหนดเอง</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Toggle ไม่ตอบ greeting (ทักทาย)</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> AI เห็น context โพสต้นทาง — ตอบตรงประเด็นกว่าเดิม</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> รวม ประวัติ + Activity Log เป็นหน้าเดียว</li>
+      <li class="feat"><span class="tag tag-feat">feat</span> Tab permalink — refresh แล้วกลับ tab เดิม (?tab=xxx)</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Auto Reply ไม่ตอบคอมเม้นใหม่บนโพสเก่า</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Tab sidebar ไม่ highlight หลัง refresh</li>
+      <li class="fix"><span class="tag tag-fix">fix</span> Activity Log 500 error (endpoint mismatch /api/logs vs /api/activity)</li>
+      <li class="feat"><span class="tag tag-feat">security</span> ป้องกัน prompt injection ใน comment</li>
+      <li class="feat"><span class="tag tag-feat">security</span> Content filter — strip URL + limit reply length</li>
+      <li class="feat"><span class="tag tag-feat">security</span> Rate cap — max 15 replies ต่อ cron run ต่อเพจ</li>
+    </ul>
   </div>
 
   <div class="version" id="v16">
