@@ -215,11 +215,12 @@ export async function processAutoReplies(env: Env) {
         const feedData = await feedRes.json() as any;
         if (feedData.data) {
           posts = feedData.data.map((p: any) => ({ fb_post_id: p.id, message: p.message || "", created_at: p.created_time }));
-          // Sync posts to DB (insert if not exists)
+          // Sync posts to DB — strip pageId_ prefix to match existing format
           for (const p of posts) {
+            const shortId = p.fb_post_id.includes("_") ? p.fb_post_id.split("_").pop() : p.fb_post_id;
             await env.DB.prepare(
               "INSERT OR IGNORE INTO posts (fb_post_id, page_id, user_fb_id, message, status, created_at) VALUES (?, ?, ?, ?, 'posted', ?)"
-            ).bind(p.fb_post_id, page.page_id, fbId, p.message.slice(0, 2000), p.created_at).run();
+            ).bind(shortId, page.page_id, fbId, p.message.slice(0, 2000), p.created_at).run();
           }
         }
       } catch {
@@ -236,6 +237,8 @@ export async function processAutoReplies(env: Env) {
       const sinceParam = `&since=${Math.floor(nowMs / 1000) - 86400}`;
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
+        // Normalize: strip pageId_ prefix for DB consistency
+        const postId = post.fb_post_id.includes("_") ? post.fb_post_id.split("_").pop() : post.fb_post_id;
 
         let comments: any[];
         try {
@@ -271,8 +274,8 @@ export async function processAutoReplies(env: Env) {
             if (alreadyReplied) {
               // Record in DB so we don't check again next tick
               await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'unknown', 'already_replied', ?)"
-              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
+                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'other', 'already_replied', ?)"
+              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
               continue;
             }
           } catch {
@@ -289,7 +292,7 @@ export async function processAutoReplies(env: Env) {
               await hideComment(comment.id, pageToken);
               await env.DB.prepare(
                 "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'spam', 'hidden', ?)"
-              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
+              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
 
               await createNotification(env.DB, fbId, {
                 page_id: page.page_id, type: "auto_reply", priority: "normal",
@@ -304,7 +307,7 @@ export async function processAutoReplies(env: Env) {
             if (skipGreeting && classification.type === "greeting") {
               await env.DB.prepare(
                 "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
               continue;
             }
 
@@ -316,14 +319,14 @@ export async function processAutoReplies(env: Env) {
               // Log as skipped but don't reply
               await env.DB.prepare(
                 "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
               continue;
             }
             if (replyMode === "random" && Math.random() > 0.7) {
               // 30% chance to skip (reply 60-80%)
               await env.DB.prepare(
                 "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
               continue;
             }
 
@@ -341,7 +344,7 @@ export async function processAutoReplies(env: Env) {
             await env.DB.prepare(
               "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, reply_text, reply_id, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             ).bind(
-              fbId, page.page_id, post.fb_post_id, comment.id,
+              fbId, page.page_id, postId, comment.id,
               comment.message.slice(0, 500), comment.from?.name || "",
               classification.type, replyText, result.id || null,
               result.ok ? "replied" : "failed", result.error || null,
@@ -357,7 +360,7 @@ export async function processAutoReplies(env: Env) {
                 title: `💬 ตอบ comment [${classification.type}]`,
                 detail: replyText.slice(0, 100),
                 link: `?page=${page.page_id}&tab=autoReply`,
-                source_id: post.fb_post_id,
+                source_id: postId,
               });
             }
           } catch {

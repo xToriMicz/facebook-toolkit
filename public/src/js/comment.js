@@ -253,6 +253,10 @@ export async function loadAutoReplyHistory() {
         emoji: "\u{1F60A}",
         spam: "\u{1F6AB}",
         unclear: "\u2754",
+        complaint: "\u{1F4E2}",
+        greeting: "\u{1F44B}",
+        other: "\u{1F4AC}",
+        unknown: "\u{1F4AC}",
       },
       F = {
         question: "\u0E16\u0E32\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",
@@ -266,6 +270,10 @@ export async function loadAutoReplyHistory() {
         emoji: "emoji",
         spam: "spam",
         unclear: "\u0E44\u0E21\u0E48\u0E0A\u0E31\u0E14\u0E40\u0E08\u0E19",
+        complaint: "\u0E23\u0E49\u0E2D\u0E07\u0E40\u0E23\u0E35\u0E22\u0E19",
+        greeting: "\u0E17\u0E31\u0E01\u0E17\u0E32\u0E22",
+        other: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
+        unknown: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
       },
       w = {},
       B = [];
@@ -325,7 +333,7 @@ export async function loadAutoReplyHistory() {
                 v !== "unknown"
                   ? '<a href="https://facebook.com/' +
                     v +
-                    '" target="_blank" rel="noopener" style="font-size:0.62rem;color:var(--accent);text-decoration:none;flex-shrink:0" onclick="event.stopPropagation()">\u{1F517}</a>'
+                    '" target="_blank" rel="noopener" style="font-size:0.65rem;color:var(--accent);text-decoration:none;flex-shrink:0;padding:2px 8px;border:1px solid var(--accent);border-radius:6px" onclick="event.stopPropagation()">\u{1F517} \u0E14\u0E39\u0E42\u0E1E\u0E2A</a>'
                   : "",
               C = "arGroup" + j++;
             return (
@@ -356,7 +364,11 @@ export async function loadAutoReplyHistory() {
                         ? '<span style="color:var(--success);font-size:0.62rem">\u2705</span>'
                         : a.status === "hidden"
                           ? '<span style="color:var(--warning);font-size:0.62rem">\u{1F6AB}</span>'
-                          : '<span style="color:var(--danger);font-size:0.62rem">\u274C</span>';
+                          : a.status === "already_replied"
+                            ? '<span style="color:var(--text-muted);font-size:0.62rem">\u2705</span>'
+                            : a.status === "skipped"
+                              ? '<span style="color:var(--text-muted);font-size:0.62rem">\u23ED\uFE0F</span>'
+                              : '<span style="color:var(--danger);font-size:0.62rem">\u274C</span>';
                   return (
                     '<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px"><span style="font-size:0.66rem;color:var(--text-muted)">' +
                     I +
