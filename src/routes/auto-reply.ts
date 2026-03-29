@@ -105,12 +105,13 @@ async function generateReply(
   endpoint?: string,
   postContext?: string,
   tone?: string,
+  customTone?: string,
 ): Promise<string> {
   const prompt = REPLY_PROMPTS[type];
   if (!prompt) return "";
 
   const toneInstruction = tone === "casual" ? "\nใช้ภาษาเป็นกันเอง เช่น นะ จ้า ค่า" :
-    tone === "custom" ? "" : // custom tone handled separately
+    tone === "custom" && customTone ? `\nสไตล์การตอบ: ${customTone.slice(0, 200)}` :
     "\nใช้ภาษาสุภาพ เช่น ค่ะ ครับ";
   const contextLine = postContext ? `\nเนื้อหาโพส: "${postContext.slice(0, 200)}"` : "";
 
@@ -170,9 +171,9 @@ function sleep(ms: number): Promise<void> {
 export async function processAutoReplies(env: Env) {
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
-  // Get all enabled page settings (per-page, exclude mode 'off') — include tone + skip_greeting
+  // Get all enabled page settings (per-page, exclude mode 'off') — include tone + skip_greeting + custom_tone
   const { results: settings } = await env.DB.prepare(
-    "SELECT ars.user_fb_id, ars.page_id, ars.reply_mode, ars.reply_tone, ars.skip_greeting, up.page_token FROM auto_reply_settings ars JOIN user_pages up ON ars.user_fb_id = up.user_fb_id AND ars.page_id = up.page_id WHERE ars.enabled = 1 AND ars.reply_mode != 'off'"
+    "SELECT ars.user_fb_id, ars.page_id, ars.reply_mode, ars.reply_tone, ars.skip_greeting, ars.custom_tone, up.page_token FROM auto_reply_settings ars JOIN user_pages up ON ars.user_fb_id = up.user_fb_id AND ars.page_id = up.page_id WHERE ars.enabled = 1 AND ars.reply_mode != 'off'"
   ).all();
 
   if (!settings.length) return;
@@ -181,6 +182,7 @@ export async function processAutoReplies(env: Env) {
     const fbId = setting.user_fb_id;
     const replyMode: string = setting.reply_mode || "all";
     const replyTone: string = setting.reply_tone || "formal";
+    const customToneText: string = setting.custom_tone || "";
     const skipGreeting: boolean = setting.skip_greeting === 1;
     const page = { page_id: setting.page_id, page_token: setting.page_token };
     let repliesThisRun = 0;
@@ -303,7 +305,7 @@ export async function processAutoReplies(env: Env) {
             }
 
             // Generate reply
-            const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone);
+            const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
             if (!replyText) continue;
 
             // Delay 2-5 seconds between replies
@@ -360,9 +362,9 @@ autoReply.get("/auto-reply/settings", async (c) => {
   if (pageId) {
     // Single page setting
     const row = await c.env.DB.prepare(
-      "SELECT enabled, reply_mode, reply_tone, skip_greeting FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
-    ).bind(session.fb_id, pageId).first<{ enabled: number; reply_mode: string; reply_tone: string; skip_greeting: number }>();
-    return c.json({ page_id: pageId, enabled: row?.enabled === 1, reply_mode: row?.reply_mode || "all", reply_tone: row?.reply_tone || "formal", skip_greeting: row?.skip_greeting === 1 });
+      "SELECT enabled, reply_mode, reply_tone, skip_greeting, custom_tone FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
+    ).bind(session.fb_id, pageId).first<{ enabled: number; reply_mode: string; reply_tone: string; skip_greeting: number; custom_tone: string }>();
+    return c.json({ page_id: pageId, enabled: row?.enabled === 1, reply_mode: row?.reply_mode || "all", reply_tone: row?.reply_tone || "formal", skip_greeting: row?.skip_greeting === 1, custom_tone: row?.custom_tone || "" });
   }
 
   // All pages settings
@@ -377,13 +379,14 @@ autoReply.post("/auto-reply/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const { enabled, page_id, reply_mode, reply_tone, skip_greeting } = await c.req.json() as { enabled: boolean; page_id: string; reply_mode?: string; reply_tone?: string; skip_greeting?: boolean };
+  const { enabled, page_id, reply_mode, reply_tone, skip_greeting, custom_tone } = await c.req.json() as { enabled: boolean; page_id: string; reply_mode?: string; reply_tone?: string; skip_greeting?: boolean; custom_tone?: string };
   if (!page_id) return c.json({ error: "page_id required" }, 400);
 
   const validModes = ["all", "random", "question_only", "off"];
   const mode = reply_mode && validModes.includes(reply_mode) ? reply_mode : "all";
   const validTones = ["formal", "casual", "custom"];
   const tone = reply_tone && validTones.includes(reply_tone) ? reply_tone : "formal";
+  const customToneText = (custom_tone || "").slice(0, 200); // limit custom tone length
 
   // Verify user owns this page
   const page = await c.env.DB.prepare(
@@ -392,10 +395,10 @@ autoReply.post("/auto-reply/settings", async (c) => {
   if (!page) return c.json({ error: "Page not found" }, 400);
 
   await c.env.DB.prepare(
-    "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode, reply_tone, skip_greeting) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode, reply_tone = excluded.reply_tone, skip_greeting = excluded.skip_greeting"
-  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode, tone, skip_greeting ? 1 : 0).run();
+    "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode, reply_tone, skip_greeting, custom_tone) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode, reply_tone = excluded.reply_tone, skip_greeting = excluded.skip_greeting, custom_tone = excluded.custom_tone"
+  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode, tone, skip_greeting ? 1 : 0, customToneText).run();
 
-  return c.json({ ok: true, page_id, enabled, reply_mode: mode, reply_tone: tone, skip_greeting: !!skip_greeting });
+  return c.json({ ok: true, page_id, enabled, reply_mode: mode, reply_tone: tone, skip_greeting: !!skip_greeting, custom_tone: customToneText });
 });
 
 // GET /api/auto-reply/history?date=YYYY-MM-DD
