@@ -102,10 +102,7 @@ export async function loadTargetPages() {
           '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:1px">' +
           (s
             ? "\u{1F7E2} " +
-              g[r] +
-              " \xB7 max " +
-              (e.max_per_day || 1) +
-              "/\u0E27\u0E31\u0E19"
+              ({"all":"\u0E17\u0E38\u0E01\u0E42\u0E1E\u0E2A","random":"\u0E1A\u0E32\u0E07\u0E42\u0E1E\u0E2A","one":"\u0E42\u0E1E\u0E2A\u0E40\u0E14\u0E35\u0E22\u0E27/\u0E27\u0E31\u0E19"}[e.reply_mode||"all"] || "\u0E17\u0E38\u0E01\u0E42\u0E1E\u0E2A")
             : "\u26AB \u0E1B\u0E34\u0E14\u0E2D\u0E22\u0E39\u0E48") +
           (e.last_commented_at
             ? " \xB7 \u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14: " +
@@ -128,35 +125,19 @@ export async function loadTargetPages() {
           e.id +
           ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:3px 8px;border-radius:6px;font-size:0.68rem;cursor:pointer">\u2715</button></div></div>' +
           (s
-            ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><select onchange="updateTargetTone(' +
+            ? '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><select onchange="updateTargetMode(' +
               e.id +
               ',this.value)" style="padding:4px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.7rem;font-family:inherit;color-scheme:dark">' +
-              ["formal", "casual", "custom"]
+              [["all","\u0E17\u0E38\u0E01\u0E42\u0E1E\u0E2A"],["random","\u0E1A\u0E32\u0E07\u0E42\u0E1E\u0E2A"],["one","\u0E42\u0E1E\u0E2A\u0E40\u0E14\u0E35\u0E22\u0E27/\u0E27\u0E31\u0E19"]]
                 .map(function (n) {
                   return (
                     '<option value="' +
-                    n +
+                    n[0] +
                     '"' +
-                    (n === r ? " selected" : "") +
+                    (n[0] === (e.reply_mode || "all") ? " selected" : "") +
                     ">" +
-                    g[n] +
+                    n[1] +
                     "</option>"
-                  );
-                })
-                .join("") +
-              '</select><select onchange="updateTargetMaxDay(' +
-              e.id +
-              ',this.value)" style="padding:4px 8px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;font-size:0.7rem;font-family:inherit;color-scheme:dark">' +
-              [1, 2, 3, 5]
-                .map(function (n) {
-                  return (
-                    '<option value="' +
-                    n +
-                    '"' +
-                    (n === (e.max_per_day || 1) ? " selected" : "") +
-                    ">" +
-                    n +
-                    " \u0E04\u0E23\u0E31\u0E49\u0E07/\u0E27\u0E31\u0E19</option>"
                   );
                 })
                 .join("") +
@@ -212,6 +193,17 @@ export async function updateTargetMaxDay(t, a) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ max_per_day: parseInt(a) }),
     });
+  } catch {}
+}
+export async function updateTargetMode(t, a) {
+  try {
+    await fetch("/api/outbound/targets/" + t, {
+      method: "PUT",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reply_mode: a }),
+    });
+    loadTargetPages();
   } catch {}
 }
 export async function loadOutboundQueue() {
