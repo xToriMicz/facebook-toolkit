@@ -35,3 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Cloudflare Wrangler
 .wrangler/
+
+# Build output (generated from public/src/ by scripts/build.sh)
+public/js/
+public/css/
