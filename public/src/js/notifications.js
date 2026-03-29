@@ -105,7 +105,7 @@ export async function loadNotifications() {
           var time = formatTimeAgo(n.created_at);
           var prioColor = PRIORITY_COLORS[n.priority] || 'var(--accent)';
 
-          return '<div onclick="markNotifSingleRead(' + n.id + ')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);' +
+          return '<div onclick="markNotifSingleRead(' + n.id + ',' + JSON.stringify(n.link || '').replace(/"/g, '&quot;') + ')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);' +
             (isUnread ? 'background:rgba(79,110,247,0.04);' : '') +
             'display:flex;gap:10px;align-items:start;cursor:pointer;-webkit-tap-highlight-color:transparent">' +
             '<div style="width:32px;height:32px;border-radius:8px;background:' + prioColor + '15;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">' + icon + '</div>' +
@@ -131,10 +131,18 @@ export async function markNotifRead() {
   } catch (e) { }
 }
 
-export async function markNotifSingleRead(id) {
+export async function markNotifSingleRead(id, link) {
   try {
     await fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' });
-    loadNotifications();
+    // Close panel
+    var panel = document.getElementById('notifPanel');
+    if (panel) panel.style.display = 'none';
+    // Navigate to linked tab
+    if (link) {
+      window.location.href = link;
+    } else {
+      loadNotifications();
+    }
   } catch (e) { }
 }
 

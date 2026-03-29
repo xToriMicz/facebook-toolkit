@@ -649,7 +649,7 @@ export async function submitTicket() {
 }
 
 // === Insights Dashboard ===
-// var insData = {};
+var insData = {};
 
 
 

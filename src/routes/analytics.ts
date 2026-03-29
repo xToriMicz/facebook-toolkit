@@ -32,7 +32,7 @@ analytics.get("/insights/:pageId", async (c) => {
   if (!pageToken) return c.json({ error: "Page not found" }, 404);
   try {
     const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
-    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${pageToken}`);
+    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${pageToken}`);
     const data = await res.json() as any;
     if (data.error) return c.json({ error: data.error.message }, 400);
     return c.json({ ok: true, insights: data.data || [] });
@@ -179,7 +179,7 @@ analytics.post("/analytics/refresh", async (c) => {
   let updated = 0;
   for (const post of posts as any[]) {
     try {
-      const res = await fetch(`https://graph.facebook.com/v21.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pageToken}`);
+      const res = await fetch(`https://graph.facebook.com/v25.0/${post.fb_post_id}?fields=likes.summary(true),comments.summary(true),shares&access_token=${pageToken}`);
       const data: any = await res.json();
       if (!data.error) {
         await c.env.DB.prepare("UPDATE posts SET likes = ?, comments = ?, shares = ? WHERE id = ?")
@@ -202,7 +202,7 @@ analytics.post("/analytics/sync-posts", async (c) => {
   if (!pageToken) return c.json({ error: "Page not found" }, 404);
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=50&access_token=${pageToken}`);
+    const res = await fetch(`https://graph.facebook.com/v25.0/${page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=50&access_token=${pageToken}`);
     const data: any = await res.json();
     if (data.error) return c.json({ error: data.error.message }, 400);
 
@@ -257,7 +257,7 @@ analytics.get("/insights-bundle/:pageId", async (c) => {
 async function fetchInsights(pageId: string, token: string) {
   try {
     const metrics = "page_views_total,page_post_engagements,page_actions_post_reactions_total,page_daily_follows";
-    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${token}`);
+    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/insights?metric=${metrics}&period=day&access_token=${token}`);
     const data: any = await res.json();
     if (data.error) return [];
     return (data.data || []).map((m: any) => ({
@@ -316,7 +316,7 @@ export async function refreshAllEngagement(env: Env) {
   for (const pg of pages as any[]) {
     // Sync posts from FB into DB
     try {
-      const syncRes = await fetch(`https://graph.facebook.com/v21.0/${pg.page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=20&access_token=${pg.page_token}`);
+      const syncRes = await fetch(`https://graph.facebook.com/v25.0/${pg.page_id}/posts?fields=id,message,created_time,likes.summary(true),comments.summary(true),shares&limit=20&access_token=${pg.page_token}`);
       const syncData: any = await syncRes.json();
       if (!syncData.error) {
         for (const p of (syncData.data || [])) {
@@ -392,7 +392,7 @@ analytics.get("/challenges/:pageId", async (c) => {
 async function fetchChallengeMetrics(pageId: string, token: string, since: string) {
   const result = { follows: 0, engagements: 0, views: 0 };
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${pageId}/insights?metric=page_daily_follows,page_post_engagements,page_video_views&period=day&since=${since}&access_token=${token}`);
+    const res = await fetch(`https://graph.facebook.com/v25.0/${pageId}/insights?metric=page_daily_follows,page_post_engagements,page_video_views&period=day&since=${since}&access_token=${token}`);
     const data: any = await res.json();
     if (!data.error) {
       for (const m of (data.data || [])) {
