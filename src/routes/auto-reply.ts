@@ -243,7 +243,7 @@ export async function processAutoReplies(env: Env) {
         let comments: any[];
         try {
           const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time&order=reverse_chronological&limit=25${sinceParam}&access_token=${pageToken}`
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=25${sinceParam}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
           if (data.error) continue;
@@ -253,7 +253,12 @@ export async function processAutoReplies(env: Env) {
         }
 
         for (const comment of comments) {
-          if (!comment.id || !comment.message) continue;
+          if (!comment.id) continue;
+          // Sticker/image-only comments: set message for AI context
+          const isSticker = !comment.message && comment.attachment?.type === "sticker";
+          const isImageOnly = !comment.message && comment.attachment?.type === "photo";
+          if (!comment.message && !isSticker && !isImageOnly) continue;
+          if (!comment.message) comment.message = isSticker ? "[sticker]" : "[photo]";
 
           // Skip if already processed in our DB
           const existing = await env.DB.prepare(
@@ -264,7 +269,7 @@ export async function processAutoReplies(env: Env) {
           // Skip own page comments (don't reply to ourselves)
           if (comment.from?.id === page.page_id) continue;
 
-          // Check Facebook API for existing replies from our page (catches manual/legacy replies)
+          // Check Facebook API for existing replies from our page (any reply counts)
           try {
             const repliesRes = await fetch(
               `https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from&limit=50&access_token=${pageToken}`
@@ -283,9 +288,11 @@ export async function processAutoReplies(env: Env) {
           }
 
           try {
-            // Classify comment
+            // Classify comment — sticker/photo skip AI, treat as greeting
             const postMessage = (post as any).message || "";
-            const classification = await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
+            const classification = (isSticker || isImageOnly)
+              ? { type: "greeting", confidence: 1 }
+              : await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
 
             // Handle spam: hide + log
             if (classification.type === "spam") {
