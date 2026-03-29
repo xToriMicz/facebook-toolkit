@@ -1,0 +1,166 @@
+"use strict";
+import p from "./state.js";
+import {
+  toast as g,
+  insEsc as m,
+  showNotify as c,
+  formatBytes as d,
+  showProgress as u,
+  hideProgress as f,
+  handleApiError as h,
+} from "./utils.js";
+import {
+  checkAuth as y,
+  showLogin as A,
+  showApp as w,
+  loginFacebook as P,
+  logout as T,
+  populatePages as I,
+  selectPage as v,
+  switchTab as C,
+  initRouter as R,
+} from "./router.js";
+import {
+  initCompose as b,
+  handleFiles as S,
+  handleFile as k,
+  renderImagePreviews as F,
+  removeImage as D,
+  submitPost as L,
+  showPreview as O,
+  closePreview as _,
+  confirmPost as j,
+  loadHistory as H,
+  loadComposeTemplates as x,
+  applyTemplate as B,
+  loadTemplates as E,
+  useTemplate as G,
+  onStyleChange as M,
+  updateCharColor as N,
+  saveDraftFromCompose as U,
+  loadComposeDrafts as Y,
+  loadDraftToCompose as q,
+  deleteDraftInline as z,
+  generateAI as J,
+  toggleAffiliate as K,
+  initAlgoTips as Q,
+  showComments as V,
+  setReplyTarget as W,
+  sendReply as X,
+  togglePromptLogs as Z,
+  loadPromptLogs as $,
+  savePromptLog as ee,
+  copyLogFull as oe,
+  toggleTextOverlay as ae,
+  getOverlayText as se,
+  generateAiImageAuto as te,
+  generateAiImageSemi as re,
+  confirmGenerateImage as le,
+  acceptAiImage as ie,
+  rejectAiImage as ne,
+  closeAiPreview as pe,
+  loadAiImageTemplates as ge,
+  copyAiPrompt as me,
+} from "./compose.js";
+import {
+  loadAutoReplySettings as ce,
+  toggleAutoReplyPage as de,
+  changeAutoReplyMode as ue,
+  changeAutoReplyTone as fe,
+  saveCustomTone as he,
+  toggleSkipGreeting as ye,
+  loadAutoReplyHistory as Ae,
+} from "./comment.js";
+import * as we from "./outbound.js";
+import * as l from "./schedule.js";
+import * as a from "./bulk.js";
+Object.assign(window, {
+  toast: g,
+  insEsc: m,
+  showNotify: c,
+  formatBytes: d,
+  showProgress: u,
+  hideProgress: f,
+  handleApiError: h,
+  checkAuth: y,
+  showLogin: A,
+  showApp: w,
+  loginFacebook: P,
+  logout: T,
+  populatePages: I,
+  selectPage: v,
+  switchTab: C,
+  handleFiles: S,
+  handleFile: k,
+  renderImagePreviews: F,
+  removeImage: D,
+  submitPost: L,
+  showPreview: O,
+  closePreview: _,
+  confirmPost: j,
+  loadHistory: H,
+  loadComposeTemplates: x,
+  applyTemplate: B,
+  loadTemplates: E,
+  useTemplate: G,
+  onStyleChange: M,
+  updateCharColor: N,
+  saveDraftFromCompose: U,
+  loadComposeDrafts: Y,
+  loadDraftToCompose: q,
+  deleteDraftInline: z,
+  generateAI: J,
+  toggleAffiliate: K,
+  showComments: V,
+  setReplyTarget: W,
+  sendReply: X,
+  togglePromptLogs: Z,
+  loadPromptLogs: $,
+  savePromptLog: ee,
+  copyLogFull: oe,
+  toggleTextOverlay: ae,
+  getOverlayText: se,
+  generateAiImageAuto: te,
+  generateAiImageSemi: re,
+  confirmGenerateImage: le,
+  acceptAiImage: ie,
+  rejectAiImage: ne,
+  closeAiPreview: pe,
+  loadAiImageTemplates: ge,
+  copyAiPrompt: me,
+  loadAutoReplySettings: ce,
+  toggleAutoReplyPage: de,
+  changeAutoReplyMode: ue,
+  changeAutoReplyTone: fe,
+  saveCustomTone: he,
+  toggleSkipGreeting: ye,
+  loadAutoReplyHistory: Ae,
+});
+for (const [o, e] of Object.entries(l))
+  typeof e == "function" && (window[o] = e);
+for (const [o, e] of Object.entries(a))
+  typeof e == "function" && (window[o] = e);
+for (const [o, e] of Object.entries(we))
+  typeof e == "function" && (window[o] = e);
+((window._bulkUpdateSchedule =
+  a._bulkUpdateSchedule ||
+  function (o, e, i) {
+    if (!(o < 0 || o >= p._bulkResults.length)) {
+      var s = p._bulkResults[o],
+        t = s.scheduled_at ? new Date(s.scheduled_at) : new Date();
+      if (e) {
+        var r = e.split("-");
+        t.setFullYear(parseInt(r[0]), parseInt(r[1]) - 1, parseInt(r[2]));
+      }
+      if (i) {
+        var n = i.split(":");
+        t.setHours(parseInt(n[0]), parseInt(n[1]), 0, 0);
+      }
+      s.scheduled_at = t.toISOString();
+    }
+  }),
+  b(),
+  Q(),
+  typeof l.initScheduleTime == "function" && l.initScheduleTime(),
+  typeof a.initBulk == "function" && a.initBulk(),
+  R());

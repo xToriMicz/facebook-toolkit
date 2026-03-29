@@ -11,10 +11,11 @@
     "typescript": "^5"
   },
   "scripts": {
-    "dev": "npx wrangler dev",
+    "dev": "npm run build:dev && npx wrangler dev",
     "build": "./scripts/build.sh",
     "build:dev": "./scripts/build.sh --no-minify",
-    "deploy": "BRANCH=$(git branch --show-current); if [ \"$BRANCH\" != 'main' ]; then echo '❌ deploy ต้องจาก main เท่านั้น (ตอนนี้อยู่ '$BRANCH')'; exit 1; fi; git pull origin main && npm run build && npx wrangler deploy"
+    "test": "./scripts/test.sh",
+    "deploy": "BRANCH=$(git branch --show-current); if [ \"$BRANCH\" != 'main' ]; then echo '❌ deploy ต้องจาก main เท่านั้น (ตอนนี้อยู่ '$BRANCH')'; exit 1; fi; git pull origin main && npm test && npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "hono": "^4.12.8"
