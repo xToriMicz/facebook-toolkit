@@ -1,0 +1,77 @@
+      <div id="tabBulkV2" class="hidden">
+        <!-- Plan List -->
+        <div id="bulkPlanList">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="card-title" style="margin:0"><span class="card-title-icon">📦</span> แผนโพสอัตโนมัติ</div>
+            <button class="btn btn-accent" onclick="showCreatePlan()" style="padding:8px 16px;font-size:0.8rem">+ สร้างแผนใหม่</button>
+          </div>
+          <div id="bulkPlanListContent"><div class="empty-state">Loading...</div></div>
+        </div>
+
+        <!-- Create Form -->
+        <div id="bulkCreateForm" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <button onclick="backToPlanList()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:0.85rem">← กลับ</button>
+            <span style="font-size:0.9rem;font-weight:700;color:var(--text)">สร้างแผนโพสใหม่</span>
+          </div>
+
+          <div class="card">
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:0.78rem;color:var(--text-muted)">ชื่อแผน (optional)</label>
+              <input id="bpName" placeholder="เช่น โพสเดือน เม.ย." style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit">
+            </div>
+
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:0.78rem;color:var(--text-muted)">Keywords (บรรทัดละ 1, สูงสุด 100)</label>
+              <textarea id="bpKeywords" rows="5" placeholder="keyword 1&#10;keyword 2&#10;keyword 3" style="width:100%;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;resize:vertical"></textarea>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div class="field">
+                <label style="font-size:0.78rem;color:var(--text-muted)">วันเริ่ม</label>
+                <input type="date" id="bpDateStart" style="width:100%;padding:8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark">
+              </div>
+              <div class="field">
+                <label style="font-size:0.78rem;color:var(--text-muted)">วันจบ</label>
+                <input type="date" id="bpDateEnd" style="width:100%;padding:8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div class="field">
+                <label style="font-size:0.78rem;color:var(--text-muted)">เวลาเริ่ม</label>
+                <select id="bpTimeStart" style="width:100%;padding:8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark">
+                  <option value="06:00">06:00</option><option value="07:00">07:00</option><option value="08:00" selected>08:00</option><option value="09:00">09:00</option><option value="10:00">10:00</option>
+                </select>
+              </div>
+              <div class="field">
+                <label style="font-size:0.78rem;color:var(--text-muted)">เวลาจบ</label>
+                <select id="bpTimeEnd" style="width:100%;padding:8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark">
+                  <option value="18:00">18:00</option><option value="19:00">19:00</option><option value="20:00" selected>20:00</option><option value="21:00">21:00</option><option value="22:00">22:00</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field" style="margin-bottom:10px">
+              <label style="font-size:0.78rem;color:var(--text-muted)">Tone</label>
+              <select id="bpTone" style="width:100%;padding:8px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;color-scheme:dark">
+                <option value="general">📝 ทั่วไป</option>
+                <option value="professional">📋 ให้ความรู้</option>
+              </select>
+            </div>
+
+            <div class="field" style="margin-bottom:14px">
+              <label style="font-size:0.78rem;color:var(--text-muted)">ความถี่</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <label style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;cursor:pointer;color:var(--text-secondary)"><input type="radio" name="bpFreq" value="auto" checked style="margin-right:4px"> 🤖 Auto</label>
+                <label style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;cursor:pointer;color:var(--text-secondary)"><input type="radio" name="bpFreq" value="1perday" style="margin-right:4px"> 📅 วันละ 1</label>
+              </div>
+            </div>
+
+            <button id="bpCreateBtn" class="btn btn-accent" onclick="createBulkPlan()" style="width:100%;padding:14px;font-size:0.95rem">✅ สร้างแผน</button>
+          </div>
+        </div>
+
+        <!-- Plan Detail -->
+        <div id="bulkPlanDetail" style="display:none"></div>
+      </div>
