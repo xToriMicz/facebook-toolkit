@@ -83,10 +83,13 @@ schedule.post("/schedule/bulk", async (c) => {
 schedule.get("/schedule", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const { results } = await c.env.DB.prepare(
-    "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status = 'pending' ORDER BY sp.scheduled_at ASC"
-  ).bind(session.fb_id).all();
-  return c.json({ scheduled: results, total: results.length });
+  const pageId = c.req.query("page_id");
+  let q = "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status = 'pending'";
+  const binds: any[] = [session.fb_id];
+  if (pageId) { q += " AND sp.page_id = ?"; binds.push(pageId); }
+  q += " ORDER BY sp.scheduled_at ASC";
+  const { results } = await c.env.DB.prepare(q).bind(...binds).all();
+  return c.json({ scheduled: results, posts: results, total: results.length });
 });
 
 // PUT /api/schedule/:id — update pending scheduled post

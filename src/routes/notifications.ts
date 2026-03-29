@@ -125,9 +125,10 @@ export async function createNotification(
     opts.source_id || null,
   ).run();
   await db.prepare(
-    "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO activity_logs (user_fb_id, page_id, action, details, post_id, created_at) VALUES (?, ?, ?, ?, ?, ?)"
   ).bind(
     userFbId,
+    opts.page_id || null,
     opts.type,
     (opts.title + (opts.detail ? ": " + opts.detail : "")).slice(0, 300),
     opts.source_id || null,

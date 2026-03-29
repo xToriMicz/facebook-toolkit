@@ -47,12 +47,14 @@ analytics.get("/activity", async (c) => {
     const search = c.req.query("q");
     const from = c.req.query("from");
     const to = c.req.query("to");
+    const pageId = c.req.query("page_id");
     const limit = Math.min(100, +(c.req.query("limit") || "50"));
 
     let query = "SELECT * FROM activity_logs WHERE user_fb_id = ?";
     const params: (string | number)[] = [session.fb_id];
 
-    if (search) { query += " AND (action LIKE ? OR detail LIKE ?)"; params.push(`%${search}%`, `%${search}%`); }
+    if (pageId) { query += " AND page_id = ?"; params.push(pageId); }
+    if (search) { query += " AND (action LIKE ? OR details LIKE ?)"; params.push(`%${search}%`, `%${search}%`); }
     if (from) { query += " AND created_at >= ?"; params.push(from); }
     if (to) { query += " AND created_at <= ?"; params.push(to); }
 
@@ -71,12 +73,13 @@ analytics.get("/activity/stats", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const today = new Date().toISOString().split("T")[0];
+  const pageId = c.req.query("page_id");
 
   const [postsToday, aiToday, scheduledToday, draftsToday] = await Promise.all([
-    c.env.DB.prepare("SELECT COUNT(*) as count FROM posts WHERE created_at >= ? AND (user_fb_id = ? OR user_fb_id IS NULL)").bind(today, session.fb_id).first<{count:number}>(),
-    c.env.DB.prepare("SELECT COUNT(*) as count FROM activity_logs WHERE action LIKE '%ai%' AND created_at >= ? AND user_fb_id = ?").bind(today, session.fb_id).first<{count:number}>(),
-    c.env.DB.prepare("SELECT COUNT(*) as count FROM scheduled_posts WHERE status = 'pending' AND user_fb_id = ?").bind(session.fb_id).first<{count:number}>(),
-    c.env.DB.prepare("SELECT COUNT(*) as count FROM drafts WHERE user_fb_id = ?").bind(session.fb_id).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM posts WHERE created_at >= ? AND (user_fb_id = ? OR user_fb_id IS NULL)" + (pageId ? " AND page_id = ?" : "")).bind(...[today, session.fb_id, ...(pageId ? [pageId] : [])]).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM activity_logs WHERE action LIKE '%ai%' AND created_at >= ? AND user_fb_id = ?" + (pageId ? " AND page_id = ?" : "")).bind(...[today, session.fb_id, ...(pageId ? [pageId] : [])]).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM scheduled_posts WHERE status = 'pending' AND user_fb_id = ?" + (pageId ? " AND page_id = ?" : "")).bind(...[session.fb_id, ...(pageId ? [pageId] : [])]).first<{count:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) as count FROM drafts WHERE user_fb_id = ?" + (pageId ? " AND page_id = ?" : "")).bind(...[session.fb_id, ...(pageId ? [pageId] : [])]).first<{count:number}>(),
   ]);
 
   return c.json({
@@ -93,11 +96,15 @@ analytics.get("/activity/timeline", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const days = Math.min(30, +(c.req.query("days") || "7"));
+  const pageId = c.req.query("page_id");
   const since = new Date(Date.now() - days * 86400000).toISOString();
 
-  const { results } = await c.env.DB.prepare(
-    "SELECT date(created_at) as day, action, COUNT(*) as count FROM activity_logs WHERE user_fb_id = ? AND created_at >= ? GROUP BY day, action ORDER BY day DESC"
-  ).bind(session.fb_id, since).all();
+  let q = "SELECT date(created_at) as day, action, COUNT(*) as count FROM activity_logs WHERE user_fb_id = ? AND created_at >= ?";
+  const binds: any[] = [session.fb_id, since];
+  if (pageId) { q += " AND page_id = ?"; binds.push(pageId); }
+  q += " GROUP BY day, action ORDER BY day DESC";
+
+  const { results } = await c.env.DB.prepare(q).bind(...binds).all();
 
   // Group by day
   const timeline: Record<string, {day:string, actions:Record<string,number>}> = {};
