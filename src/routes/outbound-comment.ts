@@ -152,7 +152,7 @@ export async function processOutboundComments(env: Env) {
       let posts: any[];
       try {
         const res = await fetch(
-          `https://graph.facebook.com/v25.0/${target.target_page_id}/feed?fields=id,message,created_time,type,attachments{type,title}&limit=5&access_token=${pageToken}`
+          `https://graph.facebook.com/v25.0/${target.target_page_id}/feed?fields=id,message,created_time,type,attachments{type,title}&limit=10&access_token=${pageToken}`
         );
         const data = await res.json() as any;
         if (data.error) continue;
@@ -183,7 +183,7 @@ export async function processOutboundComments(env: Env) {
             "369239263222822",  // Like variant
             "533655440095498",  // Heart eyes
             "126361540881097",  // Fire
-            "154aborrar931588",  // Clap
+            "144884865685478",  // Clap
           ];
           const stickerId = stickerIds[Math.floor(Math.random() * stickerIds.length)];
           await env.DB.prepare(
