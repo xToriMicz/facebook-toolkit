@@ -175,24 +175,11 @@ export async function processAutoReplies(env: Env) {
       ).bind(fbId, page.page_id).all();
 
       const nowMs = Date.now();
+      // ดึง comment ใหม่ตั้งแต่ 10 นาทีที่แล้ว (2x cron interval)
+      // DB dedup ป้องกัน reply ซ้ำ — ไม่ต้องพึ่ง post age
+      const sinceParam = `&since=${Math.floor(nowMs / 1000) - 600}`;
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
-
-        // Smart since: ดึง comment ตามอายุโพส
-        // วันนี้ → ดึงทั้งหมด, เมื่อวาน → since เมื่อวาน, 2-3 วัน → since 3 วัน
-        const postAgeMs = nowMs - new Date(post.created_at).getTime();
-        const postAgeDays = postAgeMs / 86400000;
-        let sinceParam = "";
-        if (postAgeDays <= 1) {
-          // โพสวันนี้ — ดึง comment ทั้งหมด (ไม่ใส่ since)
-          sinceParam = "";
-        } else if (postAgeDays <= 2) {
-          // โพสเมื่อวาน — since เมื่อวาน
-          sinceParam = `&since=${Math.floor(nowMs / 1000) - 86400}`;
-        } else {
-          // โพส 2-3 วัน — since 3 วัน
-          sinceParam = `&since=${Math.floor(nowMs / 1000) - 259200}`;
-        }
 
         let comments: any[];
         try {
