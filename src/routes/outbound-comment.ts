@@ -173,12 +173,22 @@ export async function processOutboundComments(env: Env) {
         // Skip posts without message (image_only / reel_no_caption)
         if (!post.id || (!post.message && !isVideo)) continue;
         if (!post.message && isVideo) {
-          // Reel/video without caption — ตอบ emoji แทน
-          const emojis = ["🔥", "👏", "💯", "😍", "🤩", "❤️", "👍", "✨", "💪", "🙌"];
-          const emojiComment = emojis[Math.floor(Math.random() * emojis.length)] + emojis[Math.floor(Math.random() * emojis.length)];
+          // Reel/video without caption — ส่ง Facebook sticker แทน
+          // Popular Facebook sticker IDs (Like, Love, Haha, Wow, Fire, etc.)
+          const stickerIds = [
+            "369239263222822",  // Like (thumbs up)
+            "369239343222814",  // Love (heart)
+            "369239383222810",  // Haha
+            "369239413222807",  // Wow
+            "369239263222822",  // Like variant
+            "533655440095498",  // Heart eyes
+            "126361540881097",  // Fire
+            "154aborrar931588",  // Clap
+          ];
+          const stickerId = stickerIds[Math.floor(Math.random() * stickerIds.length)];
           await env.DB.prepare(
             "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'reel_no_caption', ?, 'approved', ?)"
-          ).bind(fbId, target.page_id, target.target_page_id, post.id, "", emojiComment, new Date().toISOString()).run();
+          ).bind(fbId, target.page_id, target.target_page_id, post.id, "", "sticker:" + stickerId, new Date().toISOString()).run();
           draftsThisRun++;
           continue;
         }
@@ -269,10 +279,16 @@ async function sendComment(commentId: number, env: Env): Promise<{ ok: boolean; 
   await sleep(2000 + Math.random() * 8000);
 
   try {
+    // Support sticker comments (format: "sticker:123456")
+    const isSticker = row.comment_text.startsWith("sticker:");
+    const body = isSticker
+      ? { sticker_id: row.comment_text.replace("sticker:", ""), access_token: pageToken }
+      : { message: row.comment_text, access_token: pageToken };
+
     const res = await fetch(`https://graph.facebook.com/v25.0/${row.target_post_id}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: row.comment_text, access_token: pageToken }),
+      body: JSON.stringify(body),
     });
     const data = await res.json() as any;
 
