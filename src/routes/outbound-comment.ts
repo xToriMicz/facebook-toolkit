@@ -199,8 +199,10 @@ export async function processOutboundComments(env: Env) {
         ).bind(post.id, fbId).first();
         if (existing) continue;
 
-        // Skip rate: 30-50% chance to skip
-        if (Math.random() > 0.6) {
+        // Reply mode: all = ทุกโพส, random = ~60% chance, one = 1 โพส/วัน
+        const replyMode = target.reply_mode || "all";
+        if (replyMode === "one" && draftsThisRun > 0) break; // จบเลยถ้า mode=one แล้วได้ 1 แล้ว
+        if (replyMode === "random" && Math.random() > 0.6) {
           await env.DB.prepare(
             "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'skipped', '', 'skipped', ?)"
           ).bind(fbId, target.page_id, target.target_page_id, post.id, (post.message || "").slice(0, 500), new Date().toISOString()).run();
@@ -436,7 +438,7 @@ outbound.patch("/outbound/targets/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number };
+  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number; reply_mode?: string };
 
   if (body.enabled !== undefined) {
     await c.env.DB.prepare("UPDATE target_pages SET enabled = ? WHERE id = ? AND user_fb_id = ?")
@@ -446,6 +448,12 @@ outbound.patch("/outbound/targets/:id", async (c) => {
     const maxDay = Math.min(5, Math.max(1, body.max_per_day));
     await c.env.DB.prepare("UPDATE target_pages SET max_per_day = ? WHERE id = ? AND user_fb_id = ?")
       .bind(maxDay, id, session.fb_id).run();
+  }
+  if (body.reply_mode !== undefined) {
+    const validModes = ["all", "random", "one"];
+    const mode = validModes.includes(body.reply_mode) ? body.reply_mode : "all";
+    await c.env.DB.prepare("UPDATE target_pages SET reply_mode = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(mode, id, session.fb_id).run();
   }
   return c.json({ ok: true });
 });
@@ -455,7 +463,7 @@ outbound.put("/outbound/targets/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number };
+  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number; reply_mode?: string };
 
   if (body.enabled !== undefined) {
     await c.env.DB.prepare("UPDATE target_pages SET enabled = ? WHERE id = ? AND user_fb_id = ?")
@@ -465,6 +473,12 @@ outbound.put("/outbound/targets/:id", async (c) => {
     const maxDay = Math.min(5, Math.max(1, body.max_per_day));
     await c.env.DB.prepare("UPDATE target_pages SET max_per_day = ? WHERE id = ? AND user_fb_id = ?")
       .bind(maxDay, id, session.fb_id).run();
+  }
+  if (body.reply_mode !== undefined) {
+    const validModes = ["all", "random", "one"];
+    const mode = validModes.includes(body.reply_mode) ? body.reply_mode : "all";
+    await c.env.DB.prepare("UPDATE target_pages SET reply_mode = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(mode, id, session.fb_id).run();
   }
   return c.json({ ok: true });
 });
