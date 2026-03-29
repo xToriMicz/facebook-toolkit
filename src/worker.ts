@@ -19,6 +19,7 @@ import bulk from "./routes/bulk";
 import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-reply";
 import outbound, { processOutboundComments, sendApprovedComments } from "./routes/outbound-comment";
 import notifications from "./routes/notifications";
+import bulkPlans from "./routes/bulk-plans";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -92,6 +93,7 @@ app.route("/api", outbound);
 app.route("/api", bulk);
 app.route("/api", autoReply);
 app.route("/api", notifications);
+app.route("/api", bulkPlans);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
@@ -199,6 +201,8 @@ export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(processScheduledPosts(env));
+    // Bulk plan: generate content ahead + post when ready
+    ctx.waitUntil((async () => { try { const { processBulkGenerate, processBulkPost } = await import("./routes/bulk-plan"); await processBulkGenerate(env); await processBulkPost(env); } catch {} })());
     // Auto-reply: process new comments every cron tick
     ctx.waitUntil(processAutoReplies(env));
     // Outbound comments: generate drafts + send approved (throttled to every 30 min via KV)
