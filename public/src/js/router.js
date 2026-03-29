@@ -169,7 +169,7 @@ export function switchTab(e, t) {
       "tabDrafts",
       "tabInsights",
       "tabChallenges",
-      "tabTickets",
+      "tabBulkV2", "tabTickets",
       "tabOutbound",
     ].forEach((a) => {
       const u = document.getElementById(a);
@@ -191,6 +191,7 @@ export function switchTab(e, t) {
     e === "calendar" && window.renderCalendar(),
     e === "activityLog" && window.loadLogs(),
     e === "outbound" && window.initOutbound && window.initOutbound(),
+    e === "bulkV2" && window.initBulkV2 && window.initBulkV2(),
     e === "aiSettings" && (window.loadAiSettings(), window.loadApiKeyStatus()),
     e === "autoReply")
   ) {

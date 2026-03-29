@@ -8,6 +8,7 @@ import { initNotifications, loadNotifications, markNotifRead, markNotifSingleRea
 import * as outbound from './outbound.js';
 import * as schedule from './schedule.js';
 import * as bulk from './bulk.js';
+import * as bulkV2 from './bulk-v2.js';
 
 // Expose ALL functions to window for onclick/onchange handlers in HTML
 Object.assign(window, {
@@ -37,6 +38,9 @@ for (const [key, val] of Object.entries(bulk)) {
   if (typeof val === 'function') window[key] = val;
 }
 for (const [key, val] of Object.entries(outbound)) {
+  if (typeof val === 'function') window[key] = val;
+}
+for (const [key, val] of Object.entries(bulkV2)) {
   if (typeof val === 'function') window[key] = val;
 }
 
