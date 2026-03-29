@@ -17,6 +17,7 @@ import aiImage from "./routes/ai-image";
 import promptLogs from "./routes/prompt-logs";
 import bulk from "./routes/bulk";
 import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-reply";
+import outbound, { processOutboundComments, sendApprovedComments } from "./routes/outbound-comment";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -86,6 +87,7 @@ app.route("/api", trends);
 app.route("/api", shopee);
 app.route("/api", aiImage);
 app.route("/api", promptLogs);
+app.route("/api", outbound);
 app.route("/api", bulk);
 app.route("/api", autoReply);
 
@@ -197,6 +199,9 @@ export default {
     ctx.waitUntil(processScheduledPosts(env));
     // Auto-reply: process new comments every cron tick
     ctx.waitUntil(processAutoReplies(env));
+    // Outbound comments: generate drafts + send approved (throttled to every 30 min via KV)
+    ctx.waitUntil(processOutboundComments(env));
+    ctx.waitUntil(sendApprovedComments(env));
     // Refresh engagement every ~30 min (check KV throttle)
     const lastRefresh = await env.KV.get("cron:engagement:last");
     const now = Date.now();
