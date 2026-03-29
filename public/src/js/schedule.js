@@ -117,7 +117,8 @@ export async function submitScheduled() {
 export async function loadScheduled() {
   const el = document.getElementById('scheduledList');
   try {
-    const r = await fetch('/api/posts/scheduled', { credentials:'same-origin' });
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/posts/scheduled' + (pid ? '?page_id=' + pid : ''), { credentials:'same-origin' });
     const d = await r.json();
     const items = d.scheduled || d.posts || [];
     if (!items.length) { el.innerHTML = ''; return; }
@@ -387,7 +388,8 @@ export function loadAiSettings() {
 export async function loadSchedule() {
   const list = document.getElementById('scheduleList');
   try {
-    const res = await fetch('/api/schedule', {credentials:'same-origin'});
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/schedule' + (pid ? '?page_id=' + pid : ''), {credentials:'same-origin'});
     const data = await res.json();
     if (!data.scheduled || data.scheduled.length === 0) {
       list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
@@ -560,7 +562,8 @@ export function exitEditMode() {
 export async function loadDrafts() {
   const list = document.getElementById('draftList');
   try {
-    const res = await fetch('/api/drafts', {credentials:'same-origin'});
+    const dpid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/drafts' + (dpid ? '?page_id=' + dpid : ''), {credentials:'same-origin'});
     const data = await res.json();
     if (!data.drafts || data.drafts.length === 0) {
       list.innerHTML = '<div class="empty-state">ยังไม่มีฉบับร่าง</div>';
@@ -603,7 +606,8 @@ export async function publishDraft(id) {
 
 export async function editDraft(id) {
   try {
-    const res = await fetch('/api/drafts', {credentials:'same-origin'});
+    const dpid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/drafts' + (dpid ? '?page_id=' + dpid : ''), {credentials:'same-origin'});
     const data = await res.json();
     const draft = data.drafts.find(d => d.id === id);
     if (draft) {

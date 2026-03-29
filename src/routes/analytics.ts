@@ -120,15 +120,18 @@ analytics.get("/activity/timeline", async (c) => {
 analytics.get("/analytics/performance", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const pageId = c.req.query("page_id");
+  const where = "status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL)" + (pageId ? " AND page_id = ?" : "");
+  const binds = pageId ? [session.fb_id, pageId] : [session.fb_id];
   const { results: topPosts } = await c.env.DB.prepare(
-    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) ORDER BY engagement DESC LIMIT 10"
-  ).bind(session.fb_id).all();
+    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE " + where + " ORDER BY engagement DESC LIMIT 10"
+  ).bind(...binds).all();
   const { results: worstPosts } = await c.env.DB.prepare(
-    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) ORDER BY engagement ASC LIMIT 5"
-  ).bind(session.fb_id).all();
+    "SELECT *, (COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as engagement FROM posts WHERE " + where + " ORDER BY engagement ASC LIMIT 5"
+  ).bind(...binds).all();
   const avg = await c.env.DB.prepare(
-    "SELECT AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as total_posts, SUM(COALESCE(likes,0)) as total_likes, SUM(COALESCE(comments,0)) as total_comments, SUM(COALESCE(shares,0)) as total_shares FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL)"
-  ).bind(session.fb_id).first<any>();
+    "SELECT AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as total_posts, SUM(COALESCE(likes,0)) as total_likes, SUM(COALESCE(comments,0)) as total_comments, SUM(COALESCE(shares,0)) as total_shares FROM posts WHERE " + where
+  ).bind(...binds).first<any>();
   return c.json({ top: topPosts, worst: worstPosts, summary: avg });
 });
 
@@ -136,18 +139,21 @@ analytics.get("/analytics/performance", async (c) => {
 analytics.get("/analytics/best-time", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const pageId = c.req.query("page_id");
+  const where = "status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL)" + (pageId ? " AND page_id = ?" : "");
+  const binds = pageId ? [session.fb_id, pageId] : [session.fb_id];
   const { results: byHour } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY hour ORDER BY avg_engagement DESC"
-  ).bind(session.fb_id).all();
+    "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE " + where + " GROUP BY hour ORDER BY avg_engagement DESC"
+  ).bind(...binds).all();
   const { results: byDay } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY day ORDER BY avg_engagement DESC"
-  ).bind(session.fb_id).all();
+    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as post_count FROM posts WHERE " + where + " GROUP BY day ORDER BY avg_engagement DESC"
+  ).bind(...binds).all();
   const dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
   const bestHours = (byHour as any[]).slice(0, 3).map((h: any) => h.hour);
   const bestDays = (byDay as any[]).slice(0, 3).map((d: any) => dayNames[d.day]);
   const { results: heatmap } = await c.env.DB.prepare(
-    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as count FROM posts WHERE status = 'posted' AND (user_fb_id = ? OR user_fb_id IS NULL) GROUP BY day, hour"
-  ).bind(session.fb_id).all();
+    "SELECT CAST(strftime('%w', created_at) AS INTEGER) as day, CAST(strftime('%H', created_at) AS INTEGER) as hour, AVG(COALESCE(likes,0) + COALESCE(comments,0) + COALESCE(shares,0)) as avg_engagement, COUNT(*) as count FROM posts WHERE " + where + " GROUP BY day, hour"
+  ).bind(...binds).all();
   return c.json({
     best_hours: bestHours, best_days: bestDays, by_hour: byHour,
     by_day: (byDay as any[]).map((d: any) => ({ ...d, day_name: dayNames[d.day] })),

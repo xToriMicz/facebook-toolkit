@@ -6,7 +6,8 @@ import { toast, insEsc, showNotify, showProgress, hideProgress } from './utils.j
 export async function loadBulkDrafts() {
   const el = document.getElementById('bulkDraftList');
   try {
-    const r = await fetch('/api/drafts', {credentials:'include'});
+    const dpid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/drafts' + (dpid ? '?page_id=' + dpid : ''), {credentials:'include'});
     const d = await r.json();
     if (!d.drafts || d.drafts.length === 0) {
       el.innerHTML = '<div class="empty-state">ไม่มีฉบับร่าง — เขียนฉบับร่างก่อน</div>';

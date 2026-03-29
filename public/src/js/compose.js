@@ -217,7 +217,7 @@ export async function saveDraftFromCompose() {
   const msg = document.getElementById('message').value.trim();
   if (!msg) { toast('err', 'กรุณาเขียนข้อความก่อนบันทึก'); return; }
   try {
-    const r = await fetch('/api/drafts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, image_url: state.uploadedImageUrl || null }) });
+    const r = await fetch('/api/drafts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, image_url: state.uploadedImageUrl || null, page_id: state.selectedPage ? state.selectedPage.id : null }) });
     const d = await r.json();
     if (d.ok) { toast('ok', 'บันทึกร่างแล้ว'); showNotify('บันทึกฉบับร่างสำเร็จ!'); loadComposeDrafts(); }
     else toast('err', d.error || 'บันทึกไม่สำเร็จ');
@@ -227,7 +227,8 @@ export async function saveDraftFromCompose() {
 export async function loadComposeDrafts() {
   const el = document.getElementById('composeDrafts');
   try {
-    const r = await fetch('/api/drafts', { credentials: 'same-origin' });
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/drafts' + (pid ? '?page_id=' + pid : ''), { credentials: 'same-origin' });
     const d = await r.json();
     const drafts = d.drafts || [];
     if (!drafts.length) { el.innerHTML = ''; return; }
@@ -245,7 +246,8 @@ export async function loadComposeDrafts() {
 
 export async function loadDraftToCompose(id) {
   try {
-    const r = await fetch('/api/drafts', { credentials: 'same-origin' });
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/drafts' + (pid ? '?page_id=' + pid : ''), { credentials: 'same-origin' });
     const d = await r.json();
     const draft = (d.drafts || []).find(x => x.id === id);
     if (draft) { document.getElementById('message').value = draft.message || ''; document.getElementById('charCount').textContent = (draft.message || '').length; toast('ok', 'โหลดร่างแล้ว แก้ไขได้เลย'); }

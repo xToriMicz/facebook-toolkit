@@ -17,9 +17,12 @@ drafts.post("/drafts", async (c) => {
 drafts.get("/drafts", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM drafts WHERE user_fb_id = ? ORDER BY updated_at DESC"
-  ).bind(session.fb_id).all();
+  const pageId = c.req.query("page_id");
+  let q = "SELECT * FROM drafts WHERE user_fb_id = ?";
+  const binds: any[] = [session.fb_id];
+  if (pageId) { q += " AND page_id = ?"; binds.push(pageId); }
+  q += " ORDER BY updated_at DESC";
+  const { results } = await c.env.DB.prepare(q).bind(...binds).all();
   return c.json({ drafts: results, total: results.length });
 });
 
