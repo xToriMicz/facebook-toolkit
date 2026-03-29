@@ -344,8 +344,15 @@ outbound.post("/outbound/resolve", async (c) => {
   try {
     const res = await fetch(`https://graph.facebook.com/v25.0/${identifier}?fields=id,name,picture&access_token=${pageToken}`);
     const data = await res.json() as any;
-    if (data.error) return c.json({ error: data.error.message }, 400);
-    return c.json({ id: data.id, name: data.name, picture: data.picture?.data?.url || "" });
+    if (!data.error) {
+      return c.json({ id: data.id, name: data.name, picture: data.picture?.data?.url || "" });
+    }
+    // Fallback: Graph API ปฏิเสธ (New Pages Experience ใช้ profile.php URL)
+    // ถ้าเป็น numeric ID → เก็บไว้ ให้ cron ลอง fetch โพสเอง
+    if (/^\d+$/.test(identifier)) {
+      return c.json({ id: identifier, name: "Page #" + identifier, picture: "" });
+    }
+    return c.json({ error: data.error.message }, 400);
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
   }
