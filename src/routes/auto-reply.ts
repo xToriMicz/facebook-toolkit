@@ -7,7 +7,7 @@ const autoReply = new Hono<{ Bindings: Env }>();
 
 // ── Types ──
 
-type CommentType = "question" | "praise" | "experience" | "disagree" | "tag_friend" | "emoji" | "spam" | "unclear";
+type CommentType = "question" | "praise" | "experience" | "disagree" | "complaint" | "greeting" | "short_reaction" | "tag_friend" | "emoji" | "spam";
 
 interface ClassifiedComment {
   type: CommentType;
@@ -18,16 +18,19 @@ interface ClassifiedComment {
 
 const CLASSIFY_PROMPT = `คุณเป็นระบบวิเคราะห์ comment ของ Facebook page
 
-วิเคราะห์ comment ต่อไปนี้แล้วจัดประเภท 1 ใน 8:
-1. question — ถามข้อมูล เช่น "รถรุ่นนี้กี่ cc" "ราคาเท่าไหร่"
-2. praise — ชม/เห็นด้วย เช่น "บทความดีมาก" "เขียนดี"
-3. experience — แชร์ประสบการณ์ เช่น "ผมใช้อยู่ ประหยัดจริง"
-4. disagree — ไม่เห็นด้วย เช่น "ไม่จริง" "ข้อมูลผิด"
-5. tag_friend — แท็กเพื่อน เช่น "@friend ดูนี่"
-6. emoji — emoji/สั้นๆ เช่น "❤️" "👍" "555" "สุดยอด"
-7. spam — link spam, ขายของ, โฆษณา
-8. unclear — ไม่ชัดเจน เช่น "อืม" "น่าสนใจ"
+วิเคราะห์ comment ต่อไปนี้แล้วจัดประเภท 1 ใน 10:
+1. question — ถามข้อมูล เช่น "รถรุ่นนี้กี่ cc" "ราคาเท่าไหร่" "สั่งยังไง"
+2. praise — ชม/เห็นด้วย เช่น "บทความดีมาก" "เขียนดี" "เยี่ยมเลย"
+3. experience — แชร์ประสบการณ์ยาว เช่น "ผมใช้อยู่ ประหยัดจริง" "เพชรบุรีก็ร้อนมากค่ะ"
+4. disagree — ไม่เห็นด้วยกับเนื้อหาโพส เช่น "ไม่จริง" "ข้อมูลผิด"
+5. complaint — บ่น/ระบาย (ไม่ใช่ disagree กับเพจ) เช่น "แย่จังอากาศ" "ร้อนจัง" "ผิดหวัง"
+6. greeting — ทักทาย/อวยพร เช่น "สวัสดีครับ" "อรุณสวัสดิ์" "หวัดดี" "กลับค่า" "Hi"
+7. short_reaction — ข้อความสั้น 1-3 คำ ที่ไม่ใช่ emoji เช่น "สุดยอด" "ร้อนสุดๆ" "น่าทาน" "เก่งมาก"
+8. tag_friend — แท็กเพื่อน เช่น "@friend ดูนี่"
+9. emoji — emoji ล้วนๆ หรือ "555" "5555" เช่น "❤️" "👍" "✌️✌️"
+10. spam — link spam, ขายของ, โฆษณา
 
+สำคัญ: greeting = ทักทาย/ลา, short_reaction = คำสั้นแสดงความรู้สึก, emoji = สัญลักษณ์ล้วน
 ตอบ JSON เท่านั้น: {"type":"ประเภท","confidence":0.0-1.0}`;
 
 const REPLY_PROMPTS: Record<CommentType, string> = {
@@ -40,14 +43,31 @@ const REPLY_PROMPTS: Record<CommentType, string> = {
 
   disagree: `ตอบอย่างสุภาพ ให้ข้อมูลเพิ่มเติม ไม่ต่อล้อต่อเถียง 1-2 ประโยค ภาษาไทย ห้าม markdown`,
 
+  complaint: `เห็นใจที่เจอสถานการณ์แบบนั้น ตอบอบอุ่น 1-2 ประโยค ภาษาไทย ห้าม markdown ห้ามแนะนำเว้นแต่เขาถาม`,
+
+  greeting: `ทักทายกลับสั้นๆ อบอุ่น 1 ประโยค ภาษาไทย ใส่ emoji 1 ตัว ห้าม markdown เช่น ถ้าเขาบอก "สวัสดี" ก็ตอบ "สวัสดีค่ะ 😊"`,
+
+  short_reaction: `ตอบสั้นๆ เป็นกันเอง 1 ประโยค ภาษาไทย ใส่ emoji 1 ตัว ห้าม markdown`,
+
   tag_friend: `ขอบคุณที่แชร์ให้เพื่อน ตอบสั้นๆ สนุก 1 ประโยค ภาษาไทย ใส่ emoji ห้าม markdown`,
 
   emoji: `ตอบ emoji กลับ 1-3 ตัว เท่านั้น ไม่ต้องเขียนข้อความ`,
 
   spam: "", // ไม่ตอบ spam
-
-  unclear: `ตอบเบาๆ เช่น "ขอบคุณที่แวะมาค่ะ 😊" หรือคล้ายๆ กัน สั้น 1 ประโยค ภาษาไทย ห้าม markdown`,
 };
+
+/** Sanitize comment text — strip potential prompt injection */
+function sanitizeComment(text: string): string {
+  return text
+    .slice(0, 300) // limit length
+    .replace(/ignore\s+(above|previous|all)\s+instructions?/gi, "[filtered]")
+    .replace(/system\s*prompt/gi, "[filtered]")
+    .replace(/you\s+are\s+(now|a)\s/gi, "[filtered]")
+    .trim();
+}
+
+/** Max replies per cron run per page — prevent rate limit burst */
+const MAX_REPLIES_PER_RUN = 15;
 
 /** Classify a comment using AI */
 async function classifyComment(
@@ -56,10 +76,12 @@ async function classifyComment(
   apiKey: string,
   model: string,
   endpoint?: string,
+  postContext?: string,
 ): Promise<ClassifiedComment> {
+  const contextLine = postContext ? `\n\nโพสต้นทาง: "${postContext.slice(0, 200)}"` : "";
   const result = await callAI(
     provider, apiKey, model,
-    `${CLASSIFY_PROMPT}\n\nComment: "${comment}"`,
+    `${CLASSIFY_PROMPT}${contextLine}\n\nComment: "${sanitizeComment(comment)}"`,
     endpoint,
   );
 
@@ -81,21 +103,31 @@ async function generateReply(
   apiKey: string,
   model: string,
   endpoint?: string,
+  postContext?: string,
+  tone?: string,
+  customTone?: string,
 ): Promise<string> {
   const prompt = REPLY_PROMPTS[type];
   if (!prompt) return "";
 
+  const toneInstruction = tone === "casual" ? "\nใช้ภาษาเป็นกันเอง เช่น นะ จ้า ค่า" :
+    tone === "custom" && customTone ? `\nสไตล์การตอบ: ${customTone.slice(0, 200)}` :
+    "\nใช้ภาษาสุภาพ เช่น ค่ะ ครับ";
+  const contextLine = postContext ? `\nเนื้อหาโพส: "${postContext.slice(0, 200)}"` : "";
+
   const result = await callAI(
     provider, apiKey, model,
-    `${prompt}\n\nComment ที่ต้องตอบ: "${comment}"\n\nตอบข้อความ reply เท่านั้น ไม่ต้องอธิบาย`,
+    `${prompt}${toneInstruction}${contextLine}\n\nComment ที่ต้องตอบ: "${sanitizeComment(comment)}"\n\nตอบข้อความ reply เท่านั้น ไม่ต้องอธิบาย`,
     endpoint,
   );
 
-  // Strip markdown and quotes
+  // Strip markdown, quotes, URLs
   let reply = result.text.trim();
   reply = reply.replace(/^["']|["']$/g, "");
   reply = reply.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1");
-  return reply;
+  reply = reply.replace(/https?:\/\/\S+/g, ""); // strip URLs from reply
+  reply = reply.slice(0, 500); // max reply length
+  return reply.trim();
 }
 
 /** Hide a spam comment */
@@ -139,9 +171,9 @@ function sleep(ms: number): Promise<void> {
 export async function processAutoReplies(env: Env) {
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
-  // Get all enabled page settings (per-page, exclude mode 'off')
+  // Get all enabled page settings (per-page, exclude mode 'off') — include tone + skip_greeting + custom_tone
   const { results: settings } = await env.DB.prepare(
-    "SELECT ars.user_fb_id, ars.page_id, ars.reply_mode, up.page_token FROM auto_reply_settings ars JOIN user_pages up ON ars.user_fb_id = up.user_fb_id AND ars.page_id = up.page_id WHERE ars.enabled = 1 AND ars.reply_mode != 'off'"
+    "SELECT ars.user_fb_id, ars.page_id, ars.reply_mode, ars.reply_tone, ars.skip_greeting, ars.custom_tone, up.page_token FROM auto_reply_settings ars JOIN user_pages up ON ars.user_fb_id = up.user_fb_id AND ars.page_id = up.page_id WHERE ars.enabled = 1 AND ars.reply_mode != 'off'"
   ).all();
 
   if (!settings.length) return;
@@ -149,7 +181,11 @@ export async function processAutoReplies(env: Env) {
   for (const setting of settings as any[]) {
     const fbId = setting.user_fb_id;
     const replyMode: string = setting.reply_mode || "all";
+    const replyTone: string = setting.reply_tone || "formal";
+    const customToneText: string = setting.custom_tone || "";
+    const skipGreeting: boolean = setting.skip_greeting === 1;
     const page = { page_id: setting.page_id, page_token: setting.page_token };
+    let repliesThisRun = 0;
 
     // Get user's AI settings
     const aiSettings = await env.DB.prepare(
@@ -169,9 +205,9 @@ export async function processAutoReplies(env: Env) {
         : page.page_token;
       if (!pageToken) continue;
 
-      // Get recent posts (last 3 days, newest first)
+      // Get recent posts (last 3 days, newest first) — include message for AI context
       const { results: posts } = await env.DB.prepare(
-        "SELECT fb_post_id, created_at FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
+        "SELECT fb_post_id, created_at, message FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
       ).bind(fbId, page.page_id).all();
 
       const nowMs = Date.now();
@@ -225,7 +261,8 @@ export async function processAutoReplies(env: Env) {
 
           try {
             // Classify comment
-            const classification = await classifyComment(comment.message, provider, apiKey, model, endpoint);
+            const postMessage = (post as any).message || "";
+            const classification = await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
 
             // Handle spam: hide + log
             if (classification.type === "spam") {
@@ -239,6 +276,17 @@ export async function processAutoReplies(env: Env) {
               ).bind(fbId, `ซ่อน spam: ${comment.message.slice(0, 100)}`, post.fb_post_id, new Date().toISOString()).run();
               continue;
             }
+
+            // Skip greeting if user opted out
+            if (skipGreeting && classification.type === "greeting") {
+              await env.DB.prepare(
+                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
+              ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+              continue;
+            }
+
+            // Rate cap — stop after MAX_REPLIES_PER_RUN replies per page per cron
+            if (repliesThisRun >= MAX_REPLIES_PER_RUN) break;
 
             // Check reply mode before generating
             if (replyMode === "question_only" && classification.type !== "question" && classification.type !== "disagree") {
@@ -257,7 +305,7 @@ export async function processAutoReplies(env: Env) {
             }
 
             // Generate reply
-            const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint);
+            const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
             if (!replyText) continue;
 
             // Delay 2-5 seconds between replies
@@ -276,6 +324,9 @@ export async function processAutoReplies(env: Env) {
               result.ok ? "replied" : "failed", result.error || null,
               new Date().toISOString(),
             ).run();
+
+            // Track reply count for rate cap
+            if (result.ok) repliesThisRun++;
 
             // Log activity
             if (result.ok) {
@@ -311,14 +362,14 @@ autoReply.get("/auto-reply/settings", async (c) => {
   if (pageId) {
     // Single page setting
     const row = await c.env.DB.prepare(
-      "SELECT enabled, reply_mode FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
-    ).bind(session.fb_id, pageId).first<{ enabled: number; reply_mode: string }>();
-    return c.json({ page_id: pageId, enabled: row?.enabled === 1, reply_mode: row?.reply_mode || "all" });
+      "SELECT enabled, reply_mode, reply_tone, skip_greeting, custom_tone FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
+    ).bind(session.fb_id, pageId).first<{ enabled: number; reply_mode: string; reply_tone: string; skip_greeting: number; custom_tone: string }>();
+    return c.json({ page_id: pageId, enabled: row?.enabled === 1, reply_mode: row?.reply_mode || "all", reply_tone: row?.reply_tone || "formal", skip_greeting: row?.skip_greeting === 1, custom_tone: row?.custom_tone || "" });
   }
 
   // All pages settings
   const { results } = await c.env.DB.prepare(
-    "SELECT ars.page_id, ars.enabled, ars.reply_mode, up.page_name FROM auto_reply_settings ars LEFT JOIN user_pages up ON ars.page_id = up.page_id AND ars.user_fb_id = up.user_fb_id WHERE ars.user_fb_id = ?"
+    "SELECT ars.page_id, ars.enabled, ars.reply_mode, ars.reply_tone, ars.skip_greeting, up.page_name FROM auto_reply_settings ars LEFT JOIN user_pages up ON ars.page_id = up.page_id AND ars.user_fb_id = up.user_fb_id WHERE ars.user_fb_id = ?"
   ).bind(session.fb_id).all();
   return c.json({ pages: results });
 });
@@ -328,11 +379,14 @@ autoReply.post("/auto-reply/settings", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
-  const { enabled, page_id, reply_mode } = await c.req.json() as { enabled: boolean; page_id: string; reply_mode?: string };
+  const { enabled, page_id, reply_mode, reply_tone, skip_greeting, custom_tone } = await c.req.json() as { enabled: boolean; page_id: string; reply_mode?: string; reply_tone?: string; skip_greeting?: boolean; custom_tone?: string };
   if (!page_id) return c.json({ error: "page_id required" }, 400);
 
   const validModes = ["all", "random", "question_only", "off"];
   const mode = reply_mode && validModes.includes(reply_mode) ? reply_mode : "all";
+  const validTones = ["formal", "casual", "custom"];
+  const tone = reply_tone && validTones.includes(reply_tone) ? reply_tone : "formal";
+  const customToneText = (custom_tone || "").slice(0, 200); // limit custom tone length
 
   // Verify user owns this page
   const page = await c.env.DB.prepare(
@@ -341,10 +395,10 @@ autoReply.post("/auto-reply/settings", async (c) => {
   if (!page) return c.json({ error: "Page not found" }, 400);
 
   await c.env.DB.prepare(
-    "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode) VALUES (?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode"
-  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode).run();
+    "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode, reply_tone, skip_greeting, custom_tone) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode, reply_tone = excluded.reply_tone, skip_greeting = excluded.skip_greeting, custom_tone = excluded.custom_tone"
+  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode, tone, skip_greeting ? 1 : 0, customToneText).run();
 
-  return c.json({ ok: true, page_id, enabled, reply_mode: mode });
+  return c.json({ ok: true, page_id, enabled, reply_mode: mode, reply_tone: tone, skip_greeting: !!skip_greeting, custom_tone: customToneText });
 });
 
 // GET /api/auto-reply/history?date=YYYY-MM-DD
