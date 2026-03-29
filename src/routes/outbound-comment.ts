@@ -7,26 +7,29 @@ const outbound = new Hono<{ Bindings: Env }>();
 
 // ── Types ──
 
-type PostType = "informative" | "question" | "product" | "story" | "meme" | "personal_grief" | "political" | "controversial" | "ad_sponsored" | "image_only" | "other";
+type PostType = "informative" | "question" | "product" | "story" | "meme" | "reel_with_caption" | "video" | "personal_grief" | "political" | "controversial" | "ad_sponsored" | "image_only" | "reel_no_caption" | "other";
 
-const SKIP_TYPES: PostType[] = ["personal_grief", "political", "controversial", "ad_sponsored", "image_only"];
+const SKIP_TYPES: PostType[] = ["personal_grief", "political", "controversial", "ad_sponsored", "image_only", "reel_no_caption"];
 
 // ── AI Classification ──
 
 const CLASSIFY_POST_PROMPT = `คุณเป็นระบบวิเคราะห์โพส Facebook
 
-วิเคราะห์โพสต่อไปนี้แล้วจัดประเภท 1 ใน 11:
+วิเคราะห์โพสต่อไปนี้แล้วจัดประเภท 1 ใน 14:
 1. informative — โพสข้อมูล/ข่าว/ให้ความรู้
 2. question — โพสถามความเห็น/ถามคำถาม
 3. product — โพสสินค้า/บริการ/รีวิว
 4. story — โพสเล่าเรื่อง/ประสบการณ์
 5. meme — โพสตลก/meme/สนุกๆ
-6. personal_grief — โพสส่วนตัวมาก/เรื่องเศร้า/สูญเสีย
-7. political — โพสการเมือง/ฝักฝ่าย
-8. controversial — โพสขัดแย้ง/sensitive/ถกเถียง
-9. ad_sponsored — โพสโฆษณา/sponsored/ขายของ
-10. image_only — รูปอย่างเดียว ไม่มีข้อความ
-11. other — อื่นๆ ที่ไม่เข้าหมวดไหน
+6. reel_with_caption — คลิปสั้น/Reel ที่มี caption ให้อ่าน
+7. video — วิดีโอยาว + มี description
+8. personal_grief — โพสส่วนตัวมาก/เรื่องเศร้า/สูญเสีย
+9. political — โพสการเมือง/ฝักฝ่าย
+10. controversial — โพสขัดแย้ง/sensitive/ถกเถียง
+11. ad_sponsored — โพสโฆษณา/sponsored/ขายของ
+12. image_only — รูปอย่างเดียว ไม่มีข้อความ
+13. reel_no_caption — คลิปสั้น/Reel ไม่มี caption (ไม่รู้จะคอมเม้นอะไร)
+14. other — อื่นๆ ที่ไม่เข้าหมวดไหน
 
 ตอบ JSON เท่านั้น: {"type":"ประเภท","confidence":0.0-1.0}`;
 
@@ -148,7 +151,7 @@ export async function processOutboundComments(env: Env) {
       let posts: any[];
       try {
         const res = await fetch(
-          `https://graph.facebook.com/v25.0/${target.target_page_id}/feed?fields=id,message,created_time,type&limit=5&access_token=${pageToken}`
+          `https://graph.facebook.com/v25.0/${target.target_page_id}/feed?fields=id,message,created_time,type,attachments{type,title}&limit=5&access_token=${pageToken}`
         );
         const data = await res.json() as any;
         if (data.error) continue;
@@ -159,7 +162,22 @@ export async function processOutboundComments(env: Env) {
 
       for (const post of posts) {
         if (draftsThisRun >= MAX_DRAFTS_PER_RUN) break;
-        if (!post.id || !post.message) continue; // skip image-only posts
+
+        // Detect media type from Graph API
+        const fbType = post.type || "";
+        const attachType = post.attachments?.data?.[0]?.type || "";
+        const isVideo = fbType === "video" || attachType === "video_inline" || attachType === "video_autoplay";
+        const isReel = attachType === "video_inline" && (!post.message || post.message.length < 20);
+
+        // Skip posts without message (image_only / reel_no_caption)
+        if (!post.id || (!post.message && !isVideo)) continue;
+        if (!post.message && isVideo) {
+          // Reel/video without caption — skip
+          await env.DB.prepare(
+            "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'reel_no_caption', '', 'skipped', ?)"
+          ).bind(fbId, target.page_id, target.target_page_id, post.id, "", new Date().toISOString()).run();
+          continue;
+        }
 
         // Check if we already commented/drafted on this post
         const existing = await env.DB.prepare(
@@ -177,9 +195,10 @@ export async function processOutboundComments(env: Env) {
 
         try {
           // Classify post type
+          const mediaHint = isVideo ? "\n(โพสนี้เป็นวิดีโอ/คลิป)" : "";
           const classResult = await callAI(
             provider, apiKey, model,
-            `${CLASSIFY_POST_PROMPT}\n\nโพส: "${sanitize(post.message)}"`,
+            `${CLASSIFY_POST_PROMPT}${mediaHint}\n\nโพส: "${sanitize(post.message)}"`,
             endpoint,
           );
           let postType: PostType = "other";
