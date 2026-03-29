@@ -96,20 +96,20 @@ export function toggleSchedule() {
 
 export async function submitScheduled() {
   const msg = document.getElementById('message').value.trim();
-  if (!msg && !uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
-  if (!selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
+  if (!msg && !state.uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+  if (!state.selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
   const date = document.getElementById('schedDate').value;
   const time = document.getElementById('schedTime').value;
   if (!date || !time) { toast('err','กรุณาเลือกวันและเวลา'); return; }
   const scheduledAt = new Date(date + 'T' + time + ':00').toISOString();
   try {
-    const imageUrls = uploadedImages.filter(i=>i.url).map(i=>i.url);
+    const imageUrls = state.uploadedImages.filter(i=>i.url).map(i=>i.url);
     const body = imageUrls.length > 1
-      ? { message:msg, image_urls:imageUrls, page_id:selectedPage.id, scheduled_at:scheduledAt }
-      : { message:msg, image_url:imageUrls[0]||null, page_id:selectedPage.id, scheduled_at:scheduledAt };
+      ? { message:msg, image_urls:imageUrls, page_id:state.selectedPage.id, scheduled_at:scheduledAt }
+      : { message:msg, image_url:imageUrls[0]||null, page_id:state.selectedPage.id, scheduled_at:scheduledAt };
     const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
     const d = await r.json();
-    if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; document.getElementById('imagePreview').innerHTML=''; uploadedImages=[]; uploadedImageUrl=null; uploadedImageData=null; var dz=document.getElementById('dropZone'); dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; loadScheduled(); }
+    if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; document.getElementById('imagePreview').innerHTML=''; state.uploadedImages=[]; state.uploadedImageUrl=null; state.uploadedImageData=null; var dz=document.getElementById('dropZone'); dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; loadScheduled(); }
     else toast('err', d.error || 'ตั้งเวลาไม่สำเร็จ');
   } catch(e) { toast('err','เกิดข้อผิดพลาด'); }
 }
@@ -470,11 +470,11 @@ export function editScheduledPost(id, message, imageUrl, date, time) {
   // Pre-fill image
   var prevEl = document.getElementById('imagePreview');
   if (imageUrl) {
-    uploadedImageUrl = imageUrl;
+    state.uploadedImageUrl = imageUrl;
     document.getElementById('postType').value = 'image';
     prevEl.innerHTML = '<div class="preview-item" style="position:relative;display:inline-block"><img src="' + insEsc(imageUrl) + '" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border)"><button onclick="removeEditImage()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:0.7rem">✕</button></div>';
   } else {
-    uploadedImageUrl = null;
+    state.uploadedImageUrl = null;
     document.getElementById('postType').value = 'text';
     prevEl.innerHTML = '';
   }
@@ -501,10 +501,10 @@ export function editScheduledPost(id, message, imageUrl, date, time) {
   updateBtn.innerHTML = '✅ อัพเดตโพส';
   updateBtn.onclick = async function() {
     var newMsg = document.getElementById('message').value.trim();
-    if (!newMsg && !uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+    if (!newMsg && !state.uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
     var newDate = document.getElementById('schedDate').value;
     var newTime = document.getElementById('schedTime').value;
-    var body = { message: newMsg, image_url: uploadedImageUrl || null };
+    var body = { message: newMsg, image_url: state.uploadedImageUrl || null };
     if (newDate && newTime) body.scheduled_at = newDate + 'T' + newTime + ':00';
     try {
       var res = await fetch('/api/schedule/' + editingScheduleId, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -533,7 +533,7 @@ export function editScheduledPost(id, message, imageUrl, date, time) {
 }
 
 export function removeEditImage() {
-  uploadedImageUrl = null;
+  state.uploadedImageUrl = null;
   document.getElementById('imagePreview').innerHTML = '';
   document.getElementById('postType').value = 'text';
 }
@@ -543,7 +543,7 @@ export function exitEditMode() {
   document.getElementById('message').value = '';
   document.getElementById('charCount').textContent = '0';
   document.getElementById('imagePreview').innerHTML = '';
-  uploadedImageUrl = null;
+  state.uploadedImageUrl = null;
   document.getElementById('postType').value = 'text';
   document.getElementById('schedulePicker').style.display = 'none';
   document.getElementById('postBtn').style.display = '';
@@ -673,7 +673,7 @@ export function insRenderAll() {
 }
 
 export async function loadInsights(force) {
-  var pageId = selectedPage ? selectedPage.id : '';
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
   if (!pageId) { insShowError('กรุณาเลือกเพจจาก sidebar ก่อน'); return; }
   insShowError(null);
   var cacheKey = 'ins:' + pageId;
@@ -711,7 +711,7 @@ export async function loadInsights(force) {
 }
 
 export async function insRefreshAndLoad() {
-  var pageId = selectedPage ? selectedPage.id : '';
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
   if (!pageId) return;
   var btn = document.getElementById('insRefreshBtn');
   btn.textContent = '⏳';
@@ -727,7 +727,7 @@ export async function insRefreshAndLoad() {
 }
 
 export async function insSyncPosts() {
-  var pageId = selectedPage ? selectedPage.id : '';
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
   if (!pageId) { insShowError('กรุณาเลือกเพจก่อน'); return; }
   var btn = document.getElementById('insSyncBtn');
   btn.textContent = '⏳ Syncing...';
@@ -923,7 +923,7 @@ var CH_ACTIONS = {
 };
 
 export async function loadChallenges(force) {
-  var pageId = selectedPage ? selectedPage.id : '';
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
   if (!pageId) { document.getElementById('chList').innerHTML = '<div class="empty-state">เลือกเพจจาก sidebar ก่อน</div>'; return; }
   var el = document.getElementById('chList');
   var cacheKey = 'ch:' + pageId;
@@ -977,7 +977,7 @@ export function renderChCards(d) {
 
 
 export async function boostChallenge(challengeId, count, btn) {
-  var pageId = selectedPage ? selectedPage.id : '';
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
   if (!pageId) return;
   if (btn.dataset.confirmed !== 'yes') {
     btn.textContent = '⚠️ กดอีกครั้งเพื่อยืนยัน';
