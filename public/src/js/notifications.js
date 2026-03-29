@@ -1,134 +1,148 @@
-"use strict";
-import "./state.js";
-import { insEsc as c } from "./utils.js";
-var f = {
-    login: "\u{1F511}",
-    logout: "\u{1F534}",
-    post_created: "\u{1F4DD}",
-    post_scheduled: "\u23F0",
-    draft_saved: "\u{1F4BE}",
-    ai_write: "\u{1F916}",
-    page_switched: "\u{1F4C4}",
-    settings_changed: "\u2699\uFE0F",
-    auto_reply: "\u{1F4AC}",
-    auto_hide_spam: "\u{1F6AB}",
-    outbound_comment: "\u{1F3AF}",
-  },
-  v = null;
+// Notification Bell v2 — priority, group by day, deep link, preferences
+import state from './state.js';
+import { insEsc } from './utils.js';
+
+var TYPE_ICONS = {
+  post_ok: '📝', post_fail: '❌', auto_reply: '💬', outbound: '🎯',
+  comment_new: '💬', scheduled: '⏰', error: '⚠️', security: '🔒',
+  bulk_done: '📦', settings: '⚙️',
+};
+var PRIORITY_COLORS = { urgent: '#ef4444', important: '#f59e0b', normal: 'var(--accent)' };
+
+var _pollInterval = null;
+
 export function initNotifications() {
-  var t = document.getElementById("navUser");
-  if (!(!t || document.getElementById("notifBell"))) {
-    var e = document.createElement("button");
-    ((e.id = "notifBell"),
-      (e.className = "nav-btn"),
-      (e.style.cssText =
-        "position:relative;font-size:1.1rem;padding:6px 10px;cursor:pointer;background:none;border:none;color:var(--text)"),
-      (e.innerHTML =
-        '\u{1F514}<span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:700;text-align:center;line-height:16px;padding:0 4px"></span>'),
-      (e.onclick = m));
-    var o = t.querySelector(".nav-btn");
-    o ? t.insertBefore(e, o) : t.appendChild(e);
-    var n = document.createElement("div");
-    ((n.id = "notifPanel"),
-      (n.style.cssText =
-        "display:none;position:fixed;top:56px;right:12px;width:min(360px,calc(100vw - 24px));max-height:70vh;background:var(--bg-card,#1a1a2e);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.5);z-index:150;overflow:hidden"),
-      (n.innerHTML =
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)"><span style="font-size:0.85rem;font-weight:600;color:var(--text)">\u{1F514} \u0E01\u0E32\u0E23\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19</span><button id="notifMarkRead" onclick="markNotifRead()" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 8px">\u0E2D\u0E48\u0E32\u0E19\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button></div><div id="notifList" style="max-height:calc(70vh - 50px);overflow-y:auto;padding:4px 0"></div>'),
-      document.body.appendChild(n),
-      document.addEventListener("click", function (a) {
-        var i = document.getElementById("notifPanel"),
-          r = document.getElementById("notifBell");
-        i &&
-          i.style.display !== "none" &&
-          !i.contains(a.target) &&
-          !r.contains(a.target) &&
-          (i.style.display = "none");
-      }),
-      loadNotifications(),
-      (v = setInterval(loadNotifications, 6e4)));
-  }
+  var navUser = document.getElementById('navUser');
+  if (!navUser || document.getElementById('notifBell')) return;
+
+  var bell = document.createElement('button');
+  bell.id = 'notifBell';
+  bell.style.cssText = 'position:relative;font-size:1.1rem;padding:6px 10px;cursor:pointer;background:none;border:none;color:var(--text)';
+  bell.innerHTML = '🔔<span id="notifBadge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:8px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:700;text-align:center;line-height:16px;padding:0 4px"></span>';
+  bell.onclick = toggleNotifPanel;
+
+  var settingsBtn = navUser.querySelector('.nav-btn');
+  if (settingsBtn) navUser.insertBefore(bell, settingsBtn);
+  else navUser.appendChild(bell);
+
+  var panel = document.createElement('div');
+  panel.id = 'notifPanel';
+  panel.style.cssText = 'display:none;position:fixed;top:56px;right:8px;width:min(380px,calc(100vw - 16px));max-height:75vh;background:var(--bg-card,#1a1a2e);border:1px solid var(--border);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.5);z-index:150;overflow:hidden;-webkit-overflow-scrolling:touch';
+  panel.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card,#1a1a2e);z-index:1">' +
+    '<span style="font-size:0.9rem;font-weight:700;color:var(--text)">🔔 การแจ้งเตือน</span>' +
+    '<button onclick="markNotifRead()" style="font-size:0.7rem;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px 8px">อ่านทั้งหมด</button>' +
+    '</div>' +
+    '<div id="notifList" style="max-height:calc(75vh - 56px);overflow-y:auto;padding:0;-webkit-overflow-scrolling:touch"></div>';
+  document.body.appendChild(panel);
+
+  document.addEventListener('click', function (e) {
+    var p = document.getElementById('notifPanel');
+    var b = document.getElementById('notifBell');
+    if (p && p.style.display !== 'none' && !p.contains(e.target) && !b.contains(e.target)) {
+      p.style.display = 'none';
+    }
+  });
+
+  loadNotifications();
+  _pollInterval = setInterval(loadNotifications, 60000);
 }
-function m() {
-  var t = document.getElementById("notifPanel");
-  if (t) {
-    var e = t.style.display === "none";
-    ((t.style.display = e ? "block" : "none"), e && loadNotifications());
-  }
+
+function toggleNotifPanel() {
+  var panel = document.getElementById('notifPanel');
+  if (!panel) return;
+  var show = panel.style.display === 'none';
+  panel.style.display = show ? 'block' : 'none';
+  if (show) loadNotifications();
 }
+
 export async function loadNotifications() {
   try {
-    var t = await fetch("/api/notifications?limit=20", {
-        credentials: "same-origin",
-      }),
-      e = await t.json(),
-      o = e.notifications || [],
-      n = e.unread || 0,
-      a = document.getElementById("notifBadge");
-    a &&
-      (n > 0
-        ? ((a.textContent = n > 99 ? "99+" : String(n)), (a.style.display = ""))
-        : (a.style.display = "none"));
-    var i = document.getElementById("notifList");
-    if (!i) return;
-    if (!o.length) {
-      i.innerHTML =
-        '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.8rem">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E01\u0E32\u0E23\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2D\u0E19</div>';
+    var r = await fetch('/api/notifications?limit=30', { credentials: 'same-origin' });
+    var d = await r.json();
+    var items = d.notifications || [];
+    var unread = d.unread || 0;
+    var urgent = d.urgent || 0;
+
+    var badge = document.getElementById('notifBadge');
+    if (badge) {
+      if (unread > 0) {
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        badge.style.display = '';
+        badge.style.background = urgent > 0 ? '#ef4444' : 'var(--accent)';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    var el = document.getElementById('notifList');
+    if (!el) return;
+    if (!items.length) {
+      el.innerHTML = '<div style="text-align:center;padding:32px 16px;color:var(--text-muted);font-size:0.82rem">ไม่มีการแจ้งเตือน</div>';
       return;
     }
-    i.innerHTML = o
-      .map(function (r) {
-        var l = f[r.action] || "\u{1F4CC}",
-          d = !r.read_at,
-          s = g(r.created_at),
-          p = c((r.detail || "").slice(0, 80));
-        return (
-          '<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.03);' +
-          (d ? "background:rgba(79,110,247,0.04)" : "") +
-          '"><div style="display:flex;gap:10px;align-items:start"><span style="font-size:1rem;flex-shrink:0;margin-top:2px">' +
-          l +
-          '</span><div style="flex:1;min-width:0"><div style="font-size:0.78rem;color:var(--text);line-height:1.4' +
-          (d ? ";font-weight:600" : "") +
-          '">' +
-          p +
-          '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">' +
-          s +
-          "</div></div>" +
-          (d
-            ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px"></span>'
-            : "") +
-          "</div></div>"
-        );
-      })
-      .join("");
-  } catch {}
+
+    var groups = {};
+    var groupOrder = [];
+    var today = new Date().toISOString().slice(0, 10);
+    var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    items.forEach(function (n) {
+      var day = (n.created_at || '').slice(0, 10);
+      if (!groups[day]) { groups[day] = []; groupOrder.push(day); }
+      groups[day].push(n);
+    });
+
+    el.innerHTML = groupOrder.map(function (day) {
+      var label = day === today ? 'วันนี้' : day === yesterday ? 'เมื่อวาน' : new Date(day + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'long' });
+      var notifs = groups[day];
+
+      return '<div>' +
+        '<div style="padding:8px 16px;font-size:0.7rem;font-weight:600;color:var(--text-muted);background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)">' + label + '</div>' +
+        notifs.map(function (n) {
+          var icon = TYPE_ICONS[n.type] || '📌';
+          var isUnread = !n.read_at;
+          var time = formatTimeAgo(n.created_at);
+          var prioColor = PRIORITY_COLORS[n.priority] || 'var(--accent)';
+
+          return '<div onclick="markNotifSingleRead(' + n.id + ')" style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.03);' +
+            (isUnread ? 'background:rgba(79,110,247,0.04);' : '') +
+            'display:flex;gap:10px;align-items:start;cursor:pointer;-webkit-tap-highlight-color:transparent">' +
+            '<div style="width:32px;height:32px;border-radius:8px;background:' + prioColor + '15;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">' + icon + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:0.8rem;color:var(--text);line-height:1.4' + (isUnread ? ';font-weight:600' : '') + '">' + insEsc(n.title) + '</div>' +
+            (n.detail ? '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;line-height:1.3">' + insEsc(n.detail.slice(0, 80)) + '</div>' : '') +
+            '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:3px">' + time + '</div>' +
+            '</div>' +
+            (isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:' + prioColor + ';flex-shrink:0;margin-top:8px"></span>' : '') +
+            '</div>';
+        }).join('') +
+        '</div>';
+    }).join('');
+  } catch (e) { /* silent */ }
 }
+
 export async function markNotifRead() {
   try {
-    await fetch("/api/notifications/read", {
-      method: "POST",
-      credentials: "same-origin",
-    });
-    var t = document.getElementById("notifBadge");
-    (t && (t.style.display = "none"), loadNotifications());
-  } catch {}
+    await fetch('/api/notifications/read', { method: 'POST', credentials: 'same-origin' });
+    var badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = 'none';
+    loadNotifications();
+  } catch (e) { }
 }
-function g(t) {
-  var e = Date.now(),
-    o = new Date(t).getTime(),
-    n = Math.floor((e - o) / 1e3);
-  return n < 60
-    ? "\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E2A\u0E31\u0E01\u0E04\u0E23\u0E39\u0E48"
-    : n < 3600
-      ? Math.floor(n / 60) +
-        " \u0E19\u0E32\u0E17\u0E35\u0E17\u0E35\u0E48\u0E41\u0E25\u0E49\u0E27"
-      : n < 86400
-        ? Math.floor(n / 3600) +
-          " \u0E0A\u0E31\u0E48\u0E27\u0E42\u0E21\u0E07\u0E17\u0E35\u0E48\u0E41\u0E25\u0E49\u0E27"
-        : n < 604800
-          ? Math.floor(n / 86400) +
-            " \u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E41\u0E25\u0E49\u0E27"
-          : new Date(t).toLocaleDateString("th-TH", {
-              day: "numeric",
-              month: "short",
-            });
+
+export async function markNotifSingleRead(id) {
+  try {
+    await fetch('/api/notifications/' + id + '/read', { method: 'POST', credentials: 'same-origin' });
+    loadNotifications();
+  } catch (e) { }
+}
+
+function formatTimeAgo(dateStr) {
+  var diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diff < 60) return 'เมื่อสักครู่';
+  if (diff < 3600) return Math.floor(diff / 60) + ' นาทีที่แล้ว';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' ชั่วโมงที่แล้ว';
+  if (diff < 604800) return Math.floor(diff / 86400) + ' วันที่แล้ว';
+  return new Date(dateStr).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 }

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../helpers";
 import { getSessionFromReq, getDecryptedPageToken, sanitize } from "../helpers";
 import { callAI } from "../ai-providers";
+import { createNotification } from "./notifications";
 
 const autoReply = new Hono<{ Bindings: Env }>();
 
@@ -274,6 +275,12 @@ export async function processAutoReplies(env: Env) {
               await env.DB.prepare(
                 "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, 'auto_hide_spam', ?, ?, ?)"
               ).bind(fbId, `ซ่อน spam: ${comment.message.slice(0, 100)}`, post.fb_post_id, new Date().toISOString()).run();
+              await createNotification(env.DB, fbId, {
+                page_id: page.page_id, type: "auto_reply", priority: "normal",
+                title: "🚫 ซ่อน spam comment",
+                detail: comment.message.slice(0, 100),
+                link: `?page=${page.page_id}&tab=autoReply`,
+              });
               continue;
             }
 
@@ -328,11 +335,17 @@ export async function processAutoReplies(env: Env) {
             // Track reply count for rate cap
             if (result.ok) repliesThisRun++;
 
-            // Log activity
+            // Log activity + notification
             if (result.ok) {
               await env.DB.prepare(
                 "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, 'auto_reply', ?, ?, ?)"
               ).bind(fbId, `[${classification.type}] ${replyText.slice(0, 150)}`, post.fb_post_id, new Date().toISOString()).run();
+              await createNotification(env.DB, fbId, {
+                page_id: page.page_id, type: "auto_reply", priority: "important",
+                title: `💬 ตอบ comment [${classification.type}]`,
+                detail: replyText.slice(0, 100),
+                link: `?page=${page.page_id}&tab=autoReply`,
+              });
             }
           } catch {
             // Non-critical: skip this comment
