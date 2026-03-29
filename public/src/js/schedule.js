@@ -147,9 +147,9 @@ const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_sched
 export async function loadLogs() {
   const el = document.getElementById('logList');
   try {
-    const r = await fetch('/api/logs', { credentials:'same-origin' });
+    const r = await fetch('/api/activity', { credentials:'same-origin' });
     const d = await r.json();
-    allLogs = d.logs || [];
+    state.allLogs = d.activities || [];
     updateLogStats();
     renderLogs('all');
   } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
@@ -157,20 +157,20 @@ export async function loadLogs() {
 
 export function filterLogs(type, btn) {
   if (btn) { document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
-  if (type !== null) currentLogFilter = type;
-  renderLogs(currentLogFilter);
+  if (type !== null) state.currentLogFilter = type;
+  renderLogs(state.currentLogFilter);
 }
 
 export function updateLogStats() {
-  document.getElementById('logStatTotal').textContent = allLogs.length;
-  document.getElementById('logStatPosts').textContent = allLogs.filter(l=>l.action==='post_created').length;
-  document.getElementById('logStatAI').textContent = allLogs.filter(l=>l.action==='ai_write').length;
-  document.getElementById('logStatSchedule').textContent = allLogs.filter(l=>l.action==='post_scheduled').length;
+  document.getElementById('logStatTotal').textContent = state.allLogs.length;
+  document.getElementById('logStatPosts').textContent = state.allLogs.filter(l=>l.action==='post_created').length;
+  document.getElementById('logStatAI').textContent = state.allLogs.filter(l=>l.action==='ai_write').length;
+  document.getElementById('logStatSchedule').textContent = state.allLogs.filter(l=>l.action==='post_scheduled').length;
 }
 
 export function renderLogs(type) {
   const el = document.getElementById('logList');
-  let logs = type === 'all' ? allLogs : type === 'auto_reply' ? allLogs.filter(l => l.action === 'auto_reply' || l.action === 'auto_hide_spam') : allLogs.filter(l => l.action === type);
+  let logs = type === 'all' ? state.allLogs : type === 'auto_reply' ? state.allLogs.filter(l => l.action === 'auto_reply' || l.action === 'auto_hide_spam') : state.allLogs.filter(l => l.action === type);
   const search = (document.getElementById('logSearch')||{}).value||'';
   if (search.length >= 2) { const q=search.toLowerCase(); logs=logs.filter(l=>(l.details||'').toLowerCase().includes(q)||(l.action||'').includes(q)); }
   const dateVal = (document.getElementById('logDate')||{}).value||'';

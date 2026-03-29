@@ -18,7 +18,7 @@ import promptLogs from "./routes/prompt-logs";
 import bulk from "./routes/bulk";
 import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-reply";
 import outbound, { processOutboundComments, sendApprovedComments } from "./routes/outbound-comment";
-import notifications from "./routes/notifications";
+import notifications, { createNotification } from "./routes/notifications";
 import bulkPlan from "./routes/bulk-plan";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -139,9 +139,13 @@ app.post("/webhook", async (c) => {
       for (const entry of body.entry) {
         for (const change of entry.changes || []) {
           if (change.field === "feed" && change.value?.item === "comment") {
-            await c.env.DB.prepare(
-              "INSERT INTO activity_logs (user_fb_id, action, detail, post_id) VALUES (?, 'new_comment', ?, ?)"
-            ).bind(entry.id, `${change.value.from?.name || "Someone"}: ${(change.value.message || "").substring(0, 200)}`, change.value.post_id || null).run();
+            await createNotification(c.env.DB, entry.id, {
+              type: "comment_new",
+              priority: "normal",
+              title: `💬 คอมเมนต์ใหม่`,
+              detail: `${change.value.from?.name || "Someone"}: ${(change.value.message || "").substring(0, 200)}`,
+              source_id: change.value.post_id || null,
+            });
           }
         }
       }

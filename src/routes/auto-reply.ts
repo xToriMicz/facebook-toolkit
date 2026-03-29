@@ -272,9 +272,6 @@ export async function processAutoReplies(env: Env) {
                 "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'spam', 'hidden', ?)"
               ).bind(fbId, page.page_id, post.fb_post_id, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
 
-              await env.DB.prepare(
-                "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, 'auto_hide_spam', ?, ?, ?)"
-              ).bind(fbId, `ซ่อน spam: ${comment.message.slice(0, 100)}`, post.fb_post_id, new Date().toISOString()).run();
               await createNotification(env.DB, fbId, {
                 page_id: page.page_id, type: "auto_reply", priority: "normal",
                 title: "🚫 ซ่อน spam comment",
@@ -335,16 +332,13 @@ export async function processAutoReplies(env: Env) {
             // Track reply count for rate cap
             if (result.ok) repliesThisRun++;
 
-            // Log activity + notification
             if (result.ok) {
-              await env.DB.prepare(
-                "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, 'auto_reply', ?, ?, ?)"
-              ).bind(fbId, `[${classification.type}] ${replyText.slice(0, 150)}`, post.fb_post_id, new Date().toISOString()).run();
               await createNotification(env.DB, fbId, {
                 page_id: page.page_id, type: "auto_reply", priority: "important",
                 title: `💬 ตอบ comment [${classification.type}]`,
                 detail: replyText.slice(0, 100),
                 link: `?page=${page.page_id}&tab=autoReply`,
+                source_id: post.fb_post_id,
               });
             }
           } catch {

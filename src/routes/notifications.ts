@@ -104,12 +104,14 @@ notifications.post("/notifications/prefs", async (c) => {
   return c.json({ ok: true });
 });
 
-// Helper: create notification (exported for use in other routes)
+// Helper: create notification + activity log (exported for use in other routes)
+// Single function writes to both tables — Noti for alerts, Activity Log for audit trail
 export async function createNotification(
   db: any,
   userFbId: string,
   opts: { page_id?: string; type: string; priority?: string; title: string; detail?: string; link?: string; source_id?: string }
 ) {
+  const now = new Date().toISOString();
   await db.prepare(
     "INSERT INTO notifications (user_fb_id, page_id, type, priority, title, detail, link, source_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   ).bind(
@@ -121,6 +123,15 @@ export async function createNotification(
     opts.detail || null,
     opts.link || null,
     opts.source_id || null,
+  ).run();
+  await db.prepare(
+    "INSERT INTO activity_logs (user_fb_id, action, detail, post_id, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(
+    userFbId,
+    opts.type,
+    (opts.title + (opts.detail ? ": " + opts.detail : "")).slice(0, 300),
+    opts.source_id || null,
+    now,
   ).run();
 }
 

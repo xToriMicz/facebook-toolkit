@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { Env, getSessionFromReq, rateLimit, sanitize, kvCache, getUserPageId, getUserPageToken, getDecryptedPageToken, decryptToken } from "../helpers";
+import { createNotification } from "./notifications";
 
 const post = new Hono<{ Bindings: Env }>();
 
@@ -251,9 +252,13 @@ post.post("/posts/:postId/auto-comment", async (c) => {
     });
     const data = await res.json() as any;
     if (data.error) return c.json({ error: data.error.message }, 400);
-    await c.env.DB.prepare(
-      "INSERT INTO activity_logs (user_fb_id, action, detail, post_id) VALUES (?, 'auto_comment', ?, ?)"
-    ).bind(session.fb_id, message.substring(0, 200), postId).run();
+    await createNotification(c.env.DB, session.fb_id, {
+      type: "outbound",
+      priority: "normal",
+      title: "🎯 คอมเมนต์อัตโนมัติ",
+      detail: message.substring(0, 200),
+      source_id: postId,
+    });
     return c.json({ ok: true, id: data.id });
   } catch (e: any) { return c.json({ error: e.message }, 500); }
 });
