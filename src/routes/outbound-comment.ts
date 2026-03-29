@@ -65,6 +65,10 @@ function filterComment(text: string): string | null {
   c = c.slice(0, 200).trim();
   // Reject if too short or empty
   if (c.length < 5) return null;
+  // Reject phone numbers, emails, sales pitch
+  if (/\d{9,}/.test(c)) return null; // phone number
+  if (/\S+@\S+\.\S+/.test(c)) return null; // email
+  if (/ราคา.*บาท|สั่งซื้อ|line\s*:?\s*@|ติดต่อ.*สอบถาม|โปรโมช|ส่วนลด|คลิก/i.test(c)) return null; // sales pitch
   return c;
 }
 
@@ -257,6 +261,9 @@ async function sendComment(commentId: number, env: Env): Promise<{ ok: boolean; 
 
     await env.DB.prepare("UPDATE outbound_comments SET status = 'sent', comment_id = ? WHERE id = ?")
       .bind(data.id, commentId).run();
+    // Update last_commented_at on target page
+    await env.DB.prepare("UPDATE target_pages SET last_commented_at = ? WHERE user_fb_id = ? AND target_page_id = ?")
+      .bind(new Date().toISOString(), row.user_fb_id, row.target_page_id).run();
     return { ok: true, fbCommentId: data.id };
   } catch (e: any) {
     await env.DB.prepare("UPDATE outbound_comments SET status = 'failed', error_message = ? WHERE id = ?")
@@ -268,12 +275,17 @@ async function sendComment(commentId: number, env: Env): Promise<{ ok: boolean; 
 // ── Cron: Send approved comments ──
 
 export async function sendApprovedComments(env: Env) {
-  // Get approved comments that haven't been sent yet
+  // Get approved comments — join target_pages for cooldown check
   const { results } = await env.DB.prepare(
-    "SELECT id FROM outbound_comments WHERE status = 'approved' ORDER BY created_at ASC LIMIT 3"
+    "SELECT oc.id, oc.target_page_id, tp.last_commented_at FROM outbound_comments oc LEFT JOIN target_pages tp ON oc.target_page_id = tp.target_page_id AND oc.user_fb_id = tp.user_fb_id WHERE oc.status = 'approved' ORDER BY oc.created_at ASC LIMIT 5"
   ).all();
 
   for (const row of results as any[]) {
+    // Cooldown: skip if last comment to this target was < 2 hours ago
+    if (row.last_commented_at) {
+      const elapsed = Date.now() - new Date(row.last_commented_at).getTime();
+      if (elapsed < 7200000) continue; // 2 hours
+    }
     await sendComment(row.id, env);
     // Cooldown between sends
     await sleep(5000 + Math.random() * 10000);
