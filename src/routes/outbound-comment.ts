@@ -397,10 +397,36 @@ outbound.patch("/outbound/targets/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  const { enabled } = await c.req.json() as { enabled: boolean };
+  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number };
 
-  await c.env.DB.prepare("UPDATE target_pages SET enabled = ? WHERE id = ? AND user_fb_id = ?")
-    .bind(enabled ? 1 : 0, id, session.fb_id).run();
+  if (body.enabled !== undefined) {
+    await c.env.DB.prepare("UPDATE target_pages SET enabled = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(body.enabled ? 1 : 0, id, session.fb_id).run();
+  }
+  if (body.max_per_day !== undefined) {
+    const maxDay = Math.min(5, Math.max(1, body.max_per_day));
+    await c.env.DB.prepare("UPDATE target_pages SET max_per_day = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(maxDay, id, session.fb_id).run();
+  }
+  return c.json({ ok: true });
+});
+
+// PUT alias for PATCH (frontend compat)
+outbound.put("/outbound/targets/:id", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const id = c.req.param("id");
+  const body = await c.req.json() as { enabled?: boolean; max_per_day?: number };
+
+  if (body.enabled !== undefined) {
+    await c.env.DB.prepare("UPDATE target_pages SET enabled = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(body.enabled ? 1 : 0, id, session.fb_id).run();
+  }
+  if (body.max_per_day !== undefined) {
+    const maxDay = Math.min(5, Math.max(1, body.max_per_day));
+    await c.env.DB.prepare("UPDATE target_pages SET max_per_day = ? WHERE id = ? AND user_fb_id = ?")
+      .bind(maxDay, id, session.fb_id).run();
+  }
   return c.json({ ok: true });
 });
 
