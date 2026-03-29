@@ -335,6 +335,32 @@ export async function sendApprovedComments(env: Env) {
 
 // ── API Routes ──
 
+// GET /api/outbound/test-feed/:pageId — test fetch posts from target page
+outbound.get("/outbound/test-feed/:pageId", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const targetPageId = c.req.param("pageId");
+  const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
+
+  const userPage = await c.env.DB.prepare(
+    "SELECT page_token FROM user_pages WHERE user_fb_id = ? LIMIT 1"
+  ).bind(session.fb_id).first<{ page_token: string }>();
+  if (!userPage) return c.json({ error: "No page token" }, 400);
+
+  const pageToken = userPage.page_token.startsWith("enc:")
+    ? await (async () => { try { const { decryptToken } = await import("../helpers"); return decryptToken(userPage.page_token, encKey); } catch { return null; } })()
+    : userPage.page_token;
+  if (!pageToken) return c.json({ error: "Invalid token" }, 400);
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${targetPageId}/feed?fields=id,message,created_time,type&limit=3&access_token=${pageToken}`);
+    const data = await res.json() as any;
+    return c.json({ target: targetPageId, response: data });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 // GET /api/outbound/targets — list target pages
 outbound.get("/outbound/targets", async (c) => {
   const session = await getSessionFromReq(c);
