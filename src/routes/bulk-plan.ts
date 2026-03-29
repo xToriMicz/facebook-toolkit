@@ -348,17 +348,17 @@ function calculateSlots(dateStart: string, dateEnd: string, timeStart: string, t
 
     if (frequency === "1perday") {
       const hour = startH + Math.floor(Math.random() * hoursRange);
-      const min = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, 45
+      const min = Math.floor(Math.random() * 60); // 0, 15, 30, 45
       slots.push(`${dateStr}T${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`);
     } else if (frequency === "many") {
       for (let p = 0; p < freqValue; p++) {
         const hour = startH + Math.floor((hoursRange / freqValue) * p + Math.random() * (hoursRange / freqValue));
-        const min = Math.floor(Math.random() * 4) * 15;
+        const min = Math.floor(Math.random() * 60);
         slots.push(`${dateStr}T${String(Math.min(hour, endH - 1)).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`);
       }
     } else if (frequency === "interval") {
       for (let h = startH; h < endH; h += freqValue) {
-        const min = Math.floor(Math.random() * 4) * 15;
+        const min = Math.floor(Math.random() * 60);
         slots.push(`${dateStr}T${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`);
       }
     } else {
