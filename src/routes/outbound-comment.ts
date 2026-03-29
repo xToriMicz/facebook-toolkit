@@ -9,7 +9,8 @@ const outbound = new Hono<{ Bindings: Env }>();
 
 type PostType = "informative" | "question" | "product" | "story" | "meme" | "reel_with_caption" | "video" | "personal_grief" | "political" | "controversial" | "ad_sponsored" | "image_only" | "reel_no_caption" | "other";
 
-const SKIP_TYPES: PostType[] = ["personal_grief", "political", "controversial", "ad_sponsored", "image_only", "reel_no_caption"];
+const SKIP_TYPES: PostType[] = ["personal_grief", "political", "controversial", "ad_sponsored", "image_only"];
+// reel_no_caption → ตอบ emoji แทน (ไม่ skip)
 
 // ── AI Classification ──
 
@@ -172,10 +173,13 @@ export async function processOutboundComments(env: Env) {
         // Skip posts without message (image_only / reel_no_caption)
         if (!post.id || (!post.message && !isVideo)) continue;
         if (!post.message && isVideo) {
-          // Reel/video without caption — skip
+          // Reel/video without caption — ตอบ emoji แทน
+          const emojis = ["🔥", "👏", "💯", "😍", "🤩", "❤️", "👍", "✨", "💪", "🙌"];
+          const emojiComment = emojis[Math.floor(Math.random() * emojis.length)] + emojis[Math.floor(Math.random() * emojis.length)];
           await env.DB.prepare(
-            "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'reel_no_caption', '', 'skipped', ?)"
-          ).bind(fbId, target.page_id, target.target_page_id, post.id, "", new Date().toISOString()).run();
+            "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'reel_no_caption', ?, 'approved', ?)"
+          ).bind(fbId, target.page_id, target.target_page_id, post.id, "", emojiComment, new Date().toISOString()).run();
+          draftsThisRun++;
           continue;
         }
 
