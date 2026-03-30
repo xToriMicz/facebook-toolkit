@@ -285,11 +285,11 @@ export async function processAutoReplies(env: Env) {
           }
 
           try {
-            // Classify comment — sticker/image skip AI, treat as emoji
+            // Classify comment — sticker/image skip AI, treat as greeting
             const isStickerOrImage = comment.message === "[sticker]";
             const postMessage = (post as any).message || "";
             const classification = isStickerOrImage
-              ? { type: "emoji" as CommentType, confidence: 1 }
+              ? { type: "greeting" as CommentType, confidence: 1 }
               : await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
 
             // Handle spam: hide + log
