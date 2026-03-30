@@ -254,8 +254,8 @@ export async function processAutoReplies(env: Env) {
 
         for (const comment of comments) {
           if (!comment.id) continue;
-          // Skip sticker/image-only comments (no text to reply to)
-          if (!comment.message) continue;
+          // Sticker/image-only comments (no text): give placeholder so AI can reply
+          if (!comment.message) comment.message = "[sticker]";
 
           // Skip if already processed in our DB
           const existing = await env.DB.prepare(
@@ -285,9 +285,12 @@ export async function processAutoReplies(env: Env) {
           }
 
           try {
-            // Classify comment
+            // Classify comment — sticker/image skip AI, treat as emoji
+            const isStickerOrImage = comment.message === "[sticker]";
             const postMessage = (post as any).message || "";
-            const classification = await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
+            const classification = isStickerOrImage
+              ? { type: "emoji" as CommentType, confidence: 1 }
+              : await classifyComment(comment.message, provider, apiKey, model, endpoint, postMessage);
 
             // Handle spam: hide + log
             if (classification.type === "spam") {
