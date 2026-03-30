@@ -84,7 +84,7 @@ schedule.get("/schedule", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.query("page_id");
-  let q = "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status = 'pending'";
+  let q = "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status IN ('pending', 'posting')";
   const binds: any[] = [session.fb_id];
   if (pageId) { q += " AND sp.page_id = ?"; binds.push(pageId); }
   q += " ORDER BY sp.scheduled_at ASC";
@@ -143,6 +143,12 @@ export async function processScheduledPosts(env: Env) {
   const now = new Date().toISOString();
   console.log(`[cron] checking scheduled posts at ${now}`);
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
+
+  // Safety: reset stuck 'posting' posts back to pending (cron crashed mid-process)
+  await env.DB.prepare(
+    "UPDATE scheduled_posts SET status = 'pending' WHERE status = 'posting' AND scheduled_at <= datetime(?, '-10 minutes')"
+  ).bind(now).run();
+
   const { results: pending } = await env.DB.prepare(
     "SELECT sp.*, up.page_token FROM scheduled_posts sp JOIN user_pages up ON sp.user_fb_id = up.user_fb_id AND sp.page_id = up.page_id WHERE sp.status = 'pending' AND sp.scheduled_at <= ? LIMIT 10"
   ).bind(now).all();
@@ -151,6 +157,14 @@ export async function processScheduledPosts(env: Env) {
   for (const post of pending as any[]) {
     if (!post.page_token) {
       await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?").bind(post.id).run();
+      continue;
+    }
+    // Lock: claim this post before processing — prevents double-post from concurrent cron ticks
+    const lock = await env.DB.prepare(
+      "UPDATE scheduled_posts SET status = 'posting' WHERE id = ? AND status = 'pending'"
+    ).bind(post.id).run();
+    if (!lock.meta.changes) {
+      console.log(`[cron] post ${post.id} already claimed — skipping`);
       continue;
     }
     try {
