@@ -236,10 +236,15 @@ export async function processAutoReplies(env: Env) {
       // ดึง comment ย้อนหลัง 24 ชม. — จับ comment จากโพสที่สร้างนอก toolkit ด้วย
       // DB dedup ป้องกัน reply ซ้ำ — ขยาย window ปลอดภัย
       const sinceParam = `&since=${Math.floor(nowMs / 1000) - 86400}`;
+      // Dedup posts — same post can have 2 IDs (toolkit vs Graph API sync)
+      const seenPostIds = new Set<string>();
       for (const post of posts as any[]) {
         if (!post.fb_post_id) continue;
         // Normalize: strip pageId_ prefix for DB consistency
         const postId = post.fb_post_id.includes("_") ? post.fb_post_id.split("_").pop() : post.fb_post_id;
+        // Skip duplicate posts (same post can have 2 IDs)
+        if (seenPostIds.has(postId)) continue;
+        seenPostIds.add(postId);
 
         let comments: any[];
         try {
@@ -344,13 +349,13 @@ export async function processAutoReplies(env: Env) {
             const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
             if (!replyText) continue;
 
-            // Delay 2-5 seconds between replies
-            await sleep(2000 + Math.random() * 3000);
+            // Delay 5-10 seconds between replies (human-like pacing)
+            await sleep(5000 + Math.random() * 5000);
 
             // Post reply
             const result = await replyToComment(comment.id, replyText, pageToken);
 
-            // Save to DB
+            // Save to DB immediately before doing anything else
             await env.DB.prepare(
               "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, reply_text, reply_id, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
             ).bind(
@@ -360,6 +365,20 @@ export async function processAutoReplies(env: Env) {
               result.ok ? "replied" : "failed", result.error || null,
               new Date().toISOString(),
             ).run();
+
+            // Verify reply appeared on Facebook before continuing
+            if (result.ok) {
+              await sleep(2000);
+              try {
+                const verifyRes = await fetch(`https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from,message&limit=10&access_token=${pageToken}`);
+                const verifyData = await verifyRes.json() as any;
+                const confirmed = (verifyData.data || []).some((r: any) => r.from?.id === page.page_id);
+                if (!confirmed) {
+                  // Reply not confirmed — update status
+                  await env.DB.prepare("UPDATE comment_replies SET status = 'unconfirmed' WHERE comment_id = ? AND user_fb_id = ?").bind(comment.id, fbId).run();
+                }
+              } catch {}
+            }
 
             // Track reply count for rate cap
             if (result.ok) repliesThisRun++;
