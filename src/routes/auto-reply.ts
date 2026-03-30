@@ -368,7 +368,7 @@ export async function processAutoReplies(env: Env) {
 
             // Verify reply appeared on Facebook before continuing
             if (result.ok) {
-              await sleep(2000);
+              await sleep(8000);
               try {
                 const verifyRes = await fetch(`https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from,message&limit=10&access_token=${pageToken}`);
                 const verifyData = await verifyRes.json() as any;
