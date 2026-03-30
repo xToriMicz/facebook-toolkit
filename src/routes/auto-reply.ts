@@ -223,7 +223,8 @@ export async function processAutoReplies(env: Env) {
             ).bind(shortId, page.page_id, fbId, p.message.slice(0, 2000), p.created_at).run();
           }
         }
-      } catch {
+      } catch (e: any) {
+        await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Feed fetch error", detail: `${e.message}`.slice(0, 200) }).catch(() => {});
         // Fallback to DB if Graph API fails
         const { results: dbPosts } = await env.DB.prepare(
           "SELECT fb_post_id, created_at, message FROM posts WHERE user_fb_id = ? AND page_id = ? AND fb_post_id IS NOT NULL AND created_at > datetime('now', '-3 days') ORDER BY created_at DESC LIMIT 10"
@@ -246,9 +247,13 @@ export async function processAutoReplies(env: Env) {
             `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=25${sinceParam}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
-          if (data.error) continue;
+          if (data.error) {
+            await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Comment fetch error", detail: `Post ${postId}: ${data.error.message || JSON.stringify(data.error)}`.slice(0, 200) });
+            continue;
+          }
           comments = data.data || [];
-        } catch {
+        } catch (e: any) {
+          await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Comment fetch exception", detail: `Post ${postId}: ${e.message}`.slice(0, 200) }).catch(() => {});
           continue;
         }
 
@@ -368,8 +373,8 @@ export async function processAutoReplies(env: Env) {
                 source_id: postId,
               });
             }
-          } catch {
-            // Non-critical: skip this comment
+          } catch (e: any) {
+            await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Reply error", detail: `${comment.id}: ${e.message}`.slice(0, 200) }).catch(() => {});
           }
         }
       }
