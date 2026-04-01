@@ -165,14 +165,15 @@ export function filterLogs(type, btn) {
 
 export function updateLogStats() {
   document.getElementById('logStatTotal').textContent = state.allLogs.length;
-  document.getElementById('logStatPosts').textContent = state.allLogs.filter(l=>l.action==='post_created').length;
-  document.getElementById('logStatAI').textContent = state.allLogs.filter(l=>l.action==='ai_write').length;
-  document.getElementById('logStatSchedule').textContent = state.allLogs.filter(l=>l.action==='post_scheduled').length;
+  document.getElementById('logStatPosts').textContent = state.allLogs.filter(l=>l.action==='post_created'||l.action==='posted').length;
+  document.getElementById('logStatAI').textContent = state.allLogs.filter(l=>l.action==='ai_write'||l.action==='auto_reply').length;
+  document.getElementById('logStatSchedule').textContent = state.allLogs.filter(l=>l.action==='post_scheduled'||l.action==='scheduled').length;
 }
 
 export function renderLogs(type) {
   const el = document.getElementById('logList');
-  let logs = type === 'all' ? state.allLogs : type === 'auto_reply' ? state.allLogs.filter(l => l.action === 'auto_reply' || l.action === 'auto_hide_spam') : state.allLogs.filter(l => l.action === type);
+  const filterMap = { 'post_created': ['post_created','posted'], 'post_scheduled': ['post_scheduled','scheduled'], 'ai_write': ['ai_write','auto_reply'], 'auto_reply': ['auto_reply','auto_hide_spam'] };
+  let logs = type === 'all' ? state.allLogs : state.allLogs.filter(l => (filterMap[type] || [type]).includes(l.action));
   const search = (document.getElementById('logSearch')||{}).value||'';
   if (search.length >= 2) { const q=search.toLowerCase(); logs=logs.filter(l=>(l.details||'').toLowerCase().includes(q)||(l.action||'').includes(q)); }
   const dateVal = (document.getElementById('logDate')||{}).value||'';
