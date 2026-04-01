@@ -185,10 +185,14 @@ export function bulkRenderPreview(){
       '<div class="bulk-full" style="display:none;font-size:0.72rem;color:var(--text);margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;white-space:pre-wrap;max-height:200px;overflow-y:auto">'+full+'</div>'+
       schedEdit+
       '</div>'+
-      '<button onclick="event.stopPropagation();state._bulkResults.splice('+idx+',1);bulkRenderPreview()" style="padding:4px 8px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:none;color:#ef4444;font-size:0.65rem;cursor:pointer;flex-shrink:0">✕</button>'+
+      '<button onclick="event.stopPropagation();bulkRemoveItem('+idx+')" style="padding:4px 8px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:none;color:#ef4444;font-size:0.65rem;cursor:pointer;flex-shrink:0">✕</button>'+
       '</div></div>';
   }).join('');
   if(!state._bulkResults.length)document.getElementById('bulkPreview').style.display='none';
+}
+export function bulkRemoveItem(idx){
+  state._bulkResults.splice(idx,1);
+  bulkRenderPreview();
 }
 // Update schedule for individual bulk preview post
 window._bulkUpdateSchedule=function(idx,newDate,newTime){

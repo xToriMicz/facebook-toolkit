@@ -135,7 +135,8 @@ export async function createBulkPlan() {
   if (!dateStart || !dateEnd) { toast('err', 'กรุณาเลือกวันเริ่ม-จบ'); return; }
   var timeStart = document.getElementById('bpTimeStart').value || '08:00';
   var timeEnd = document.getElementById('bpTimeEnd').value || '20:00';
-  var tone = document.getElementById('bpTone').value || 'general';
+  var toneEl = document.getElementById('bpTone');
+  var tone = toneEl ? toneEl.value : 'general';
   var freq = document.querySelector('input[name="bpFreq"]:checked');
   var frequency = freq ? freq.value : 'auto';
 
