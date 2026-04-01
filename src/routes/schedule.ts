@@ -142,6 +142,9 @@ schedule.delete("/schedule/:id", async (c) => {
 export async function processScheduledPosts(env: Env) {
   const now = new Date().toISOString();
   console.log(`[cron] checking scheduled posts at ${now}`);
+  const { logEvent, newTraceId, fbUrl, isDuplicatePost, fetchGraphApi } = await import("../logger");
+  const cronTraceId = newTraceId();
+  await logEvent(env.DB, { trace_id: cronTraceId, event_type: "cron_start", source: "schedule_cron", details: { timestamp: now } });
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
   // Safety: reset stuck 'posting' posts back to pending (cron crashed mid-process)
@@ -167,7 +170,16 @@ export async function processScheduledPosts(env: Env) {
       console.log(`[cron] post ${post.id} already claimed — skipping`);
       continue;
     }
+    const postTraceId = newTraceId();
     try {
+      // Duplicate check before POST
+      const isDup = await isDuplicatePost(env.DB, post.page_id, post.message || "");
+      if (isDup) {
+        await logEvent(env.DB, { trace_id: postTraceId, event_type: "duplicate_detected", source: "schedule_cron", page_id: post.page_id, ref_id: post.id, status: "skipped", details: { message_preview: (post.message || "").slice(0, 50), reason: "same message posted within 1 hour" } });
+        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind("Duplicate detected — same message posted within 1 hour", post.id).run();
+        continue;
+      }
+
       const pageToken = await decryptToken(post.page_token, encKey);
       let result: any;
 
@@ -192,10 +204,10 @@ export async function processScheduledPosts(env: Env) {
         if (validIds.length < 2) {
           const errMsg = `Multi-photo upload failed: ${errors[0]?.error?.message || "unknown"} (${validIds.length}/${urls.length} uploaded)`;
           await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(errMsg.slice(0, 500), post.id).run();
+          await logEvent(env.DB, { trace_id: postTraceId, event_type: "error", source: "schedule_cron", page_id: post.page_id, ref_id: post.id, status: "error", details: { error: errMsg } });
           continue;
         }
 
-        // Post to feed with attached_media
         const parts = [
           `message=${encodeURIComponent(post.message || "")}`,
           `access_token=${encodeURIComponent(pageToken)}`
@@ -204,39 +216,35 @@ export async function processScheduledPosts(env: Env) {
           parts.push(`attached_media[${i}]=${encodeURIComponent(JSON.stringify({ media_fbid: id }))}`);
         });
 
-        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
+        result = await fetchGraphApi(env.DB, `https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
           method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: parts.join("&"),
-        });
-        result = await res.json();
+        }, { trace_id: postTraceId, endpoint: `POST /${post.page_id}/feed (multi-photo)`, page_id: post.page_id, source: "schedule_cron", message_preview: post.message });
       } else if (urls.length === 1) {
-        // Single photo
-        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
+        result = await fetchGraphApi(env.DB, `https://graph.facebook.com/v25.0/${post.page_id}/photos`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: urls[0], message: post.message, access_token: pageToken }),
-        });
-        result = await res.json();
+        }, { trace_id: postTraceId, endpoint: `POST /${post.page_id}/photos`, page_id: post.page_id, source: "schedule_cron", message_preview: post.message });
       } else {
-        // Text only
-        const res = await fetch(`https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
+        result = await fetchGraphApi(env.DB, `https://graph.facebook.com/v25.0/${post.page_id}/feed`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: post.message, access_token: pageToken }),
-        });
-        result = await res.json();
+        }, { trace_id: postTraceId, endpoint: `POST /${post.page_id}/feed`, page_id: post.page_id, source: "schedule_cron", message_preview: post.message });
       }
 
       if (result.error) {
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(JSON.stringify(result.error).slice(0, 500), post.id).run();
+        await logEvent(env.DB, { trace_id: postTraceId, event_type: "error", source: "schedule_cron", page_id: post.page_id, ref_id: post.id, status: "error", details: { error: result.error.message } });
       } else {
         const fbPostId = result.id || result.post_id || null;
+        const postFbUrl = fbUrl(fbPostId);
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
         try {
           await env.DB.prepare(
-            "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?)"
-          ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, new Date().toISOString()).run();
-        } catch {
-          // posts table insert is non-critical
-        }
+            "INSERT INTO posts (message, image_url, fb_post_id, page_id, user_fb_id, status, fb_url, created_at) VALUES (?, ?, ?, ?, ?, 'posted', ?, ?)"
+          ).bind(post.message, post.image_url, fbPostId, post.page_id, post.user_fb_id, postFbUrl, new Date().toISOString()).run();
+        } catch {}
+        await logEvent(env.DB, { trace_id: postTraceId, event_type: "post_created", source: "schedule_cron", page_id: post.page_id, ref_id: post.id, fb_post_id: fbPostId, fb_url: postFbUrl, status: "ok", details: { message_preview: (post.message || "").slice(0, 50) } });
         // Notification: scheduled post success
         try {
           const { createNotification } = await import("./notifications");

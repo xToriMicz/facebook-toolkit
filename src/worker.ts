@@ -20,6 +20,8 @@ import autoReply, { processAutoReplies, cleanupOldReplies } from "./routes/auto-
 import outbound, { processOutboundComments, sendApprovedComments } from "./routes/outbound-comment";
 import notifications, { createNotification } from "./routes/notifications";
 import bulkPlan from "./routes/bulk-plan";
+import logs from "./routes/logs";
+import { cleanupOldLogs } from "./logger";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -94,6 +96,7 @@ app.route("/api", bulk);
 app.route("/api", autoReply);
 app.route("/api", notifications);
 app.route("/api", bulkPlan);
+app.route("/api", logs);
 
 // Alias routes (frontend uses different paths)
 app.post("/api/post/schedule", async (c) => {
@@ -226,6 +229,8 @@ export default {
       ctx.waitUntil(
         cleanupOldReplies(env).then(() => env.KV.put("cron:reply-cleanup:last", String(now), { expirationTtl: 86400 }))
       );
+      // Cleanup old event_logs (30 day retention)
+      ctx.waitUntil(cleanupOldLogs(env.DB));
     }
   },
 };
