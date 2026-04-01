@@ -146,6 +146,21 @@ async function hideComment(commentId: string, pageToken: string): Promise<boolea
   }
 }
 
+/** Like a comment via Facebook API (react before replying) */
+async function likeComment(commentId: string, pageToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${commentId}/likes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: pageToken }),
+    });
+    const data = await res.json() as any;
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Reply to a comment via Facebook API */
 async function replyToComment(commentId: string, message: string, pageToken: string): Promise<{ ok: boolean; id?: string; error?: string }> {
   try {
@@ -348,6 +363,9 @@ export async function processAutoReplies(env: Env) {
             // Generate reply
             const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
             if (!replyText) continue;
+
+            // Like comment first (human-like: read → like → reply)
+            await likeComment(comment.id, pageToken);
 
             // Delay 5-10 seconds between replies (human-like pacing)
             await sleep(5000 + Math.random() * 5000);
