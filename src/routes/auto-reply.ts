@@ -67,8 +67,8 @@ function sanitizeComment(text: string): string {
     .trim();
 }
 
-/** Max replies per cron run per page — prevent rate limit burst */
-const MAX_REPLIES_PER_RUN = 15;
+/** Max replies per cron run per page — prevent subrequest limit burst */
+const MAX_REPLIES_PER_RUN = 10;
 
 /** Classify a comment using AI */
 async function classifyComment(
@@ -138,6 +138,21 @@ async function hideComment(commentId: string, pageToken: string): Promise<boolea
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_hidden: true, access_token: pageToken }),
+    });
+    const data = await res.json() as any;
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
+/** Like a comment via Facebook API — fail silently, never blocks reply */
+async function likeComment(commentId: string, pageToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${commentId}/likes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token: pageToken }),
     });
     const data = await res.json() as any;
     return data.success === true;
@@ -348,6 +363,9 @@ export async function processAutoReplies(env: Env) {
             // Generate reply
             const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
             if (!replyText) continue;
+
+            // Like comment first (human-like: read → like → pause → reply)
+            await likeComment(comment.id, pageToken);
 
             // Delay 5-10 seconds between replies (human-like pacing)
             await sleep(5000 + Math.random() * 5000);
