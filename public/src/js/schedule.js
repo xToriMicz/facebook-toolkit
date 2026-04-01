@@ -253,8 +253,8 @@ export function showCalDay(dateStr) {
   if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
   const si={posted:'✅',pending:'⏳',failed:'❌'};
   let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-  posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';html+='<div class="cal-detail-item">'+icon+' '+pn+(p.message||'').substring(0,50)+'</div>';});
-  scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});const icon=si[p.status]||'⏰';html+='<div class="cal-detail-item">'+icon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
+  posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';const typeIcon=p.image_url?'🖼️':p.video_url?'🎬':'📝';const fbLink=p.fb_post_id?'<a href="https://www.facebook.com/'+p.fb_post_id+'" target="_blank" rel="noopener" style="color:var(--text-primary);text-decoration:none;border-bottom:1px dashed var(--text-muted)">':'';const fbLinkEnd=p.fb_post_id?'</a>':'';const thumb=p.image_url?'<img src="'+h(p.image_url)+'" style="width:32px;height:32px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:6px">':'';html+='<div class="cal-detail-item" style="display:flex;align-items:center;gap:6px">'+icon+' '+typeIcon+' '+thumb+pn+fbLink+(p.message||'').substring(0,50)+fbLinkEnd+'</div>';});
+  scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});const icon=si[p.status]||'⏰';const typeIcon=p.image_url?'🖼️':'📝';html+='<div class="cal-detail-item">'+icon+' '+typeIcon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
   html+=addBtn+'</div>';
   el.innerHTML=html;
 }
