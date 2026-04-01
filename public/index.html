@@ -237,8 +237,8 @@
 
           <!-- Search + Date -->
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-            <input type="text" id="logSearch" oninput="filterLogs(null,null)" placeholder="🔍 ค้นหา..." style="flex:1;min-width:120px;padding:8px 12px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
-            <input type="date" id="logDate" onchange="filterLogs(null,null)" style="padding:8px 10px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+            <input type="text" id="logSearch" oninput="filterLogs(currentLogFilter,null)" placeholder="🔍 ค้นหา..." style="flex:1;min-width:120px;padding:8px 12px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
+            <input type="date" id="logDate" onchange="filterLogs(currentLogFilter,null)" style="padding:8px 10px;background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit">
           </div>
 
           <div class="log-filter" id="logFilter">
