@@ -460,10 +460,8 @@ export async function cancelSchedule(id) {
   window.loadSchedule();
 }
 
-// var editingScheduleId = null;
-
 export function editScheduledPost(id, message, imageUrl, date, time) {
-  editingScheduleId = id;
+  state.editingScheduleId = id;
   // Switch to compose tab
   window.switchTab('compose', document.querySelector('.sidebar-nav-item'));
   // Pre-fill message
@@ -510,7 +508,7 @@ export function editScheduledPost(id, message, imageUrl, date, time) {
     var body = { message: newMsg, image_url: state.uploadedImageUrl || null };
     if (newDate && newTime) body.scheduled_at = newDate + 'T' + newTime + ':00';
     try {
-      var res = await fetch('/api/schedule/' + editingScheduleId, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var res = await fetch('/api/schedule/' + state.editingScheduleId, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       var data = await res.json();
       if (data.ok) {
         toast('ok','อัพเดตโพสสำเร็จ!');
@@ -542,7 +540,7 @@ export function removeEditImage() {
 }
 
 export function exitEditMode() {
-  editingScheduleId = null;
+  state.editingScheduleId = null;
   document.getElementById('message').value = '';
   document.getElementById('charCount').textContent = '0';
   document.getElementById('imagePreview').innerHTML = '';
