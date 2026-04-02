@@ -122,16 +122,15 @@ auth.get("/callback", async (c) => {
     picture_url: p.picture?.data?.url || `https://graph.facebook.com/${p.id}/picture?type=small`,
   }));
 
-  // Cache profile + page pictures to R2
-  for (const page of pages) {
-    if (page.picture_url) {
-      const cached = await cacheImageToR2(c.env.ASSETS, page.picture_url, `avatars/page-${page.id}.jpg`);
-      if (cached) page.picture_url = cached;
-    }
-  }
-
   // Save user to D1
   try {
+    // Cache profile + page pictures to R2 (best-effort, don't block login)
+    for (const page of pages) {
+      if (page.picture_url) {
+        const cached = await cacheImageToR2(c.env.ASSETS, page.picture_url, `avatars/page-${page.id}.jpg`);
+        if (cached) page.picture_url = cached;
+      }
+    }
     const userPicSrc = profile.picture?.data?.url || null;
     const pictureUrl = userPicSrc
       ? (await cacheImageToR2(c.env.ASSETS, userPicSrc, `avatars/user-${profile.id}.jpg`)) || userPicSrc
