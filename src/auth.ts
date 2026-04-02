@@ -2,6 +2,18 @@ import { Hono } from "hono";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { setUserPage, getUserPageId, encryptToken, type Env } from "./helpers";
 
+/** Download image from URL and upload to R2, return public URL */
+async function cacheImageToR2(assets: R2Bucket, imageUrl: string, key: string): Promise<string | null> {
+  try {
+    const res = await fetch(imageUrl, { redirect: "follow" });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    const data = await res.arrayBuffer();
+    await assets.put(key, data, { httpMetadata: { contentType } });
+    return `https://fb.makeloops.xyz/img/${key}`;
+  } catch { return null; }
+}
+
 const FB_APP_ID = "26012743801749271";
 const FB_REDIRECT_URI = "https://fb.makeloops.xyz/auth/callback";
 const FB_GRAPH_VERSION = "v25.0";
@@ -110,9 +122,20 @@ auth.get("/callback", async (c) => {
     picture_url: p.picture?.data?.url || `https://graph.facebook.com/${p.id}/picture?type=small`,
   }));
 
+  // Cache profile + page pictures to R2
+  for (const page of pages) {
+    if (page.picture_url) {
+      const cached = await cacheImageToR2(c.env.ASSETS, page.picture_url, `avatars/page-${page.id}.jpg`);
+      if (cached) page.picture_url = cached;
+    }
+  }
+
   // Save user to D1
   try {
-    const pictureUrl = profile.picture?.data?.url || null;
+    const userPicSrc = profile.picture?.data?.url || null;
+    const pictureUrl = userPicSrc
+      ? (await cacheImageToR2(c.env.ASSETS, userPicSrc, `avatars/user-${profile.id}.jpg`)) || userPicSrc
+      : null;
     const now = new Date().toISOString();
     const firstPage = pages.length > 0 ? pages[0] : null;
     const encKey = c.env.TOKEN_ENCRYPTION_KEY || c.env.FB_APP_SECRET;
@@ -183,7 +206,7 @@ auth.get("/callback", async (c) => {
     fb_id: profile.id,
     name: profile.name || "",
     email: profile.email || "",
-    picture: profile.picture?.data?.url || "",
+    picture: pictureUrl || "",
     pages: pages.map((p: any) => ({ id: p.id, name: p.name, category: p.category || null, picture: p.picture_url || null })),
   }), { expirationTtl: SESSION_TTL });
 
