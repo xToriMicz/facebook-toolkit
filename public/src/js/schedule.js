@@ -246,16 +246,42 @@ export async function renderCalendar() {
 }
 export function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();window.renderCalendar();}
 export function calCreatePost(dateStr){window.switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
+function postTypeLabel(p) {
+  if (p.image_url && /\.(mp4|mov|avi|webm)$/i.test(p.image_url)) return '<span style="padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.15);color:#c084fc;font-size:0.65rem">🎬 วิดีโอ</span>';
+  if (p.image_url) return '<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.15);color:#60a5fa;font-size:0.65rem">🖼️ รูปภาพ</span>';
+  return '<span style="padding:2px 6px;border-radius:4px;background:rgba(156,163,175,0.15);color:#9ca3af;font-size:0.65rem">📝 ข้อความ</span>';
+}
+function engagementBar(p) {
+  var l=p.likes||0,c=p.comments||0,s=p.shares||0;
+  if(!l&&!c&&!s) return '';
+  return '<div style="display:flex;gap:8px;font-size:0.7rem;color:var(--text-muted);margin-top:4px">'+(l?'<span>👍 '+l+'</span>':'')+(c?'<span>💬 '+c+'</span>':'')+(s?'<span>🔄 '+s+'</span>':'')+'</div>';
+}
 export function showCalDay(dateStr) {
   const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
   const scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
   const el=document.getElementById('calDetail');
-  const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:8px;padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
+  const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:10px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
   if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
-  const si={posted:'✅',pending:'⏳',failed:'❌'};
-  let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div>';
-  posts.forEach(p=>{const icon=si[p.status]||'📤';const pn=p.page_name?'<span style="color:var(--accent);font-size:0.72rem">'+p.page_name+'</span> ':'';const typeIcon=p.image_url?'🖼️':p.video_url?'🎬':'📝';const fbLink=p.fb_post_id?'<a href="https://www.facebook.com/'+p.fb_post_id+'" target="_blank" rel="noopener" style="color:var(--text-primary);text-decoration:none;border-bottom:1px dashed var(--text-muted)">':'';const fbLinkEnd=p.fb_post_id?'</a>':'';const thumb=p.image_url?'<img src="'+insEsc(p.image_url)+'" style="width:32px;height:32px;border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:6px">':'';html+='<div class="cal-detail-item" style="display:flex;align-items:center;gap:6px">'+icon+' '+typeIcon+' '+thumb+pn+fbLink+(p.message||'').substring(0,50)+fbLinkEnd+'</div>';});
-  scheds.forEach(p=>{const t=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});const icon=si[p.status]||'⏰';const typeIcon=p.image_url?'🖼️':'📝';html+='<div class="cal-detail-item">'+icon+' '+typeIcon+' '+t+' — '+(p.message||'').substring(0,50)+'</div>';});
+  const si={posted:'✅',pending:'⏳',failed:'❌',posting:'🔄'};
+  let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+' <span style="font-size:0.72rem;color:var(--text-muted);font-weight:400">('+posts.length+' โพส'+(scheds.length?' + '+scheds.length+' รอโพส':'')+')</span></div>';
+  // Posted
+  posts.forEach(p=>{
+    var icon=si[p.status]||'📤';
+    var time=p.created_at?new Date(p.created_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}):'';
+    var thumb=p.image_url&&!/\.(mp4|mov|avi|webm)$/i.test(p.image_url)?'<img loading="lazy" src="'+insEsc(p.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+    var videoThumb=p.image_url&&/\.(mp4|mov|avi|webm)$/i.test(p.image_url)?'<div style="width:48px;height:48px;border-radius:6px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem">🎬</div>':'';
+    var msg=(p.message||'').length>120?(p.message||'').substring(0,120)+'…':(p.message||'');
+    var fbLink=p.fb_post_id?'<a href="https://www.facebook.com/'+p.fb_post_id+'" target="_blank" rel="noopener" style="font-size:0.68rem;color:var(--accent);text-decoration:none">ดูบน Facebook →</a>':'';
+    html+='<div style="display:flex;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg)">'+(thumb||videoThumb)+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+icon+' '+postTypeLabel(p)+'<span style="font-size:0.68rem;color:var(--text-muted)">'+time+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+insEsc(msg)+'</div>'+engagementBar(p)+(fbLink?'<div style="margin-top:4px">'+fbLink+'</div>':'')+'</div></div>';
+  });
+  // Scheduled
+  scheds.forEach(p=>{
+    var time=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
+    var icon=si[p.status]||'⏰';
+    var thumb=p.image_url?'<img loading="lazy" src="'+insEsc(p.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+    var msg=(p.message||'').length>120?(p.message||'').substring(0,120)+'…':(p.message||'');
+    html+='<div style="display:flex;gap:10px;padding:10px;border:1px dashed var(--warning);border-radius:8px;margin-bottom:6px;background:rgba(234,179,8,0.04)">'+(thumb||'')+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+icon+' '+postTypeLabel(p)+'<span style="font-size:0.68rem;color:var(--warning)">⏰ '+time+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+insEsc(msg)+'</div></div></div>';
+  });
   html+=addBtn+'</div>';
   el.innerHTML=html;
 }
