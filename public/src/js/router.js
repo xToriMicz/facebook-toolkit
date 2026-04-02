@@ -120,9 +120,7 @@ export function selectPage(e) {
       document.getElementById("tabChallenges").classList.contains("hidden") ||
         window.loadChallenges(),
       document.getElementById("tabTickets").classList.contains("hidden") ||
-        window.loadTickets(),
-      document.getElementById("tabOutbound").classList.contains("hidden") ||
-        (window.initOutbound && window.initOutbound()))
+        window.loadTickets())
     : ((i.selectedPage = null), n.classList.add("hidden"));
 }
 function s(e) {
@@ -163,14 +161,12 @@ export function switchTab(e, t) {
       "tabCalendar",
       "tabActivityLog",
       "tabAutoReply",
-      "tabOutbound",
       "tabAiSettings",
       "tabSchedule",
       "tabDrafts",
       "tabInsights",
       "tabChallenges",
       "tabBulkV2", "tabTickets",
-      "tabOutbound",
     ].forEach((a) => {
       const u = document.getElementById(a);
       u && u.classList.add("hidden");
