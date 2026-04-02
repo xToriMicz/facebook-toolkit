@@ -253,9 +253,9 @@ post.post("/posts/:postId/auto-comment", async (c) => {
     const data = await res.json() as any;
     if (data.error) return c.json({ error: data.error.message }, 400);
     await createNotification(c.env.DB, session.fb_id, {
-      type: "outbound",
+      type: "auto_reply",
       priority: "normal",
-      title: "🎯 คอมเมนต์อัตโนมัติ",
+      title: "💬 คอมเมนต์อัตโนมัติ",
       detail: message.substring(0, 200),
       source_id: postId,
     });

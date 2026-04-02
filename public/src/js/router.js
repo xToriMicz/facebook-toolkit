@@ -166,7 +166,7 @@ export function switchTab(e, t) {
       "tabDrafts",
       "tabInsights",
       "tabChallenges",
-      "tabBulkV2", "tabTickets",
+      "tabTickets",
     ].forEach((a) => {
       const u = document.getElementById(a);
       u && u.classList.add("hidden");
