@@ -219,8 +219,8 @@ export async function renderCalendar() {
   if(!calYear){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   document.getElementById('calMonth').textContent=months[calMonth]+' '+calYear;
-  // Fetch data
-  try{const cpf=document.getElementById('calPageFilter');const pfv=cpf?cpf.value:(state.selectedPage?state.selectedPage.id:'');const[p,s]=await Promise.all([fetch('/api/posts'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[],pages:[]})),fetch('/api/posts/scheduled'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];if(cpf&&p.pages&&cpf.options.length<=1){(p.pages||[]).forEach(pg=>{const o=document.createElement('option');o.value=pg.page_id;o.textContent=pg.page_name||pg.page_id;cpf.appendChild(o);});}}catch{}
+  // Fetch data — filter ตามเพจที่เลือกจาก sidebar
+  try{const pfv=state.selectedPage?state.selectedPage.id:'';const q=pfv?'?page_id='+pfv+'&limit=50':'?limit=50';const[p,s]=await Promise.all([fetch('/api/posts'+q,{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];}catch{}
   const grid=document.getElementById('calGrid');
   const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
   let html=days.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
