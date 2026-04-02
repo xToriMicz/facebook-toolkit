@@ -190,7 +190,6 @@ export function switchTab(e, t) {
     e === "trends" && window.loadTrends(),
     e === "calendar" && window.renderCalendar(),
     e === "activityLog" && window.loadLogs(),
-    e === "outbound" && window.initOutbound && window.initOutbound(),
     e === "bulkV2" && window.initBulkV2 && window.initBulkV2(),
     e === "aiSettings" && (window.loadAiSettings(), window.loadApiKeyStatus()),
     e === "autoReply")
@@ -204,8 +203,7 @@ export function switchTab(e, t) {
     e === "schedule" && (window.loadSchedule(), window.loadBulkDrafts()),
     e === "drafts" && window.loadDrafts(),
     e === "insights" && window.loadInsights(),
-    e === "challenges" && window.loadChallenges(),
-    e === "outbound" && window.initOutbound());
+    e === "challenges" && window.loadChallenges());
 }
 export function initRouter() {
   const e = new URLSearchParams(window.location.search),

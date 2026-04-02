@@ -3,7 +3,7 @@ import state from './state.js';
 import { insEsc } from './utils.js';
 
 var TYPE_ICONS = {
-  post_ok: '📝', post_fail: '❌', auto_reply: '💬', outbound: '🎯',
+  post_ok: '📝', post_fail: '❌', auto_reply: '💬',
   comment_new: '💬', scheduled: '⏰', error: '⚠️', security: '🔒',
   bulk_done: '📦', settings: '⚙️',
 };

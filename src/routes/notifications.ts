@@ -75,7 +75,7 @@ notifications.get("/notifications/prefs", async (c) => {
     "SELECT * FROM notification_prefs WHERE user_fb_id = ?"
   ).bind(session.fb_id).first();
 
-  return c.json({ prefs: prefs || { auto_reply: 1, outbound: 1, post_ok: 1, post_fail: 1, scheduled: 1, comment_new: 1, error: 1 } });
+  return c.json({ prefs: prefs || { auto_reply: 1, post_ok: 1, post_fail: 1, scheduled: 1, comment_new: 1, error: 1 } });
 });
 
 // POST /api/notifications/prefs — update preferences
@@ -84,7 +84,7 @@ notifications.post("/notifications/prefs", async (c) => {
   if (!session) return c.json({ error: "Not authenticated" }, 401);
 
   const body = await c.req.json() as Record<string, any>;
-  const fields = ["auto_reply", "outbound", "post_ok", "post_fail", "scheduled", "comment_new", "error"];
+  const fields = ["auto_reply", "post_ok", "post_fail", "scheduled", "comment_new", "error"];
   const updates: string[] = [];
   const values: any[] = [];
 

@@ -636,41 +636,6 @@
           <div id="ticketList"><div class="empty-state">Loading...</div></div>
         </div>
       </div>
-      <div id="tabOutbound" class="hidden">
-        <!-- Add Target Page -->
-        <div class="card">
-          <div class="card-title"><span class="card-title-icon">🎯</span> เพิ่มเพจเป้าหมาย</div>
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="outTargetInput" placeholder="ใส่ URL หรือ Page ID เช่น https://facebook.com/pagename" style="flex:1;padding:10px 14px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit">
-            <button class="btn btn-accent" onclick="addTargetPage()" style="white-space:nowrap;padding:10px 16px">+ เพิ่ม</button>
-          </div>
-          <div id="outTargetStatus" class="toast"></div>
-        </div>
-
-        <!-- Target Pages List -->
-        <div class="card" style="margin-top:12px">
-          <div class="card-title"><span class="card-title-icon">📋</span> เพจที่ติดตาม</div>
-          <div id="outTargetList"><div class="empty-state">ยังไม่มีเพจเป้าหมาย</div></div>
-        </div>
-
-        <!-- Approval Queue (hidden in full auto mode — no pending items created) -->
-        <div class="card" style="margin-top:12px;display:none" id="outApprovalCard">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div class="card-title" style="margin:0"><span class="card-title-icon">✅</span> รอ Approve</div>
-            <button class="btn btn-ghost" onclick="loadOutboundQueue()" style="font-size:0.75rem;padding:4px 10px">↻</button>
-          </div>
-          <div id="outApprovalQueue"><div class="empty-state">ไม่มี comment รอ approve</div></div>
-        </div>
-
-        <!-- History -->
-        <div class="card" style="margin-top:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div class="card-title" style="margin:0"><span class="card-title-icon">📜</span> ประวัติ Comment</div>
-            <button class="btn btn-ghost" onclick="loadOutboundHistory()" style="font-size:0.75rem;padding:4px 10px">↻</button>
-          </div>
-          <div id="outHistoryList"><div class="empty-state">ยังไม่มีประวัติ</div></div>
-        </div>
-      </div>
     </div>
     </div>
     </div>

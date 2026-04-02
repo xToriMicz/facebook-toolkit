@@ -5,7 +5,7 @@ import { checkAuth, showLogin, showApp, loginFacebook, logout, populatePages, se
 import { initCompose, handleFiles, handleFile, renderImagePreviews, removeImage, submitPost, showPreview, closePreview, confirmPost, loadHistory, loadComposeTemplates, applyTemplate, loadTemplates, useTemplate, STYLE_GUIDE, onStyleChange, updateCharColor, saveDraftFromCompose, loadComposeDrafts, loadDraftToCompose, deleteDraftInline, generateAI, toggleAffiliate, initAlgoTips, showComments, setReplyTarget, sendReply, togglePromptLogs, loadPromptLogs, savePromptLog, copyLogFull, toggleTextOverlay, getOverlayText, generateAiImageAuto, generateAiImageSemi, confirmGenerateImage, acceptAiImage, rejectAiImage, closeAiPreview, loadAiImageTemplates, copyAiPrompt } from './compose.js';
 import { loadAutoReplySettings, toggleAutoReplyPage, changeAutoReplyMode, changeAutoReplyTone, saveCustomTone, toggleSkipGreeting, loadAutoReplyHistory } from './comment.js';
 import { initNotifications, loadNotifications, markNotifRead, markNotifSingleRead } from './notifications.js';
-import * as outbound from './outbound.js';
+
 import * as schedule from './schedule.js';
 import * as bulk from './bulk.js';
 import * as bulkV2 from './bulk-v2.js';
@@ -30,14 +30,11 @@ Object.assign(window, {
   loadNotifications, markNotifRead, markNotifSingleRead,
 });
 
-// Expose schedule/bulk/outbound module functions (dynamic — no need to list each)
+// Expose schedule/bulk module functions (dynamic — no need to list each)
 for (const [key, val] of Object.entries(schedule)) {
   if (typeof val === 'function') window[key] = val;
 }
 for (const [key, val] of Object.entries(bulk)) {
-  if (typeof val === 'function') window[key] = val;
-}
-for (const [key, val] of Object.entries(outbound)) {
   if (typeof val === 'function') window[key] = val;
 }
 for (const [key, val] of Object.entries(bulkV2)) {
