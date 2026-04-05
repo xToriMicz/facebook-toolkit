@@ -445,8 +445,8 @@ export async function loadSchedule() {
       var msg = insEsc(s.message || '');
       var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
       var dt = new Date(s.scheduled_at).toLocaleString('th-TH',{hour12:false});
-      var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : '#ef4444';
-      var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : 'ล้มเหลว';
+      var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : s.status === 'posting' ? '#f59e0b' : '#ef4444';
+      var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : s.status === 'posting' ? 'กำลังโพส...' : 'ล้มเหลว';
       var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
       var pageBadge = s.page_name ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">' + (s.page_picture ? '<img src="' + insEsc(s.page_picture) + '" style="width:16px;height:16px;border-radius:50%;object-fit:cover">' : '<span style="width:16px;height:16px;border-radius:50%;background:' + pgColor + ';display:inline-block;flex-shrink:0"></span>') + '<span style="font-size:0.72rem;color:' + pgColor + ';font-weight:500">' + insEsc(s.page_name) + '</span></div>' : '';
       var hasImage = s.image_url && s.image_url.trim() !== '';
@@ -462,13 +462,13 @@ export async function loadSchedule() {
           '<button onclick="event.stopPropagation();editScheduledPost(' + s.id + ',' + JSON.stringify(s.message||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',' + JSON.stringify(s.image_url||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',\'' + (s.scheduled_at||'').slice(0,10) + '\',\'' + (s.scheduled_at||'').slice(11,16) + '\')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">✏️ แก้ไข</button>' +
           '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
           '</div>';
-      } else if (s.status === 'failed') {
+      } else if (s.status === 'failed' || s.status === 'posting') {
         actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
           '<button onclick="event.stopPropagation();retrySchedule(' + s.id + ')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🔄 ลองใหม่</button>' +
           '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ลบ</button>' +
           '</div>';
       }
-      var borderLeft = s.status === 'failed' ? '#ef4444' : pgColor;
+      var borderLeft = s.status === 'failed' ? '#ef4444' : s.status === 'posting' ? '#f59e0b' : pgColor;
       return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);border-left:3px solid ' + borderLeft + '">' +
         '<div style="display:flex;align-items:center;padding:10px 12px;gap:10px">' +
           thumbnail +

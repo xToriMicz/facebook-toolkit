@@ -134,7 +134,7 @@ schedule.delete("/schedule/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status IN ('pending', 'failed') AND user_fb_id = ?").bind(id, session.fb_id).run();
+  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status IN ('pending', 'failed', 'posting') AND user_fb_id = ?").bind(id, session.fb_id).run();
   return c.json({ ok: true });
 });
 
@@ -146,7 +146,7 @@ schedule.post("/schedule/:id/retry", async (c) => {
   // Reset failed post to pending with new schedule time (now + 1 min)
   const retryAt = new Date(Date.now() + 60_000).toISOString();
   const result = await c.env.DB.prepare(
-    "UPDATE scheduled_posts SET status = 'pending', error_message = NULL, scheduled_at = ? WHERE id = ? AND status = 'failed' AND user_fb_id = ?"
+    "UPDATE scheduled_posts SET status = 'pending', error_message = NULL, scheduled_at = ? WHERE id = ? AND status IN ('failed', 'posting') AND user_fb_id = ?"
   ).bind(retryAt, id, session.fb_id).run();
   if (!result.meta.changes) return c.json({ error: "Post not found or not failed" }, 404);
   return c.json({ ok: true, retry_at: retryAt });
