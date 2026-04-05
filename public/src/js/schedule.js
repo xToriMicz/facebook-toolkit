@@ -453,11 +453,13 @@ export async function loadSchedule() {
           '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
           '</div>';
       } else if (s.status === 'failed') {
-        actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
-          '<button onclick="event.stopPropagation();retrySchedule(' + s.id + ')" style="background:none;border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🔄 ลองใหม่</button>' +
-          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🗑️ ลบ</button>' +
+        actionBtns = '<div style="display:flex;gap:6px;padding:6px 12px 10px;border-top:1px solid var(--border,rgba(255,255,255,0.08))">' +
+          '<button onclick="event.stopPropagation();retrySchedule(' + s.id + ')" style="flex:1;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">🔄 ลองใหม่</button>' +
+          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="flex:1;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">🗑️ ลบ</button>' +
           '</div>';
       }
+      var pendingBtns = s.status === 'pending' ? actionBtns : '';
+      var failedBtns = s.status === 'failed' ? actionBtns : '';
       return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + pgColor + ';border:1px solid var(--border);border-left:3px solid ' + pgColor + '">' +
         '<div style="display:flex;align-items:center;padding:10px 12px;gap:10px">' +
           thumbnail +
@@ -468,8 +470,9 @@ export async function loadSchedule() {
             '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
             (s.status === 'failed' && s.error_message ? '<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">⚠️ ' + insEsc(s.error_message.slice(0,80)) + '</div>' : '') +
           '</div>' +
-          actionBtns +
+          pendingBtns +
         '</div>' +
+        failedBtns +
       '</div>';
     }).join('');
   } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
