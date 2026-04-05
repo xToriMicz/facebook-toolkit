@@ -84,7 +84,7 @@ schedule.get("/schedule", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const pageId = c.req.query("page_id");
-  let q = "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status IN ('pending', 'posting')";
+  let q = "SELECT sp.*, up.page_name, up.picture_url as page_picture FROM scheduled_posts sp LEFT JOIN user_pages up ON sp.page_id = up.page_id AND sp.user_fb_id = up.user_fb_id WHERE sp.user_fb_id = ? AND sp.status IN ('pending', 'posting', 'failed')";
   const binds: any[] = [session.fb_id];
   if (pageId) { q += " AND sp.page_id = ?"; binds.push(pageId); }
   q += " ORDER BY sp.scheduled_at ASC";
@@ -134,8 +134,22 @@ schedule.delete("/schedule/:id", async (c) => {
   const session = await getSessionFromReq(c);
   if (!session) return c.json({ error: "Not authenticated" }, 401);
   const id = c.req.param("id");
-  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status = 'pending' AND user_fb_id = ?").bind(id, session.fb_id).run();
+  await c.env.DB.prepare("DELETE FROM scheduled_posts WHERE id = ? AND status IN ('pending', 'failed') AND user_fb_id = ?").bind(id, session.fb_id).run();
   return c.json({ ok: true });
+});
+
+// POST /api/schedule/:id/retry — retry a failed scheduled post
+schedule.post("/schedule/:id/retry", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+  const id = c.req.param("id");
+  // Reset failed post to pending with new schedule time (now + 1 min)
+  const retryAt = new Date(Date.now() + 60_000).toISOString();
+  const result = await c.env.DB.prepare(
+    "UPDATE scheduled_posts SET status = 'pending', error_message = NULL, scheduled_at = ? WHERE id = ? AND status = 'failed' AND user_fb_id = ?"
+  ).bind(retryAt, id, session.fb_id).run();
+  if (!result.meta.changes) return c.json({ error: "Post not found or not failed" }, 404);
+  return c.json({ ok: true, retry_at: retryAt });
 });
 
 // Cron handler (exported for use in worker.ts)
@@ -144,9 +158,9 @@ export async function processScheduledPosts(env: Env) {
   console.log(`[cron] checking scheduled posts at ${now}`);
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
-  // Safety: reset stuck 'posting' posts back to pending (cron crashed mid-process)
+  // Safety: reset stuck 'posting' posts back to pending — only if no fb_post_id (not yet posted)
   await env.DB.prepare(
-    "UPDATE scheduled_posts SET status = 'pending' WHERE status = 'posting' AND scheduled_at <= datetime(?, '-10 minutes')"
+    "UPDATE scheduled_posts SET status = 'pending' WHERE status = 'posting' AND fb_post_id IS NULL AND scheduled_at <= datetime(?, '-30 minutes')"
   ).bind(now).run();
 
   const { results: pending } = await env.DB.prepare(
