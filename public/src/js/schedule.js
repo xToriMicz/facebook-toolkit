@@ -2,6 +2,16 @@
 import state from './state.js';
 import { toast, insEsc, showNotify, showProgress, hideProgress } from './utils.js';
 
+function parseFailReason(errMsg) {
+  if (!errMsg) return 'ไม่ทราบสาเหตุ — ลองลบแล้วตั้งเวลาใหม่';
+  try {
+    var obj = JSON.parse(errMsg);
+    if (obj.error_user_msg) return obj.error_user_msg;
+    if (obj.message) return obj.message;
+  } catch {}
+  return errMsg.slice(0, 100);
+}
+
 export function setTrendView(mode) {
   var grid = document.getElementById('trendList');
   document.getElementById('trendViewGrid').classList.toggle('active', mode === 'grid');
@@ -468,7 +478,7 @@ export async function loadSchedule() {
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">' + typeBadge + '</div>' +
             '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
             '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
-            (s.status === 'failed' && s.error_message ? '<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">⚠️ ' + insEsc(s.error_message.slice(0,80)) + '</div>' : '') +
+            (s.status === 'failed' ? '<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">⚠️ ' + insEsc(parseFailReason(s.error_message)) + '</div>' : '') +
           '</div>' +
           pendingBtns +
         '</div>' +
