@@ -446,10 +446,18 @@ export async function loadSchedule() {
       var thumbnail = hasImage
         ? '<img src="' + insEsc(s.image_url) + '" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display=\'none\'">'
         : '<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-card,rgba(148,163,184,0.1));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;border:1px solid var(--border)">📝</div>';
-      var actionBtns = s.status === 'pending' ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
-        '<button onclick="event.stopPropagation();editScheduledPost(' + s.id + ',' + JSON.stringify(s.message||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',' + JSON.stringify(s.image_url||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',\'' + (s.scheduled_at||'').slice(0,10) + '\',\'' + (s.scheduled_at||'').slice(11,16) + '\')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">✏️ แก้ไข</button>' +
-        '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
-        '</div>' : '';
+      var actionBtns = '';
+      if (s.status === 'pending') {
+        actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+          '<button onclick="event.stopPropagation();editScheduledPost(' + s.id + ',' + JSON.stringify(s.message||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',' + JSON.stringify(s.image_url||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',\'' + (s.scheduled_at||'').slice(0,10) + '\',\'' + (s.scheduled_at||'').slice(11,16) + '\')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">✏️ แก้ไข</button>' +
+          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
+          '</div>';
+      } else if (s.status === 'failed') {
+        actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+          '<button onclick="event.stopPropagation();retrySchedule(' + s.id + ')" style="background:none;border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🔄 ลองใหม่</button>' +
+          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🗑️ ลบ</button>' +
+          '</div>';
+      }
       return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + pgColor + ';border:1px solid var(--border);border-left:3px solid ' + pgColor + '">' +
         '<div style="display:flex;align-items:center;padding:10px 12px;gap:10px">' +
           thumbnail +
@@ -458,6 +466,7 @@ export async function loadSchedule() {
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">' + typeBadge + '</div>' +
             '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
             '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
+            (s.status === 'failed' && s.error_message ? '<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">⚠️ ' + insEsc(s.error_message.slice(0,80)) + '</div>' : '') +
           '</div>' +
           actionBtns +
         '</div>' +
@@ -484,6 +493,11 @@ export async function createSchedule() {
 
 export async function cancelSchedule(id) {
   await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'same-origin'});
+  window.loadSchedule();
+}
+
+export async function retrySchedule(id) {
+  await fetch('/api/schedule/'+id+'/retry', {method:'POST', credentials:'same-origin'});
   window.loadSchedule();
 }
 
