@@ -240,7 +240,19 @@ export async function processScheduledPosts(env: Env) {
       }
 
       if (result.error) {
-        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(JSON.stringify(result.error).slice(0, 500), post.id).run();
+        const errMsg = JSON.stringify(result.error).slice(0, 500);
+        await env.DB.prepare("UPDATE scheduled_posts SET status = 'failed', error_message = ? WHERE id = ?").bind(errMsg, post.id).run();
+        // Notification + activity log: FB API error
+        try {
+          const { createNotification } = await import("./notifications");
+          const detail = result.error.error_user_msg || result.error.message || errMsg.slice(0, 100);
+          await createNotification(env.DB, post.user_fb_id, {
+            page_id: post.page_id, type: "error", priority: "urgent",
+            title: "❌ โพสตั้งเวลาล้มเหลว",
+            detail,
+            link: `?page=${post.page_id}&tab=schedule`,
+          });
+        } catch { /* non-critical */ }
       } else {
         const fbPostId = result.id || result.post_id || null;
         await env.DB.prepare("UPDATE scheduled_posts SET status = 'posted', fb_post_id = ? WHERE id = ?").bind(fbPostId, post.id).run();
