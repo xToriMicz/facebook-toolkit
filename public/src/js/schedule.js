@@ -445,8 +445,9 @@ export async function loadSchedule() {
       var msg = insEsc(s.message || '');
       var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
       var dt = new Date(s.scheduled_at).toLocaleString('th-TH',{hour12:false});
-      var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : s.status === 'posting' ? '#f59e0b' : '#ef4444';
-      var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : s.status === 'posting' ? 'กำลังโพส...' : 'ล้มเหลว';
+      var isStuck = s.status === 'posting' && (Date.now() - new Date(s.scheduled_at).getTime() > 30 * 60 * 1000);
+      var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : (s.status === 'posting' && !isStuck) ? '#f59e0b' : '#ef4444';
+      var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : (s.status === 'posting' && !isStuck) ? 'กำลังโพส...' : s.status === 'posting' ? 'ค้าง — กดลองใหม่หรือลบ' : 'ล้มเหลว';
       var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
       var pageBadge = s.page_name ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">' + (s.page_picture ? '<img src="' + insEsc(s.page_picture) + '" style="width:16px;height:16px;border-radius:50%;object-fit:cover">' : '<span style="width:16px;height:16px;border-radius:50%;background:' + pgColor + ';display:inline-block;flex-shrink:0"></span>') + '<span style="font-size:0.72rem;color:' + pgColor + ';font-weight:500">' + insEsc(s.page_name) + '</span></div>' : '';
       var hasImage = s.image_url && s.image_url.trim() !== '';
