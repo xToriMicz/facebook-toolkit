@@ -204,23 +204,20 @@ app.get("/*", serveStatic({ root: "./" }));
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    const minute = new Date(event.scheduledTime).getMinutes();
-    const isFive = minute % 5 === 0;           // */5 — schedule + bulk
-    const isReply = minute % 10 === 3;          // 3,13,23,33,43,53 — auto-reply
-    const isEngagement = minute === 7 || minute === 37; // 7,37 — engagement
+    const now = Date.now();
 
-    // Schedule posts + bulk plan (every 5 min)
-    if (isFive) {
-      ctx.waitUntil(processScheduledPosts(env));
-      ctx.waitUntil((async () => { try { const { processBulkGenerate, processBulkPost } = await import("./routes/bulk-plan"); await processBulkGenerate(env); await processBulkPost(env); } catch {} })());
-    }
+    // Schedule posts + bulk plan — every cron tick (5 min) but lightweight
+    ctx.waitUntil(processScheduledPosts(env));
+    ctx.waitUntil((async () => { try { const { processBulkGenerate, processBulkPost } = await import("./routes/bulk-plan"); await processBulkGenerate(env); await processBulkPost(env); } catch {} })());
 
-    // Auto-reply (every 10 min, offset by 3)
-    if (isReply) {
-      ctx.waitUntil(processAutoReplies(env));
+    // Auto-reply — throttle to every 10 min via KV
+    const lastReply = await env.KV.get("cron:reply:last");
+    if (!lastReply || now - parseInt(lastReply) > 600000) {
+      ctx.waitUntil(
+        processAutoReplies(env).then(() => env.KV.put("cron:reply:last", String(now), { expirationTtl: 900 }))
+      );
       // Cleanup old replies once per day
       const lastCleanup = await env.KV.get("cron:reply-cleanup:last");
-      const now = Date.now();
       if (!lastCleanup || now - parseInt(lastCleanup) > 86400000) {
         ctx.waitUntil(
           cleanupOldReplies(env).then(() => env.KV.put("cron:reply-cleanup:last", String(now), { expirationTtl: 86400 }))
@@ -228,9 +225,12 @@ export default {
       }
     }
 
-    // Engagement refresh (every 30 min)
-    if (isEngagement) {
-      ctx.waitUntil(refreshAllEngagement(env));
+    // Engagement refresh — throttle to every 30 min via KV
+    const lastRefresh = await env.KV.get("cron:engagement:last");
+    if (!lastRefresh || now - parseInt(lastRefresh) > 1800000) {
+      ctx.waitUntil(
+        refreshAllEngagement(env).then(() => env.KV.put("cron:engagement:last", String(now), { expirationTtl: 3600 }))
+      );
     }
   },
 };
