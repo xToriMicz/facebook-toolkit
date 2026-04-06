@@ -225,7 +225,7 @@ export async function processAutoReplies(env: Env) {
       let posts: any[] = [];
       try {
         const feedRes = await fetch(
-          `https://graph.facebook.com/v25.0/${page.page_id}/posts?fields=id,message,created_time&limit=10&access_token=${pageToken}`
+          `https://graph.facebook.com/v25.0/${page.page_id}/posts?fields=id,message,created_time&limit=5&access_token=${pageToken}`
         );
         const feedData = await feedRes.json() as any;
         if (feedData.data) {
@@ -264,7 +264,7 @@ export async function processAutoReplies(env: Env) {
         let comments: any[];
         try {
           const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=25${sinceParam}&access_token=${pageToken}`
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=15${sinceParam}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
           if (data.error) {
