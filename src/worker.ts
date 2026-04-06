@@ -204,25 +204,33 @@ app.get("/*", serveStatic({ root: "./" }));
 export default {
   fetch: app.fetch,
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(processScheduledPosts(env));
-    // Bulk plan: generate content ahead + post when ready
-    ctx.waitUntil((async () => { try { const { processBulkGenerate, processBulkPost } = await import("./routes/bulk-plan"); await processBulkGenerate(env); await processBulkPost(env); } catch {} })());
-    // Auto-reply: process new comments every cron tick
-    ctx.waitUntil(processAutoReplies(env));
-    // Refresh engagement every ~30 min (check KV throttle)
-    const lastRefresh = await env.KV.get("cron:engagement:last");
-    const now = Date.now();
-    if (!lastRefresh || now - parseInt(lastRefresh) > 1800000) {
-      ctx.waitUntil(
-        refreshAllEngagement(env).then(() => env.KV.put("cron:engagement:last", String(now), { expirationTtl: 3600 }))
-      );
+    const minute = new Date(event.scheduledTime).getMinutes();
+    const isFive = minute % 5 === 0;           // */5 — schedule + bulk
+    const isReply = minute % 10 === 3;          // 3,13,23,33,43,53 — auto-reply
+    const isEngagement = minute === 7 || minute === 37; // 7,37 — engagement
+
+    // Schedule posts + bulk plan (every 5 min)
+    if (isFive) {
+      ctx.waitUntil(processScheduledPosts(env));
+      ctx.waitUntil((async () => { try { const { processBulkGenerate, processBulkPost } = await import("./routes/bulk-plan"); await processBulkGenerate(env); await processBulkPost(env); } catch {} })());
     }
-    // Cleanup old comment_replies once per day (check KV throttle)
-    const lastCleanup = await env.KV.get("cron:reply-cleanup:last");
-    if (!lastCleanup || now - parseInt(lastCleanup) > 86400000) {
-      ctx.waitUntil(
-        cleanupOldReplies(env).then(() => env.KV.put("cron:reply-cleanup:last", String(now), { expirationTtl: 86400 }))
-      );
+
+    // Auto-reply (every 10 min, offset by 3)
+    if (isReply) {
+      ctx.waitUntil(processAutoReplies(env));
+      // Cleanup old replies once per day
+      const lastCleanup = await env.KV.get("cron:reply-cleanup:last");
+      const now = Date.now();
+      if (!lastCleanup || now - parseInt(lastCleanup) > 86400000) {
+        ctx.waitUntil(
+          cleanupOldReplies(env).then(() => env.KV.put("cron:reply-cleanup:last", String(now), { expirationTtl: 86400 }))
+        );
+      }
+    }
+
+    // Engagement refresh (every 30 min)
+    if (isEngagement) {
+      ctx.waitUntil(refreshAllEngagement(env));
     }
   },
 };

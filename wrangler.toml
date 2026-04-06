@@ -19,4 +19,5 @@ binding = "KV"
 id = "6447fb51f8d0414e8c6d2bd93eac236a"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "3,13,23,33,43,53 * * * *", "7,37 * * * *"]
+# */5 = schedule posts, 3/13/23/33/43/53 = auto-reply, 7/37 = engagement refresh
