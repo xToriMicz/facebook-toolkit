@@ -68,7 +68,10 @@ function sanitizeComment(text: string): string {
 }
 
 /** Max replies per cron run per page — prevent subrequest limit burst */
-const MAX_REPLIES_PER_RUN = 10;
+const MAX_REPLIES_PER_RUN = 5;
+
+/** Max comments to process per post — limit subrequests */
+const MAX_COMMENTS_PER_POST = 8;
 
 /** Classify a comment using AI */
 async function classifyComment(
@@ -261,14 +264,22 @@ export async function processAutoReplies(env: Env) {
         if (seenPostIds.has(postId)) continue;
         seenPostIds.add(postId);
 
+        // Skip early if already hit rate cap
+        if (repliesThisRun >= MAX_REPLIES_PER_RUN) break;
+
         let comments: any[];
         try {
           const res = await fetch(
-            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=15${sinceParam}&access_token=${pageToken}`
+            `https://graph.facebook.com/v25.0/${post.fb_post_id}/comments?fields=id,message,from,created_time,attachment&order=reverse_chronological&limit=${MAX_COMMENTS_PER_POST}${sinceParam}&access_token=${pageToken}`
           );
           const data = await res.json() as any;
           if (data.error) {
-            await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Comment fetch error", detail: `Post ${postId}: ${data.error.message || JSON.stringify(data.error)}`.slice(0, 200) });
+            // Deprecated statuses API (#12) — skip silently, don't spam notifications
+            const errMsg = data.error.message || "";
+            if (errMsg.includes("singular statuses API is deprecated") || data.error.code === 12) {
+              continue;
+            }
+            await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Comment fetch error", detail: `Post ${postId}: ${errMsg || JSON.stringify(data.error)}`.slice(0, 200) });
             continue;
           }
           comments = data.data || [];
@@ -291,22 +302,15 @@ export async function processAutoReplies(env: Env) {
           // Skip own page comments (don't reply to ourselves)
           if (comment.from?.id === page.page_id) continue;
 
-          // Check Facebook API for existing replies from our page (any reply counts)
+          // Reserve slot in DB FIRST (prevent race condition between cron runs)
+          // If another run already reserved this comment, INSERT fails and we skip
           try {
-            const repliesRes = await fetch(
-              `https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from&limit=50&access_token=${pageToken}`
-            );
-            const repliesData = await repliesRes.json() as any;
-            const alreadyReplied = (repliesData.data || []).some((r: any) => r.from?.id === page.page_id);
-            if (alreadyReplied) {
-              // Record in DB so we don't check again next tick
-              await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'other', 'already_replied', ?)"
-              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
-              continue;
-            }
+            await env.DB.prepare(
+              "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'processing', ?)"
+            ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
           } catch {
-            // Non-critical: if check fails, proceed with caution (DB check already passed)
+            // UNIQUE constraint = another run already processing this comment
+            continue;
           }
 
           try {
@@ -321,8 +325,8 @@ export async function processAutoReplies(env: Env) {
             if (classification.type === "spam") {
               await hideComment(comment.id, pageToken);
               await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'spam', 'hidden', ?)"
-              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", new Date().toISOString()).run();
+                "UPDATE comment_replies SET comment_type = 'spam', status = 'hidden' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(comment.id, fbId).run();
 
               await createNotification(env.DB, fbId, {
                 page_id: page.page_id, type: "auto_reply", priority: "normal",
@@ -336,8 +340,8 @@ export async function processAutoReplies(env: Env) {
             // Skip greeting if user opted out
             if (skipGreeting && classification.type === "greeting") {
               await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+                "UPDATE comment_replies SET comment_type = ?, status = 'skipped' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(classification.type, comment.id, fbId).run();
               continue;
             }
 
@@ -346,17 +350,15 @@ export async function processAutoReplies(env: Env) {
 
             // Check reply mode before generating
             if (replyMode === "question_only" && classification.type !== "question" && classification.type !== "disagree") {
-              // Log as skipped but don't reply
               await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+                "UPDATE comment_replies SET comment_type = ?, status = 'skipped' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(classification.type, comment.id, fbId).run();
               continue;
             }
             if (replyMode === "random" && Math.random() > 0.7) {
-              // 30% chance to skip (reply 60-80%)
               await env.DB.prepare(
-                "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'skipped', ?)"
-              ).bind(fbId, page.page_id, postId, comment.id, comment.message.slice(0, 500), comment.from?.name || "", classification.type, new Date().toISOString()).run();
+                "UPDATE comment_replies SET comment_type = ?, status = 'skipped' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(classification.type, comment.id, fbId).run();
               continue;
             }
 
@@ -373,30 +375,14 @@ export async function processAutoReplies(env: Env) {
             // Post reply
             const result = await replyToComment(comment.id, replyText, pageToken);
 
-            // Save to DB immediately before doing anything else
+            // Update reserved row with reply result
             await env.DB.prepare(
-              "INSERT INTO comment_replies (user_fb_id, page_id, post_id, comment_id, comment_text, comment_from, comment_type, reply_text, reply_id, status, error_message, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+              "UPDATE comment_replies SET comment_type = ?, reply_text = ?, reply_id = ?, status = ?, error_message = ? WHERE comment_id = ? AND user_fb_id = ?"
             ).bind(
-              fbId, page.page_id, postId, comment.id,
-              comment.message.slice(0, 500), comment.from?.name || "",
               classification.type, replyText, result.id || null,
               result.ok ? "replied" : "failed", result.error || null,
-              new Date().toISOString(),
+              comment.id, fbId,
             ).run();
-
-            // Verify reply appeared on Facebook before continuing
-            if (result.ok) {
-              await sleep(3000 + Math.random() * 2000);
-              try {
-                const verifyRes = await fetch(`https://graph.facebook.com/v25.0/${comment.id}/comments?fields=from,message&limit=10&access_token=${pageToken}`);
-                const verifyData = await verifyRes.json() as any;
-                const confirmed = (verifyData.data || []).some((r: any) => r.from?.id === page.page_id);
-                if (!confirmed) {
-                  // Reply not confirmed — update status
-                  await env.DB.prepare("UPDATE comment_replies SET status = 'unconfirmed' WHERE comment_id = ? AND user_fb_id = ?").bind(comment.id, fbId).run();
-                }
-              } catch {}
-            }
 
             // Track reply count for rate cap
             if (result.ok) repliesThisRun++;
@@ -411,6 +397,10 @@ export async function processAutoReplies(env: Env) {
               });
             }
           } catch (e: any) {
+            // Update reserved row to failed
+            await env.DB.prepare(
+              "UPDATE comment_replies SET status = 'failed', error_message = ? WHERE comment_id = ? AND user_fb_id = ?"
+            ).bind(`${e.message}`.slice(0, 200), comment.id, fbId).run().catch(() => {});
             await createNotification(env.DB, fbId, { page_id: page.page_id, type: "error", priority: "normal", title: "❌ Reply error", detail: `${comment.id}: ${e.message}`.slice(0, 200) }).catch(() => {});
           }
         }
@@ -422,6 +412,11 @@ export async function processAutoReplies(env: Env) {
 // ── Cron: Cleanup old comment_replies (>90 days) ──
 
 export async function cleanupOldReplies(env: Env) {
+  // Remove stale reservations (processing > 10 min = crashed cron, allow retry)
+  await env.DB.prepare(
+    "DELETE FROM comment_replies WHERE status = 'processing' AND created_at < datetime('now', '-10 minutes')"
+  ).run();
+  // Remove old completed replies (> 90 days)
   await env.DB.prepare(
     "DELETE FROM comment_replies WHERE created_at < datetime('now', '-90 days')"
   ).run();
