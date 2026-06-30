@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../helpers";
-import { getSessionFromReq, getDecryptedPageToken, sanitize } from "../helpers";
+import { getSessionFromReq, getDecryptedPageToken, sanitize, safeSlice } from "../helpers";
 import { callAI } from "../ai-providers";
 import { createNotification } from "./notifications";
 
@@ -59,8 +59,7 @@ const REPLY_PROMPTS: Record<CommentType, string> = {
 
 /** Sanitize comment text — strip potential prompt injection */
 function sanitizeComment(text: string): string {
-  return text
-    .slice(0, 300) // limit length
+  return safeSlice(text, 300) // limit length
     .replace(/ignore\s+(above|previous|all)\s+instructions?/gi, "[filtered]")
     .replace(/system\s*prompt/gi, "[filtered]")
     .replace(/you\s+are\s+(now|a)\s/gi, "[filtered]")
@@ -82,7 +81,7 @@ async function classifyComment(
   endpoint?: string,
   postContext?: string,
 ): Promise<ClassifiedComment> {
-  const contextLine = postContext ? `\n\nโพสต้นทาง: "${postContext.slice(0, 200)}"` : "";
+  const contextLine = postContext ? `\n\nโพสต้นทาง: "${safeSlice(postContext, 200)}"` : "";
   const result = await callAI(
     provider, apiKey, model,
     `${CLASSIFY_PROMPT}${contextLine}\n\nComment: "${sanitizeComment(comment)}"`,
@@ -115,9 +114,9 @@ async function generateReply(
   if (!prompt) return "";
 
   const toneInstruction = tone === "casual" ? "\nใช้ภาษาเป็นกันเอง เช่น นะ จ้า ค่า" :
-    tone === "custom" && customTone ? `\nสไตล์การตอบ: ${customTone.slice(0, 200)}` :
+    tone === "custom" && customTone ? `\nสไตล์การตอบ: ${safeSlice(customTone, 200)}` :
     "\nใช้ภาษาสุภาพ เช่น ค่ะ ครับ";
-  const contextLine = postContext ? `\nเนื้อหาโพส: "${postContext.slice(0, 200)}"` : "";
+  const contextLine = postContext ? `\nเนื้อหาโพส: "${safeSlice(postContext, 200)}"` : "";
 
   const result = await callAI(
     provider, apiKey, model,
@@ -130,7 +129,7 @@ async function generateReply(
   reply = reply.replace(/^["']|["']$/g, "");
   reply = reply.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1");
   reply = reply.replace(/https?:\/\/\S+/g, ""); // strip URLs from reply
-  reply = reply.slice(0, 500); // max reply length
+  reply = safeSlice(reply, 500); // max reply length
   return reply.trim();
 }
 

@@ -76,6 +76,13 @@ export function sanitize(input: string): string {
     .replace(/<\/?script[^>]*>/gi, "");
 }
 
+// Safe slice: handle multi-byte characters and surrogate pairs (emojis) correctly
+export function safeSlice(str: string, maxLength: number): string {
+  if (!str) return "";
+  if (str.length <= maxLength) return str;
+  return Array.from(str).slice(0, maxLength).join("");
+}
+
 // Get session from cookie
 export async function getSessionFromReq(c: any): Promise<any | null> {
   const sessionId = getCookie(c, "session");

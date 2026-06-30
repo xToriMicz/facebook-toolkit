@@ -14,7 +14,7 @@ async function cacheImageToR2(assets: R2Bucket, imageUrl: string, key: string): 
   } catch { return null; }
 }
 
-const FB_APP_ID = "26012743801749271";
+const FB_APP_ID = "1535979201499762";
 const FB_REDIRECT_URI = "https://fb.makeloops.xyz/auth/callback";
 const FB_GRAPH_VERSION = "v25.0";
 const SESSION_TTL = 60 * 60 * 24 * 30; // 30 days

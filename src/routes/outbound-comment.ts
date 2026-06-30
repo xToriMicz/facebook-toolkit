@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "../helpers";
-import { getSessionFromReq, getDecryptedPageToken } from "../helpers";
+import { getSessionFromReq, getDecryptedPageToken, safeSlice } from "../helpers";
 import { callAI } from "../ai-providers";
 import { createNotification } from "./notifications";
 
@@ -50,8 +50,7 @@ const COMMENT_PROMPT = `คุณเป็นคนจริงที่กำ�
 
 /** Sanitize text for AI prompt */
 function sanitize(text: string): string {
-  return text
-    .slice(0, 500)
+  return safeSlice(text, 500)
     .replace(/ignore\s+(above|previous|all)\s+instructions?/gi, "[filtered]")
     .replace(/system\s*prompt/gi, "[filtered]")
     .replace(/you\s+are\s+(now|a)\s/gi, "[filtered]")
@@ -67,7 +66,7 @@ function filterComment(text: string): string | null {
   c = c.replace(/@\S+/g, ""); // @mentions
   c = c.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1"); // markdown
   c = c.replace(/^["']|["']$/g, ""); // quotes
-  c = c.slice(0, 200).trim();
+  c = safeSlice(c, 200).trim();
   // Reject if too short or empty
   if (c.length < 5) return null;
   // Reject phone numbers, emails, sales pitch
@@ -206,7 +205,7 @@ export async function processOutboundComments(env: Env) {
         if (replyMode === "random" && Math.random() > 0.6) {
           await env.DB.prepare(
             "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, 'skipped', '', 'skipped', ?)"
-          ).bind(fbId, target.page_id, target.target_page_id, post.id, (post.message || "").slice(0, 500), new Date().toISOString()).run();
+          ).bind(fbId, target.page_id, target.target_page_id, post.id, safeSlice(post.message || "", 500), new Date().toISOString()).run();
           continue;
         }
 
@@ -230,13 +229,13 @@ export async function processOutboundComments(env: Env) {
           if (SKIP_TYPES.includes(postType)) {
             await env.DB.prepare(
               "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, '', 'skipped', ?)"
-            ).bind(fbId, target.page_id, target.target_page_id, post.id, (post.message || "").slice(0, 500), postType, new Date().toISOString()).run();
+            ).bind(fbId, target.page_id, target.target_page_id, post.id, safeSlice(post.message || "", 500), postType, new Date().toISOString()).run();
             continue;
           }
 
           // Generate comment draft
           const toneInstruction = target.comment_tone === "formal" ? "\nใช้ภาษาสุภาพ ค่ะ/ครับ" :
-            target.comment_tone === "custom" && target.custom_prompt ? `\nสไตล์: ${target.custom_prompt.slice(0, 200)}` :
+            target.comment_tone === "custom" && target.custom_prompt ? `\nสไตล์: ${safeSlice(target.custom_prompt, 200)}` :
             "\nใช้ภาษาเป็นกันเอง เช่น นะ จ้า ค่า";
 
           const result = await callAI(
@@ -251,7 +250,7 @@ export async function processOutboundComments(env: Env) {
           // Full auto: save as approved → sendApprovedComments จะส่งเอง
           await env.DB.prepare(
             "INSERT INTO outbound_comments (user_fb_id, page_id, target_page_id, target_post_id, post_message, post_type, comment_text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?)"
-          ).bind(fbId, target.page_id, target.target_page_id, post.id, (post.message || "").slice(0, 500), postType, commentText, new Date().toISOString()).run();
+          ).bind(fbId, target.page_id, target.target_page_id, post.id, safeSlice(post.message || "", 500), postType, commentText, new Date().toISOString()).run();
 
           draftsThisRun++;
         } catch {
