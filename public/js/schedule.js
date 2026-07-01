@@ -1,13 +1,1099 @@
-"use strict";import l from"./state.js";import{toast as f,insEsc as v,showNotify as C}from"./utils.js";export function setTrendView(e){var t=document.getElementById("trendList");document.getElementById("trendViewGrid").classList.toggle("active",e==="grid"),document.getElementById("trendViewList").classList.toggle("active",e==="list"),e==="list"?t.classList.add("trend-list-mode"):t.classList.remove("trend-list-mode")}var J=[{name:"\u0E40\u0E2A\u0E37\u0E49\u0E2D\u0E22\u0E37\u0E14\u0E42\u0E2D\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E44\u0E0B\u0E2A\u0E4C Unisex",price:199,price_min:159,price_max:299,image:"",rating:4.8,sold:12500,category:"fashion",url:"#"},{name:"\u0E2B\u0E39\u0E1F\u0E31\u0E07 Bluetooth TWS \u0E01\u0E31\u0E19\u0E19\u0E49\u0E33 IPX5",price:390,price_min:290,price_max:590,image:"",rating:4.6,sold:8700,category:"electronics",url:"#"},{name:"\u0E40\u0E0B\u0E23\u0E31\u0E48\u0E21\u0E27\u0E34\u0E15\u0E32\u0E21\u0E34\u0E19\u0E0B\u0E35 Bright Skin 30ml",price:259,price_min:199,price_max:359,image:"",rating:4.9,sold:25e3,category:"beauty",url:"#"},{name:"\u0E0A\u0E31\u0E49\u0E19\u0E27\u0E32\u0E07\u0E02\u0E2D\u0E07\u0E2A\u0E41\u0E15\u0E19\u0E40\u0E25\u0E2A 4 \u0E0A\u0E31\u0E49\u0E19",price:450,price_min:350,price_max:650,image:"",rating:4.5,sold:3200,category:"home",url:"#"},{name:"\u0E27\u0E34\u0E15\u0E32\u0E21\u0E34\u0E19\u0E0B\u0E35 1000mg 60 \u0E40\u0E21\u0E47\u0E14",price:190,price_min:150,price_max:290,image:"",rating:4.7,sold:18e3,category:"health",url:"#"},{name:"\u0E01\u0E32\u0E07\u0E40\u0E01\u0E07\u0E02\u0E32\u0E2A\u0E31\u0E49\u0E19 \u0E1C\u0E49\u0E32\u0E23\u0E48\u0E21 \u0E23\u0E30\u0E1A\u0E32\u0E22\u0E2D\u0E32\u0E01\u0E32\u0E28",price:179,price_min:129,price_max:249,image:"",rating:4.4,sold:9300,category:"fashion",url:"#"},{name:"\u0E2A\u0E32\u0E22\u0E0A\u0E32\u0E23\u0E4C\u0E08 USB-C 100W \u0E16\u0E31\u0E01 Nylon",price:89,price_min:59,price_max:159,image:"",rating:4.8,sold:42e3,category:"electronics",url:"#"},{name:"\u0E41\u0E1C\u0E48\u0E19\u0E21\u0E32\u0E2A\u0E4C\u0E01\u0E2B\u0E19\u0E49\u0E32 Collagen 10 \u0E41\u0E1C\u0E48\u0E19",price:99,price_min:79,price_max:149,image:"",rating:4.6,sold:31e3,category:"beauty",url:"#"},{name:"\u0E44\u0E1F LED Strip RGB \u0E23\u0E35\u0E42\u0E21\u0E17 5 \u0E40\u0E21\u0E15\u0E23",price:199,price_min:149,price_max:349,image:"",rating:4.3,sold:6100,category:"home",url:"#"},{name:"\u0E42\u0E1B\u0E23\u0E15\u0E35\u0E19\u0E40\u0E27\u0E22\u0E4C Isolate 2lb \u0E0A\u0E47\u0E2D\u0E01\u0E42\u0E01\u0E41\u0E25\u0E15",price:890,price_min:750,price_max:1290,image:"",rating:4.7,sold:4500,category:"health",url:"#"}];export async function loadTrends(){var e=document.getElementById("trendList");e.innerHTML='<div class="empty-state" style="grid-column:1/-1">\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14...</div>';var t=[];try{var n=await fetch("/api/shopee-trends",{credentials:"same-origin"}),r=await n.json();t=r.products||r.items||[]}catch{}t.length||(t=J);var a=document.getElementById("trendCount");a&&(a.textContent="("+t.length+" \u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32)"),e.innerHTML=t.map(function(s){for(var o=s.price_min&&s.price_max&&s.price_min!==s.price_max?"\u0E3F"+Number(s.price_min).toLocaleString()+"-"+Number(s.price_max).toLocaleString():"\u0E3F"+Number(s.price||s.price_min||0).toLocaleString(),i="",c=s.rating||0,u=0;u<5;u++)i+=u<Math.round(c)?"\u2605":"\u2606";var d=s.sold||0,g=d>=1e3?(d/1e3).toFixed(1)+"k":String(d),m=s.category||"general",p=s.image||s.thumbnail||"",h=s.url||s.link||"#",b=v((s.name||s.title||"").substring(0,60));return'<div class="trend-card" data-cat="'+v(m)+'">'+(p?'<img class="trend-card-img" src="'+v(p)+`" alt="" loading="lazy" onerror="this.style.display='none'">`:'<div class="trend-card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:2rem">\u{1F6D2}</div>')+'<div class="trend-card-body"><div class="trend-card-name">'+b+'</div><div class="trend-card-price">'+o+'</div><div class="trend-card-meta"><span class="trend-card-stars">'+i+" "+c.toFixed(1)+"</span><span>"+g+' \u0E02\u0E32\u0E22\u0E41\u0E25\u0E49\u0E27</span></div></div><a href="'+v(h)+'" target="_blank" rel="noopener" class="trend-card-btn">\u0E14\u0E39\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32 \u2192</a></div>'}).join("")}export function initScheduleTime(){for(var e=document.getElementById("schedTimeHour"),t=document.getElementById("schedTimeMin"),n=0;n<24;n++)e.innerHTML+='<option value="'+String(n).padStart(2,"0")+'">'+String(n).padStart(2,"0")+"</option>";for(var r=0;r<60;r+=5)t.innerHTML+='<option value="'+String(r).padStart(2,"0")+'">'+String(r).padStart(2,"0")+"</option>";function a(){document.getElementById("schedTime").value=e.value+":"+t.value}e.onchange=a,t.onchange=a,e.value="09",t.value="00",a()}export function setSchedTime(e){if(e){var t=e.split(":"),n=document.getElementById("schedTimeHour"),r=document.getElementById("schedTimeMin");if(n&&t[0]&&(n.value=t[0]),r&&t[1]){var a=Math.round(parseInt(t[1])/5)*5;r.value=String(a%60).padStart(2,"0")}document.getElementById("schedTime").value=e}}export function toggleSchedule(){const e=document.getElementById("schedulePicker"),t=e.style.display==="none";if(e.style.display=t?"":"none",t){const n=new Date;n.setDate(n.getDate()+1),document.getElementById("schedDate").value=n.toISOString().split("T")[0],setSchedTime("09:00"),loadScheduled()}}export async function submitScheduled(){const e=document.getElementById("message").value.trim();if(!e&&!l.uploadedImageUrl){f("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E35\u0E22\u0E19\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E2B\u0E23\u0E37\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E23\u0E39\u0E1B");return}if(!l.selectedPage){f("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E1E\u0E08\u0E01\u0E48\u0E2D\u0E19");return}const t=document.getElementById("schedDate").value,n=document.getElementById("schedTime").value;if(!t||!n){f("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E41\u0E25\u0E30\u0E40\u0E27\u0E25\u0E32");return}const r=new Date(t+"T"+n+":00").toISOString();try{const s=l.uploadedImages.filter(u=>u.url).map(u=>u.url),o=s.length>1?{message:e,image_urls:s,page_id:l.selectedPage.id,scheduled_at:r}:{message:e,image_url:s[0]||null,page_id:l.selectedPage.id,scheduled_at:r},c=await(await fetch("/api/post/schedule",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(o)})).json();if(c.ok){f("ok","\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22!"),C("\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E42\u0E1E\u0E2A\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!"),document.getElementById("message").value="",document.getElementById("charCount").textContent="0",document.getElementById("imagePreview").innerHTML="",l.uploadedImages=[],l.uploadedImageUrl=null,l.uploadedImageData=null;var a=document.getElementById("dropZone");a.classList.remove("has-file"),a.textContent="\u{1F4F7} \u0E04\u0E25\u0E34\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E23\u0E39\u0E1B\u0E2B\u0E23\u0E37\u0E2D\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D \u0E2B\u0E23\u0E37\u0E2D\u0E25\u0E32\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E21\u0E32\u0E27\u0E32\u0E07",loadScheduled()}else f("err",c.error||"\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}catch{f("err","\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14")}}export async function loadScheduled(){const e=document.getElementById("scheduledList");try{const t=l.selectedPage?l.selectedPage.id:"",r=await(await fetch("/api/posts/scheduled"+(t?"?page_id="+t:""),{credentials:"same-origin"})).json(),a=r.scheduled||r.posts||[];if(!a.length){e.innerHTML="";return}e.innerHTML='<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">\u{1F4C5} \u0E42\u0E1E\u0E2A\u0E17\u0E35\u0E48\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E44\u0E27\u0E49</div>'+a.map(function(s){var o=new Date(s.scheduled_at).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:!1}),i=v((s.message||"").substring(0,50)),c=v(s.message||""),u=s.image_urls?typeof s.image_urls=="string"?JSON.parse(s.image_urls):s.image_urls:s.image_url?[s.image_url]:[],d=u.length,g=d>0?'<div style="position:relative;flex-shrink:0"><img src="'+v(u[0])+`" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid var(--border)" onerror="this.style.display='none'">`+(d>1?'<span style="position:absolute;bottom:-2px;right:-2px;background:#3b82f6;color:#fff;font-size:0.55rem;padding:1px 4px;border-radius:4px;font-weight:600">+'+(d-1)+"</span>":"")+"</div>":"";return`<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector('.sched-full');f.style.display=f.style.display==='block'?'none':'block'"><div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">`+g+(s.page_name?(s.page_picture?'<img src="'+v(s.page_picture)+'" style="width:14px;height:14px;border-radius:50%;object-fit:cover">':"")+'<span style="color:#3b82f6;font-size:0.72rem;font-weight:500">'+v(s.page_name)+"</span>":"")+'<span style="color:var(--warning)">\u23F0 '+o+'</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+i+'</span></div><div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">'+c+"</div></div>"}).join("")}catch{e.innerHTML=""}}const U={login:"\u{1F511}",logout:"\u{1F534}",post_created:"\u{1F4DD}",post_scheduled:"\u23F0",draft_saved:"\u{1F4BE}",ai_write:"\u{1F916}",page_switched:"\u{1F4C4}",settings_changed:"\u2699\uFE0F",auto_reply:"\u{1F4AC}",auto_hide_spam:"\u{1F6AB}"},q={login:"\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A",logout:"\u0E2D\u0E2D\u0E01\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A",post_created:"\u0E42\u0E1E\u0E2A\u0E25\u0E07\u0E40\u0E1E\u0E08",post_scheduled:"\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E42\u0E1E\u0E2A",draft_saved:"\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E1A\u0E1A\u0E23\u0E48\u0E32\u0E07",ai_write:"AI \u0E40\u0E02\u0E35\u0E22\u0E19",page_switched:"\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E40\u0E1E\u0E08",settings_changed:"\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E01\u0E32\u0E23\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32",auto_reply:"AI \u0E15\u0E2D\u0E1A\u0E04\u0E2D\u0E21\u0E40\u0E21\u0E49\u0E19",auto_hide_spam:"\u0E0B\u0E48\u0E2D\u0E19 Spam"},K={login:"login",logout:"login",post_created:"post",post_scheduled:"schedule",draft_saved:"settings",ai_write:"ai",page_switched:"settings",settings_changed:"settings",auto_reply:"ai",auto_hide_spam:"settings"};export async function loadLogs(){const e=document.getElementById("logList");try{const t=l.selectedPage?l.selectedPage.id:"",r=await(await fetch("/api/activity"+(t?"?page_id="+t:""),{credentials:"same-origin"})).json();l.allLogs=r.activities||[],updateLogStats(),renderLogs("all")}catch{e.innerHTML='<div class="empty-state">\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08</div>'}}export function filterLogs(e,t){t&&(document.querySelectorAll(".log-filter-btn").forEach(n=>n.classList.remove("active")),t.classList.add("active")),e!==null&&(l.currentLogFilter=e),renderLogs(l.currentLogFilter)}export function updateLogStats(){document.getElementById("logStatTotal").textContent=l.allLogs.length,document.getElementById("logStatPosts").textContent=l.allLogs.filter(e=>e.action==="post_created"||e.action==="posted").length,document.getElementById("logStatAI").textContent=l.allLogs.filter(e=>e.action==="ai_write"||e.action==="auto_reply").length,document.getElementById("logStatSchedule").textContent=l.allLogs.filter(e=>e.action==="post_scheduled"||e.action==="scheduled").length}export function renderLogs(e){const t=document.getElementById("logList"),n={post_created:["post_created","posted"],post_scheduled:["post_scheduled","scheduled"],ai_write:["ai_write","auto_reply"],auto_reply:["auto_reply","auto_hide_spam"]};let r=e==="all"?l.allLogs:l.allLogs.filter(o=>(n[e]||[e]).includes(o.action));const a=(document.getElementById("logSearch")||{}).value||"";if(a.length>=2){const o=a.toLowerCase();r=r.filter(i=>(i.details||"").toLowerCase().includes(o)||(i.action||"").includes(o))}const s=(document.getElementById("logDate")||{}).value||"";if(s&&(r=r.filter(o=>(o.created_at||"").startsWith(s))),!r.length){t.innerHTML='<div class="empty-state">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E01\u0E34\u0E08\u0E01\u0E23\u0E23\u0E21</div>';return}t.innerHTML=r.slice(0,50).map(o=>{const i=U[o.action]||"\u{1F4CC}",c=q[o.action]||o.action,u=K[o.action]||"settings",d=new Date(o.created_at).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:!1});return'<div class="log-item"><div class="log-icon '+u+'">'+i+'</div><div class="log-body"><div class="log-action">'+c+"</div>"+(o.details?'<div class="log-detail">'+o.details+"</div>":"")+'</div><div class="log-time">'+d+"</div></div>"}).join("")}export function renderEngagementChart(e){const t=document.getElementById("engagementChart");if(!e||!e.length){t.innerHTML='<div style="text-align:center;width:100%;color:var(--text-muted);font-size:0.8rem;padding:20px">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</div>';return}const n=["\u0E2D\u0E32","\u0E08","\u0E2D","\u0E1E","\u0E1E\u0E24","\u0E28","\u0E2A"],r=new Date,a=[];for(let o=6;o>=0;o--){const i=new Date(r);i.setDate(i.getDate()-o);const c=i.toISOString().split("T")[0],u=e.filter(p=>(p.created_at||p.ts||"").startsWith(c)),d=u.reduce((p,h)=>p+(h.likes||0),0),g=u.reduce((p,h)=>p+(h.comments||0),0),m=u.reduce((p,h)=>p+(h.shares||0),0);a.push({day:n[i.getDay()],likes:d,comments:g,shares:m,total:d+g+m})}const s=Math.max(1,...a.map(o=>o.total));t.innerHTML=a.map(o=>{const i=Math.max(4,o.total/s*80),c=o.total>0?"var(--accent)":"rgba(255,255,255,0.04)";return'<div class="chart-bar" style="height:'+i+"px;background:"+c+'"><div class="chart-bar-val">'+(o.total||"")+'</div><div class="chart-bar-label">'+o.day+"</div></div>"}).join("")}let T,w,D=[],j=[];export function calNav(e){w+=e,w>11&&(w=0,T++),w<0&&(w=11,T--),window.renderCalendar()}export async function renderCalendar(){if(!T){const d=new Date;T=d.getFullYear(),w=d.getMonth()}const e=["\u0E21.\u0E04.","\u0E01.\u0E1E.","\u0E21\u0E35.\u0E04.","\u0E40\u0E21.\u0E22.","\u0E1E.\u0E04.","\u0E21\u0E34.\u0E22.","\u0E01.\u0E04.","\u0E2A.\u0E04.","\u0E01.\u0E22.","\u0E15.\u0E04.","\u0E1E.\u0E22.","\u0E18.\u0E04."];document.getElementById("calMonth").textContent=e[w]+" "+T;try{const d=l.selectedPage?l.selectedPage.id:"",g=d?"?page_id="+d+"&limit=50":"?limit=50",[m,p]=await Promise.all([fetch("/api/posts"+g,{credentials:"same-origin"}).then(h=>h.json()).catch(()=>({posts:[]})),fetch("/api/posts/scheduled"+(d?"?page_id="+d:""),{credentials:"same-origin"}).then(h=>h.json()).catch(()=>({posts:[]}))]);D=m.posts||[],renderEngagementChart(D),j=p.posts||[]}catch{}const t=document.getElementById("calGrid");let r=["\u0E2D\u0E32","\u0E08","\u0E2D","\u0E1E","\u0E1E\u0E24","\u0E28","\u0E2A"].map(d=>'<div class="cal-day-name">'+d+"</div>").join("");const a=new Date(T,w,1).getDay(),s=new Date(T,w+1,0).getDate(),o=new Date;for(let d=0;d<a;d++)r+='<div class="cal-day empty"></div>';for(let d=1;d<=s;d++){const g=T+"-"+String(w+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),m=D.filter(y=>(y.created_at||y.ts||"").startsWith(g)),p=(j||[]).filter(y=>(y.scheduled_at||"").startsWith(g)),h=m.some(y=>y.status==="failed")||p.some(y=>y.status==="failed"),b=m.some(y=>y.status==="posted"),I=p.some(y=>y.status==="pending"),x=o.getFullYear()===T&&o.getMonth()===w&&o.getDate()===d;var i="";h&&(i+='<span class="cal-dot failed"></span>'),b&&(i+='<span class="cal-dot posted"></span>'),I&&(i+='<span class="cal-dot scheduled"></span>');var c=m.length+p.length,u=c>0?'<span style="font-size:0.6rem;color:var(--text-muted)">'+c+"</span>":"";r+='<div class="cal-day'+(x?" today":"")+`" onclick="showCalDay('`+g+`')">`+d+'<div class="cal-dots">'+i+"</div>"+u+"</div>"}t.innerHTML=r,document.getElementById("calDetail").innerHTML=""}export function calToday(){var e=new Date;T=e.getFullYear(),w=e.getMonth(),window.renderCalendar()}export function calCreatePost(e){window.switchTab("compose"),setTimeout(()=>{const t=document.getElementById("schedDate");t&&(t.value=e)},100)}function F(e){return e.image_url&&/\.(mp4|mov|avi|webm)$/i.test(e.image_url)?'<span style="padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.15);color:#c084fc;font-size:0.65rem">\u{1F3AC} \u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D</span>':e.image_url?'<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.15);color:#60a5fa;font-size:0.65rem">\u{1F5BC}\uFE0F \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E</span>':'<span style="padding:2px 6px;border-radius:4px;background:rgba(156,163,175,0.15);color:#9ca3af;font-size:0.65rem">\u{1F4DD} \u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21</span>'}function R(e){var t=e.likes||0,n=e.comments||0,r=e.shares||0;return!t&&!n&&!r?"":'<div style="display:flex;gap:8px;font-size:0.7rem;color:var(--text-muted);margin-top:4px">'+(t?"<span>\u{1F44D} "+t+"</span>":"")+(n?"<span>\u{1F4AC} "+n+"</span>":"")+(r?"<span>\u{1F504} "+r+"</span>":"")+"</div>"}export function showCalDay(e){const t=D.filter(i=>(i.created_at||i.ts||"").startsWith(e)),n=(j||[]).filter(i=>(i.scheduled_at||"").startsWith(e)),r=document.getElementById("calDetail"),a=`<button onclick="calCreatePost('`+e+`')" style="margin-top:10px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ \u0E2A\u0E23\u0E49\u0E32\u0E07\u0E42\u0E1E\u0E2A\u0E27\u0E31\u0E19\u0E19\u0E35\u0E49</button>`;if(!t.length&&!n.length){r.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+e+'</div><div class="cal-detail-item" style="color:var(--text-muted)">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E42\u0E1E\u0E2A</div>'+a+"</div>";return}const s={posted:"\u2705",pending:"\u23F3",failed:"\u274C",posting:"\u{1F504}"};let o='<div class="cal-day-detail"><div class="cal-day-detail-title">'+e+' <span style="font-size:0.72rem;color:var(--text-muted);font-weight:400">('+t.length+" \u0E42\u0E1E\u0E2A"+(n.length?" + "+n.length+" \u0E23\u0E2D\u0E42\u0E1E\u0E2A":"")+")</span></div>";t.forEach(i=>{var c=s[i.status]||"\u{1F4E4}",u=i.created_at?new Date(i.created_at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit",hour12:!1}):"",d=i.image_url&&!/\.(mp4|mov|avi|webm)$/i.test(i.image_url)?'<img loading="lazy" src="'+v(i.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':"",g=i.image_url&&/\.(mp4|mov|avi|webm)$/i.test(i.image_url)?'<div style="width:48px;height:48px;border-radius:6px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem">\u{1F3AC}</div>':"",m=(i.message||"").length>120?(i.message||"").substring(0,120)+"\u2026":i.message||"",p=i.fb_post_id?'<a href="https://www.facebook.com/'+i.fb_post_id+'" target="_blank" rel="noopener" style="font-size:0.68rem;color:var(--accent);text-decoration:none">\u0E14\u0E39\u0E1A\u0E19 Facebook \u2192</a>':"";o+='<div style="display:flex;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg)">'+(d||g)+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+c+" "+F(i)+'<span style="font-size:0.68rem;color:var(--text-muted)">'+u+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+v(m)+"</div>"+R(i)+(p?'<div style="margin-top:4px">'+p+"</div>":"")+"</div></div>"}),n.forEach(i=>{var c=new Date(i.scheduled_at).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit",hour12:!1}),u=s[i.status]||"\u23F0",d=i.image_url?'<img loading="lazy" src="'+v(i.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':"",g=(i.message||"").length>120?(i.message||"").substring(0,120)+"\u2026":i.message||"";o+='<div style="display:flex;gap:10px;padding:10px;border:1px dashed var(--warning);border-radius:8px;margin-bottom:6px;background:rgba(234,179,8,0.04)">'+(d||"")+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+u+" "+F(i)+'<span style="font-size:0.68rem;color:var(--warning)">\u23F0 '+c+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+v(g)+"</div></div></div>"}),o+=a+"</div>",r.innerHTML=o}export async function uploadTicketImage(e){if(!e)return;const t=new FormData;t.append("file",e);try{const r=await(await fetch("/api/upload",{method:"POST",credentials:"same-origin",body:t})).json();r.ok?(document.getElementById("ticketImage").value=r.url,C("\u0E41\u0E19\u0E1A\u0E23\u0E39\u0E1B\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!")):f("err",r.error||"\u0E2D\u0E31\u0E1E\u0E42\u0E2B\u0E25\u0E14\u0E23\u0E39\u0E1B\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}catch{f("err","\u0E2D\u0E31\u0E1E\u0E42\u0E2B\u0E25\u0E14\u0E23\u0E39\u0E1B\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}}export async function loadTickets(){const e=document.getElementById("ticketList");try{const r=(await(await fetch("/api/tickets",{credentials:"same-origin"})).json()).tickets||[];if(!r.length){e.innerHTML='<div class="empty-state">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35 ticket</div>';return}const a={bug:"\u{1F41B}",feature:"\u2728",question:"\u2753"};e.innerHTML=r.map(s=>{const o=a[s.type]||"\u{1F4CC}",i=s.status||"open",c=new Date(s.created_at).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",hour12:!1});return'<div class="ticket-item"><div class="ticket-type '+s.type+'">'+o+'</div><div class="ticket-body"><div class="ticket-title">'+(s.title||"").replace(/</g,"&lt;")+'</div><div class="ticket-desc">'+(s.description||"").substring(0,80).replace(/</g,"&lt;")+'</div><div class="ticket-meta"><span class="ticket-status '+i+'">'+({open:"\u0E40\u0E1B\u0E34\u0E14","in-progress":"\u0E01\u0E33\u0E25\u0E31\u0E07\u0E41\u0E01\u0E49",closed:"\u0E1B\u0E34\u0E14\u0E41\u0E25\u0E49\u0E27"}[i]||i)+'</span><span class="ticket-time">'+c+"</span>"+(s.issue_url?'<a href="'+s.issue_url+'" target="_blank" class="ticket-link">GitHub \u2192</a>':"")+"</div></div></div>"}).join("")}catch{e.innerHTML='<div class="empty-state">\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08</div>'}}const A={anthropic:{models:["claude-haiku-4-5","claude-sonnet-4-6","claude-opus-4-6"],endpoint:"https://api.anthropic.com/v1"},openai:{models:["gpt-4o-mini","gpt-4o","gpt-4.1"],endpoint:"https://api.openai.com/v1"},google:{models:["gemini-2.0-flash","gemini-2.5-pro"],endpoint:"https://generativelanguage.googleapis.com/v1beta"}};export function onProviderChange(){const e=document.getElementById("aiProvider").value,t=e==="custom",n=e==="default",r=(s,o)=>{document.getElementById(s).style.display=o?"":"none"};r("aiModelField",!n&&!t),r("aiCustomModelField",t),r("aiKeyField",!n),r("aiEndpointField",!n),r("aiSettingsActions",!n);const a=document.getElementById("aiCurrentStatus");if(n?(a.style.background="rgba(34,197,94,0.06)",a.style.color="var(--success)",a.style.borderColor="rgba(34,197,94,0.12)",a.textContent="\u{1F7E2} \u0E01\u0E33\u0E25\u0E31\u0E07\u0E43\u0E0A\u0E49 AI \u0E02\u0E2D\u0E07\u0E23\u0E30\u0E1A\u0E1A (\u0E1F\u0E23\u0E35)"):(a.style.background="rgba(79,110,247,0.06)",a.style.color="var(--accent)",a.style.borderColor="rgba(79,110,247,0.12)",a.textContent="\u{1F535} \u0E43\u0E0A\u0E49 API Key \u0E02\u0E2D\u0E07\u0E04\u0E38\u0E13 \u2014 "+(t?"Custom":e.charAt(0).toUpperCase()+e.slice(1))),!n&&!t&&A[e]){const s=document.getElementById("aiModel");s.innerHTML=A[e].models.map(o=>'<option value="'+o+'">'+o+"</option>").join(""),document.getElementById("aiEndpoint").value=A[e].endpoint}}export async function testAiKey(){const e=document.getElementById("aiTestBtn");e.disabled=!0,e.textContent="\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E17\u0E14\u0E2A\u0E2D\u0E1A...";const t=document.getElementById("aiApiKey").value,n=document.getElementById("aiProvider").value;if(!t){aiToast("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48 API Key"),e.disabled=!1,e.textContent="\u{1F50D} \u0E17\u0E14\u0E2A\u0E2D\u0E1A";return}try{const a=await(await fetch("/api/ai/test",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify({provider:n,api_key:t,model:n==="custom"?document.getElementById("aiCustomModel").value:document.getElementById("aiModel").value,endpoint:document.getElementById("aiEndpoint").value})})).json();a.ok?(aiToast("ok","API Key \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49!"),C("\u0E17\u0E14\u0E2A\u0E2D\u0E1A API Key \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!")):aiToast("err",a.error||"\u0E17\u0E14\u0E2A\u0E2D\u0E1A\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}catch(r){aiToast("err","\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: "+r.message)}e.disabled=!1,e.textContent="\u{1F50D} \u0E17\u0E14\u0E2A\u0E2D\u0E1A"}export async function saveAiSettings(){const e=document.getElementById("aiProvider").value,t={provider:e};e!=="default"&&(t.api_key=document.getElementById("aiApiKey").value,t.endpoint=document.getElementById("aiEndpoint").value,t.model=e==="custom"?document.getElementById("aiCustomModel").value:document.getElementById("aiModel").value);try{(await(await fetch("/api/ai-settings",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(t)})).json()).ok?(aiToast("ok","\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27!"),C("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E01\u0E32\u0E23\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32 AI \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!")):aiToast("err","\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}catch{aiToast("err","\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14")}}export function aiToast(e,t){const n=document.getElementById("aiSettingsStatus");n.className="toast "+e,n.textContent=t,setTimeout(()=>{n.className="toast"},5e3)}export function loadAiSettings(){fetch("/api/ai-settings",{credentials:"same-origin"}).then(e=>e.json()).then(e=>{e.provider&&e.provider!=="default"&&(document.getElementById("aiProvider").value=e.provider,onProviderChange(),e.model&&(e.provider==="custom"?document.getElementById("aiCustomModel").value=e.model:document.getElementById("aiModel").value=e.model),e.endpoint&&(document.getElementById("aiEndpoint").value=e.endpoint))}).catch(()=>{})}export async function loadSchedule(){const e=document.getElementById("scheduleList");try{const a=l.selectedPage?l.selectedPage.id:"",o=await(await fetch("/api/schedule"+(a?"?page_id="+a:""),{credentials:"same-origin"})).json();if(!o.scheduled||o.scheduled.length===0){e.innerHTML='<div class="empty-state">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E42\u0E1E\u0E2A\u0E17\u0E35\u0E48\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E44\u0E27\u0E49</div>';return}var t={},n=["#3b82f6","#8b5cf6","#ec4899","#f59e0b","#10b981","#ef4444","#06b6d4","#84cc16"],r=0;o.scheduled.forEach(function(i){i.page_id&&!t[i.page_id]&&(t[i.page_id]=n[r%n.length],r++)}),e.innerHTML=o.scheduled.map(function(i){var c=v(i.message||""),u=v((i.message||"").slice(0,60))+(i.message&&i.message.length>60?"...":""),d=new Date(i.scheduled_at).toLocaleString("th-TH",{hour12:!1}),g=i.status==="pending"?"var(--accent)":i.status==="posted"?"#4caf50":"#ef4444",m=i.status==="pending"?"\u0E23\u0E2D\u0E42\u0E1E\u0E2A":i.status==="posted"?"\u0E42\u0E1E\u0E2A\u0E41\u0E25\u0E49\u0E27":"\u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27",p=t[i.page_id]||"var(--text-muted)",h=i.page_name?'<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">'+(i.page_picture?'<img src="'+v(i.page_picture)+'" style="width:16px;height:16px;border-radius:50%;object-fit:cover">':'<span style="width:16px;height:16px;border-radius:50%;background:'+p+';display:inline-block;flex-shrink:0"></span>')+'<span style="font-size:0.72rem;color:'+p+';font-weight:500">'+v(i.page_name)+"</span></div>":"",b=i.image_url&&i.image_url.trim()!=="",I=b?'<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(59,130,246,0.15);color:#60a5fa;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:500">\u{1F5BC}\uFE0F \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E</span>':'<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(148,163,184,0.15);color:#94a3b8;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:500">\u{1F4DD} \u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21</span>',x=b?'<img src="'+v(i.image_url)+`" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display='none'">`:'<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-card,rgba(148,163,184,0.1));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;border:1px solid var(--border)">\u{1F4DD}</div>',y="";i.status==="pending"?y='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button onclick="event.stopPropagation();editScheduledPost('+i.id+","+JSON.stringify(i.message||"").replace(/"/g,"&quot;").replace(/'/g,"\\'")+","+JSON.stringify(i.image_url||"").replace(/"/g,"&quot;").replace(/'/g,"\\'")+",'"+(i.scheduled_at||"").slice(0,10)+"','"+(i.scheduled_at||"").slice(11,16)+`')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">\u270F\uFE0F \u0E41\u0E01\u0E49\u0E44\u0E02</button><button onclick="event.stopPropagation();cancelSchedule(`+i.id+')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01</button></div>':i.status==="failed"&&(y='<div style="display:flex;gap:6px;padding:6px 12px 10px;border-top:1px solid var(--border,rgba(255,255,255,0.08))"><button onclick="event.stopPropagation();retrySchedule('+i.id+')" style="flex:1;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">\u{1F504} \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48</button><button onclick="event.stopPropagation();cancelSchedule('+i.id+')" style="flex:1;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer">\u{1F5D1}\uFE0F \u0E25\u0E1A</button></div>');var k=i.status==="pending"?y:"",S=i.status==="failed"?y:"";return'<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border-left:3px solid '+p+";border:1px solid var(--border);border-left:3px solid "+p+'"><div style="display:flex;align-items:center;padding:10px 12px;gap:10px">'+x+'<div style="flex:1;min-width:0">'+h+'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'+I+'</div><div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+u+'</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">\u{1F4C5} '+d+' \xB7 <span style="color:'+g+'">'+m+"</span></div>"+(i.status==="failed"&&i.error_message?'<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">\u26A0\uFE0F '+v(i.error_message.slice(0,80))+"</div>":"")+"</div>"+k+"</div>"+S+"</div>"}).join("")}catch{e.innerHTML='<div class="empty-state">Error</div>'}}export async function createSchedule(){const e=document.getElementById("scheduleMsg").value.trim(),t=document.getElementById("scheduleDate").value,n=document.getElementById("scheduleTime").value,r=document.getElementById("scheduleStatus");if(!e){r.textContent="\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E35\u0E22\u0E19\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21",r.className="toast err";return}if(!t||!n){r.textContent="\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E27\u0E31\u0E19\u0E41\u0E25\u0E30\u0E40\u0E27\u0E25\u0E32",r.className="toast err";return}const a=new Date(t+"T"+n+":00").toISOString();try{const o=await(await fetch("/api/schedule",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:e,scheduled_at:a})})).json();o.ok?(r.textContent="\u0E15\u0E31\u0E49\u0E07\u0E40\u0E27\u0E25\u0E32\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!",r.className="toast ok",document.getElementById("scheduleMsg").value="",window.loadSchedule()):(r.textContent=o.error||"Error",r.className="toast err")}catch(s){r.textContent="Error: "+s.message,r.className="toast err"}}export async function cancelSchedule(e){await fetch("/api/schedule/"+e,{method:"DELETE",credentials:"same-origin"}),window.loadSchedule()}export async function retrySchedule(e){await fetch("/api/schedule/"+e+"/retry",{method:"POST",credentials:"same-origin"}),window.loadSchedule()}export function editScheduledPost(e,t,n,r,a){l.editingScheduleId=e,window.switchTab("compose",document.querySelector(".sidebar-nav-item"));var s=document.getElementById("message");s.value=t||"",s.dispatchEvent(new Event("input"));var o=document.getElementById("imagePreview");n?(l.uploadedImageUrl=n,document.getElementById("postType").value="image",o.innerHTML='<div class="preview-item" style="position:relative;display:inline-block"><img src="'+v(n)+'" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border)"><button onclick="removeEditImage()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:0.7rem">\u2715</button></div>'):(l.uploadedImageUrl=null,document.getElementById("postType").value="text",o.innerHTML="");var i=document.getElementById("schedulePicker");i.style.display="block",r&&(document.getElementById("schedDate").value=r),a&&setSchedTime(a);var c=document.getElementById("postBtn");c.style.display="none";var u=document.getElementById("scheduleToggle");u.style.display="none";var d=document.getElementById("schedUpdateBtn");d||(d=document.createElement("button"),d.id="schedUpdateBtn",d.className="btn btn-accent",d.style.cssText="font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)",c.parentElement.insertBefore(d,c)),d.style.display="",d.innerHTML="\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E15\u0E42\u0E1E\u0E2A",d.onclick=async function(){var m=document.getElementById("message").value.trim();if(!m&&!l.uploadedImageUrl){f("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E35\u0E22\u0E19\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E2B\u0E23\u0E37\u0E2D\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E23\u0E39\u0E1B");return}var p=document.getElementById("schedDate").value,h=document.getElementById("schedTime").value,b={message:m,image_url:l.uploadedImageUrl||null};p&&h&&(b.scheduled_at=p+"T"+h+":00");try{var I=await fetch("/api/schedule/"+l.editingScheduleId,{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}),x=await I.json();x.ok?(f("ok","\u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E15\u0E42\u0E1E\u0E2A\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!"),exitEditMode(),window.loadSchedule()):f("err",x.error||"Error")}catch(y){f("err","Error: "+y.message)}};var g=document.getElementById("schedCancelEditBtn");g||(g=document.createElement("button"),g.id="schedCancelEditBtn",g.className="btn btn-ghost",g.style.cssText="font-size:0.85rem;padding:12px 18px",g.innerHTML="\u21A9\uFE0F \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E41\u0E01\u0E49\u0E44\u0E02",g.onclick=function(){exitEditMode()},c.parentElement.appendChild(g)),g.style.display="",window.scrollTo({top:0,behavior:"smooth"})}export function removeEditImage(){l.uploadedImageUrl=null,document.getElementById("imagePreview").innerHTML="",document.getElementById("postType").value="text"}export function exitEditMode(){l.editingScheduleId=null,document.getElementById("message").value="",document.getElementById("charCount").textContent="0",document.getElementById("imagePreview").innerHTML="",l.uploadedImageUrl=null,document.getElementById("postType").value="text",document.getElementById("schedulePicker").style.display="none",document.getElementById("postBtn").style.display="",document.getElementById("scheduleToggle").style.display="";var e=document.getElementById("schedUpdateBtn");e&&(e.style.display="none");var t=document.getElementById("schedCancelEditBtn");t&&(t.style.display="none"),window.switchTab("schedule",document.querySelector(".sidebar-nav-item"))}export async function loadDrafts(){const e=document.getElementById("draftList");try{const t=l.selectedPage?l.selectedPage.id:"",r=await(await fetch("/api/drafts"+(t?"?page_id="+t:""),{credentials:"same-origin"})).json();if(!r.drafts||r.drafts.length===0){e.innerHTML='<div class="empty-state">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E09\u0E1A\u0E31\u0E1A\u0E23\u0E48\u0E32\u0E07</div>';return}e.innerHTML=r.drafts.map(a=>`
+// Schedule, calendar, logs, trends, insights, challenges, tickets, AI settings, drafts, API keys
+import state from './state.js';
+import { toast, insEsc, showNotify, showProgress, hideProgress } from './utils.js';
+
+function parseFailReason(errMsg) {
+  if (!errMsg) return 'ไม่ทราบสาเหตุ — ลองลบแล้วตั้งเวลาใหม่';
+  try {
+    var obj = JSON.parse(errMsg);
+    if (obj.error_user_msg) return obj.error_user_msg;
+    if (obj.message) return obj.message;
+  } catch {}
+  return errMsg.slice(0, 100);
+}
+
+export function setTrendView(mode) {
+  var grid = document.getElementById('trendList');
+  document.getElementById('trendViewGrid').classList.toggle('active', mode === 'grid');
+  document.getElementById('trendViewList').classList.toggle('active', mode === 'list');
+  if (mode === 'list') grid.classList.add('trend-list-mode');
+  else grid.classList.remove('trend-list-mode');
+}
+
+var SHOPEE_MOCK = [
+  {name:"เสื้อยืดโอเวอร์ไซส์ Unisex",price:199,price_min:159,price_max:299,image:"",rating:4.8,sold:12500,category:"fashion",url:"#"},
+  {name:"หูฟัง Bluetooth TWS กันน้ำ IPX5",price:390,price_min:290,price_max:590,image:"",rating:4.6,sold:8700,category:"electronics",url:"#"},
+  {name:"เซรั่มวิตามินซี Bright Skin 30ml",price:259,price_min:199,price_max:359,image:"",rating:4.9,sold:25000,category:"beauty",url:"#"},
+  {name:"ชั้นวางของสแตนเลส 4 ชั้น",price:450,price_min:350,price_max:650,image:"",rating:4.5,sold:3200,category:"home",url:"#"},
+  {name:"วิตามินซี 1000mg 60 เม็ด",price:190,price_min:150,price_max:290,image:"",rating:4.7,sold:18000,category:"health",url:"#"},
+  {name:"กางเกงขาสั้น ผ้าร่ม ระบายอากาศ",price:179,price_min:129,price_max:249,image:"",rating:4.4,sold:9300,category:"fashion",url:"#"},
+  {name:"สายชาร์จ USB-C 100W ถัก Nylon",price:89,price_min:59,price_max:159,image:"",rating:4.8,sold:42000,category:"electronics",url:"#"},
+  {name:"แผ่นมาส์กหน้า Collagen 10 แผ่น",price:99,price_min:79,price_max:149,image:"",rating:4.6,sold:31000,category:"beauty",url:"#"},
+  {name:"ไฟ LED Strip RGB รีโมท 5 เมตร",price:199,price_min:149,price_max:349,image:"",rating:4.3,sold:6100,category:"home",url:"#"},
+  {name:"โปรตีนเวย์ Isolate 2lb ช็อกโกแลต",price:890,price_min:750,price_max:1290,image:"",rating:4.7,sold:4500,category:"health",url:"#"}
+];
+
+export async function loadTrends() {
+  var el = document.getElementById('trendList');
+  el.innerHTML = '<div class="empty-state" style="grid-column:1/-1">กำลังโหลด...</div>';
+  var products = [];
+  try {
+    var r = await fetch('/api/shopee-trends', { credentials: 'same-origin' });
+    var d = await r.json();
+    products = d.products || d.items || [];
+  } catch(e) { /* fallback to mock */ }
+  if (!products.length) products = SHOPEE_MOCK;
+  var countEl = document.getElementById('trendCount');
+  if (countEl) countEl.textContent = '(' + products.length + ' สินค้า)';
+  el.innerHTML = products.map(function(p) {
+    var price = p.price_min && p.price_max && p.price_min !== p.price_max
+      ? '฿' + Number(p.price_min).toLocaleString() + '-' + Number(p.price_max).toLocaleString()
+      : '฿' + Number(p.price || p.price_min || 0).toLocaleString();
+    var stars = '';
+    var rating = p.rating || 0;
+    for (var s = 0; s < 5; s++) stars += s < Math.round(rating) ? '★' : '☆';
+    var sold = p.sold || 0;
+    var soldStr = sold >= 1000 ? (sold/1000).toFixed(1) + 'k' : String(sold);
+    var cat = p.category || 'general';
+    var img = p.image || p.thumbnail || '';
+    var url = p.url || p.link || '#';
+    var name = insEsc((p.name || p.title || '').substring(0, 60));
+    return '<div class="trend-card" data-cat="' + insEsc(cat) + '">' +
+      (img ? '<img class="trend-card-img" src="' + insEsc(img) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="trend-card-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:2rem">🛒</div>') +
+      '<div class="trend-card-body">' +
+        '<div class="trend-card-name">' + name + '</div>' +
+        '<div class="trend-card-price">' + price + '</div>' +
+        '<div class="trend-card-meta">' +
+          '<span class="trend-card-stars">' + stars + ' ' + rating.toFixed(1) + '</span>' +
+          '<span>' + soldStr + ' ขายแล้ว</span>' +
+        '</div>' +
+      '</div>' +
+      '<a href="' + insEsc(url) + '" target="_blank" rel="noopener" class="trend-card-btn">ดูสินค้า →</a>' +
+    '</div>';
+  }).join('');
+}
+
+// Schedule
+// 24h time dropdowns
+export function initScheduleTime() {
+  var hSel=document.getElementById('schedTimeHour'), mSel=document.getElementById('schedTimeMin');
+  for(var h=0;h<24;h++) hSel.innerHTML+='<option value="'+String(h).padStart(2,'0')+'">'+String(h).padStart(2,'0')+'</option>';
+  for(var m=0;m<60;m+=5) mSel.innerHTML+='<option value="'+String(m).padStart(2,'0')+'">'+String(m).padStart(2,'0')+'</option>';
+  function syncTime(){document.getElementById('schedTime').value=hSel.value+':'+mSel.value;}
+  hSel.onchange=syncTime; mSel.onchange=syncTime;
+  hSel.value='09'; mSel.value='00'; syncTime();
+}
+export function setSchedTime(timeStr){
+  if(!timeStr)return;
+  var p=timeStr.split(':');
+  var h=document.getElementById('schedTimeHour'), m=document.getElementById('schedTimeMin');
+  if(h&&p[0])h.value=p[0];
+  if(m&&p[1]){var mv=Math.round(parseInt(p[1])/5)*5;m.value=String(mv%60).padStart(2,'0');}
+  document.getElementById('schedTime').value=timeStr;
+}
+export function toggleSchedule() {
+  const el = document.getElementById('schedulePicker');
+  const show = el.style.display === 'none';
+  el.style.display = show ? '' : 'none';
+  if (show) {
+    // Default: tomorrow 9:00
+    const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+    document.getElementById('schedDate').value = tmr.toISOString().split('T')[0];
+    setSchedTime('09:00');
+    loadScheduled();
+  }
+}
+
+export async function submitScheduled() {
+  const msg = document.getElementById('message').value.trim();
+  if (!msg && !state.uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+  if (!state.selectedPage) { toast('err','กรุณาเลือกเพจก่อน'); return; }
+  const date = document.getElementById('schedDate').value;
+  const time = document.getElementById('schedTime').value;
+  if (!date || !time) { toast('err','กรุณาเลือกวันและเวลา'); return; }
+  const scheduledAt = new Date(date + 'T' + time + ':00').toISOString();
+  try {
+    const imageUrls = state.uploadedImages.filter(i=>i.url).map(i=>i.url);
+    const body = imageUrls.length > 1
+      ? { message:msg, image_urls:imageUrls, page_id:state.selectedPage.id, scheduled_at:scheduledAt }
+      : { message:msg, image_url:imageUrls[0]||null, page_id:state.selectedPage.id, scheduled_at:scheduledAt };
+    const r = await fetch('/api/post/schedule', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
+    const d = await r.json();
+    if (d.ok) { toast('ok','ตั้งเวลาเรียบร้อย!'); showNotify('ตั้งเวลาโพสสำเร็จ!'); document.getElementById('message').value=''; document.getElementById('charCount').textContent='0'; document.getElementById('imagePreview').innerHTML=''; state.uploadedImages=[]; state.uploadedImageUrl=null; state.uploadedImageData=null; var dz=document.getElementById('dropZone'); dz.classList.remove('has-file'); dz.textContent='📷 คลิกเพื่อเลือกรูปหรือวิดีโอ หรือลากไฟล์มาวาง'; loadScheduled(); }
+    else toast('err', d.error || 'ตั้งเวลาไม่สำเร็จ');
+  } catch(e) { toast('err','เกิดข้อผิดพลาด'); }
+}
+
+export async function loadScheduled() {
+  const el = document.getElementById('scheduledList');
+  try {
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/posts/scheduled' + (pid ? '?page_id=' + pid : ''), { credentials:'same-origin' });
+    const d = await r.json();
+    const items = d.scheduled || d.posts || [];
+    if (!items.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;font-weight:500">📅 โพสที่ตั้งเวลาไว้</div>' +
+      items.map(function(p) {
+        var dt = new Date(p.scheduled_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+        var preview = insEsc((p.message || '').substring(0, 50));
+        var full = insEsc(p.message || '');
+        var imgUrls = p.image_urls ? (typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls) : (p.image_url ? [p.image_url] : []);
+        var imgCount = imgUrls.length;
+        var thumb = imgCount > 0 ? '<div style="position:relative;flex-shrink:0"><img src="' + insEsc(imgUrls[0]) + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid var(--border)" onerror="this.style.display=\'none\'">' + (imgCount > 1 ? '<span style="position:absolute;bottom:-2px;right:-2px;background:#3b82f6;color:#fff;font-size:0.55rem;padding:1px 4px;border-radius:4px;font-weight:600">+' + (imgCount-1) + '</span>' : '') + '</div>' : '';
+        return '<div style="padding:8px 0;border-top:1px solid var(--border);cursor:pointer" onclick="var f=this.querySelector(\'.sched-full\');f.style.display=f.style.display===\'block\'?\'none\':\'block\'">' +
+          '<div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">' + thumb + (p.page_name ? (p.page_picture ? '<img src="' + insEsc(p.page_picture) + '" style="width:14px;height:14px;border-radius:50%;object-fit:cover">' : '') + '<span style="color:#3b82f6;font-size:0.72rem;font-weight:500">' + insEsc(p.page_name) + '</span>' : '') + '<span style="color:var(--warning)">⏰ ' + dt + '</span><span style="color:var(--text-secondary);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + preview + '</span></div>' +
+          '<div class="sched-full" style="display:none;font-size:0.75rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;margin-top:6px;padding:6px 8px;background:var(--bg-input);border-radius:6px">' + full + '</div>' +
+        '</div>';
+      }).join('');
+  } catch { el.innerHTML = ''; }
+}
+
+// Log state in state.js
+// let allLogs = [];
+// let currentLogFilter = 'all';
+const LOG_ICONS = { login:'🔑', logout:'🔴', post_created:'📝', post_scheduled:'⏰', draft_saved:'💾', ai_write:'🤖', page_switched:'📄', settings_changed:'⚙️', auto_reply:'💬', auto_hide_spam:'🚫' };
+const LOG_LABELS = { login:'เข้าสู่ระบบ', logout:'ออกจากระบบ', post_created:'โพสลงเพจ', post_scheduled:'ตั้งเวลาโพส', draft_saved:'บันทึกแบบร่าง', ai_write:'AI เขียน', page_switched:'เปลี่ยนเพจ', settings_changed:'เปลี่ยนการตั้งค่า', auto_reply:'AI ตอบคอมเม้น', auto_hide_spam:'ซ่อน Spam' };
+const LOG_CSS = { login:'login', logout:'login', post_created:'post', post_scheduled:'schedule', draft_saved:'settings', ai_write:'ai', page_switched:'settings', settings_changed:'settings', auto_reply:'ai', auto_hide_spam:'settings' };
+
+export async function loadLogs() {
+  const el = document.getElementById('logList');
+  try {
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const r = await fetch('/api/activity' + (pid ? '?page_id=' + pid : ''), { credentials:'same-origin' });
+    const d = await r.json();
+    state.allLogs = d.activities || [];
+    updateLogStats();
+    renderLogs('all');
+  } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+}
+
+export function filterLogs(type, btn) {
+  if (btn) { document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  if (type !== null) state.currentLogFilter = type;
+  renderLogs(state.currentLogFilter);
+}
+
+export function updateLogStats() {
+  document.getElementById('logStatTotal').textContent = state.allLogs.length;
+  document.getElementById('logStatPosts').textContent = state.allLogs.filter(l=>l.action==='post_created'||l.action==='posted').length;
+  document.getElementById('logStatAI').textContent = state.allLogs.filter(l=>l.action==='ai_write'||l.action==='auto_reply').length;
+  document.getElementById('logStatSchedule').textContent = state.allLogs.filter(l=>l.action==='post_scheduled'||l.action==='scheduled').length;
+}
+
+export function renderLogs(type) {
+  const el = document.getElementById('logList');
+  const filterMap = { 'post_created': ['post_created','posted'], 'post_scheduled': ['post_scheduled','scheduled'], 'ai_write': ['ai_write','auto_reply'], 'auto_reply': ['auto_reply','auto_hide_spam'] };
+  let logs = type === 'all' ? state.allLogs : state.allLogs.filter(l => (filterMap[type] || [type]).includes(l.action));
+  const search = (document.getElementById('logSearch')||{}).value||'';
+  if (search.length >= 2) { const q=search.toLowerCase(); logs=logs.filter(l=>(l.details||'').toLowerCase().includes(q)||(l.action||'').includes(q)); }
+  const dateVal = (document.getElementById('logDate')||{}).value||'';
+  if (dateVal) logs = logs.filter(l=>(l.created_at||'').startsWith(dateVal));
+  if (!logs.length) { el.innerHTML = '<div class="empty-state">ไม่มีกิจกรรม</div>'; return; }
+  el.innerHTML = logs.slice(0, 50).map(l => {
+    const icon = LOG_ICONS[l.action] || '📌';
+    const label = LOG_LABELS[l.action] || l.action;
+    const css = LOG_CSS[l.action] || 'settings';
+    const time = new Date(l.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+    return '<div class="log-item"><div class="log-icon '+css+'">'+icon+'</div><div class="log-body"><div class="log-action">'+label+'</div>'+(l.details?'<div class="log-detail">'+l.details+'</div>':'')+'</div><div class="log-time">'+time+'</div></div>';
+  }).join('');
+}
+
+// Engagement Chart (CSS bar chart)
+export function renderEngagementChart(posts) {
+  const el = document.getElementById('engagementChart');
+  if (!posts || !posts.length) { el.innerHTML = '<div style="text-align:center;width:100%;color:var(--text-muted);font-size:0.8rem;padding:20px">ยังไม่มีข้อมูล</div>'; return; }
+  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const today = new Date();
+  const weekData = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayPosts = posts.filter(p => (p.created_at||p.ts||'').startsWith(dateStr));
+    const likes = dayPosts.reduce((s,p) => s + (p.likes||0), 0);
+    const comments = dayPosts.reduce((s,p) => s + (p.comments||0), 0);
+    const shares = dayPosts.reduce((s,p) => s + (p.shares||0), 0);
+    weekData.push({ day: days[d.getDay()], likes, comments, shares, total: likes+comments+shares });
+  }
+  const maxVal = Math.max(1, ...weekData.map(d => d.total));
+  el.innerHTML = weekData.map(d => {
+    const h = Math.max(4, (d.total / maxVal) * 80);
+    const color = d.total > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.04)';
+    return '<div class="chart-bar" style="height:'+h+'px;background:'+color+'"><div class="chart-bar-val">'+(d.total||'')+'</div><div class="chart-bar-label">'+d.day+'</div></div>';
+  }).join('');
+}
+
+// Calendar
+let calYear, calMonth, calPosts=[], calScheduled=[];
+export function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} window.renderCalendar(); }
+export async function renderCalendar() {
+  if(!calYear){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('calMonth').textContent=months[calMonth]+' '+calYear;
+  // Fetch data — filter ตามเพจที่เลือกจาก sidebar
+  try{const pfv=state.selectedPage?state.selectedPage.id:'';const q=pfv?'?page_id='+pfv+'&limit=50':'?limit=50';const[p,s]=await Promise.all([fetch('/api/posts'+q,{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];}catch{}
+  const grid=document.getElementById('calGrid');
+  const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  let html=days.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
+  const first=new Date(calYear,calMonth,1).getDay();
+  const total=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date();
+  for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
+  for(let d=1;d<=total;d++){
+    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayP=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+    const dayS=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+    const hasFail=dayP.some(p=>p.status==='failed')||dayS.some(p=>p.status==='failed');
+    const hasOk=dayP.some(p=>p.status==='posted');
+    const hasPend=dayS.some(p=>p.status==='pending');
+    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    var dots='';if(hasFail)dots+='<span class="cal-dot failed"></span>';if(hasOk)dots+='<span class="cal-dot posted"></span>';if(hasPend)dots+='<span class="cal-dot scheduled"></span>';
+    var count=dayP.length+dayS.length;
+    var countBadge=count>0?'<span style="font-size:0.6rem;color:var(--text-muted)">'+count+'</span>':'';
+    html+='<div class="cal-day'+(isToday?' today':'')+'" onclick="showCalDay(\''+dateStr+'\')">'+d+'<div class="cal-dots">'+dots+'</div>'+countBadge+'</div>';
+  }
+  grid.innerHTML=html;
+  document.getElementById('calDetail').innerHTML='';
+}
+export function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();window.renderCalendar();}
+export function calCreatePost(dateStr){window.switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
+function postTypeLabel(p) {
+  if (p.image_url && /\.(mp4|mov|avi|webm)$/i.test(p.image_url)) return '<span style="padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.15);color:#c084fc;font-size:0.65rem">🎬 วิดีโอ</span>';
+  if (p.image_url) return '<span style="padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.15);color:#60a5fa;font-size:0.65rem">🖼️ รูปภาพ</span>';
+  return '<span style="padding:2px 6px;border-radius:4px;background:rgba(156,163,175,0.15);color:#9ca3af;font-size:0.65rem">📝 ข้อความ</span>';
+}
+function engagementBar(p) {
+  var l=p.likes||0,c=p.comments||0,s=p.shares||0;
+  if(!l&&!c&&!s) return '';
+  return '<div style="display:flex;gap:8px;font-size:0.7rem;color:var(--text-muted);margin-top:4px">'+(l?'<span>👍 '+l+'</span>':'')+(c?'<span>💬 '+c+'</span>':'')+(s?'<span>🔄 '+s+'</span>':'')+'</div>';
+}
+export function showCalDay(dateStr) {
+  const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+  const scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+  const el=document.getElementById('calDetail');
+  const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:10px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
+  if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
+  const si={posted:'✅',pending:'⏳',failed:'❌',posting:'🔄'};
+  let html='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+' <span style="font-size:0.72rem;color:var(--text-muted);font-weight:400">('+posts.length+' โพส'+(scheds.length?' + '+scheds.length+' รอโพส':'')+')</span></div>';
+  // Posted
+  posts.forEach(p=>{
+    var icon=si[p.status]||'📤';
+    var time=p.created_at?new Date(p.created_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false}):'';
+    var thumb=p.image_url&&!/\.(mp4|mov|avi|webm)$/i.test(p.image_url)?'<img loading="lazy" src="'+insEsc(p.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+    var videoThumb=p.image_url&&/\.(mp4|mov|avi|webm)$/i.test(p.image_url)?'<div style="width:48px;height:48px;border-radius:6px;background:rgba(168,85,247,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem">🎬</div>':'';
+    var msg=(p.message||'').length>120?(p.message||'').substring(0,120)+'…':(p.message||'');
+    var fbLink=p.fb_post_id?'<a href="https://www.facebook.com/'+p.fb_post_id+'" target="_blank" rel="noopener" style="font-size:0.68rem;color:var(--accent);text-decoration:none">ดูบน Facebook →</a>':'';
+    html+='<div style="display:flex;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg)">'+(thumb||videoThumb)+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+icon+' '+postTypeLabel(p)+'<span style="font-size:0.68rem;color:var(--text-muted)">'+time+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+insEsc(msg)+'</div>'+engagementBar(p)+(fbLink?'<div style="margin-top:4px">'+fbLink+'</div>':'')+'</div></div>';
+  });
+  // Scheduled
+  scheds.forEach(p=>{
+    var time=new Date(p.scheduled_at).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
+    var icon=si[p.status]||'⏰';
+    var thumb=p.image_url?'<img loading="lazy" src="'+insEsc(p.image_url)+'" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0">':'';
+    var msg=(p.message||'').length>120?(p.message||'').substring(0,120)+'…':(p.message||'');
+    html+='<div style="display:flex;gap:10px;padding:10px;border:1px dashed var(--warning);border-radius:8px;margin-bottom:6px;background:rgba(234,179,8,0.04)">'+(thumb||'')+'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">'+icon+' '+postTypeLabel(p)+'<span style="font-size:0.68rem;color:var(--warning)">⏰ '+time+'</span></div><div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4;word-break:break-word">'+insEsc(msg)+'</div></div></div>';
+  });
+  html+=addBtn+'</div>';
+  el.innerHTML=html;
+}
+
+// Ticket UI (Kumo polish)
+export async function uploadTicketImage(file) {
+  if(!file) return;
+  const form = new FormData(); form.append('file', file);
+  try {
+    const r = await fetch('/api/upload', { method:'POST', credentials:'same-origin', body:form });
+    const d = await r.json();
+    if(d.ok) { document.getElementById('ticketImage').value = d.url; showNotify('แนบรูปสำเร็จ!'); }
+    else { toast('err', d.error || 'อัพโหลดรูปไม่สำเร็จ'); }
+  } catch(e) { toast('err','อัพโหลดรูปไม่สำเร็จ'); }
+}
+
+export async function loadTickets() {
+  const el = document.getElementById('ticketList');
+  try {
+    const r = await fetch('/api/tickets', { credentials:'same-origin' });
+    const d = await r.json();
+    const tickets = d.tickets || [];
+    if (!tickets.length) { el.innerHTML = '<div class="empty-state">ยังไม่มี ticket</div>'; return; }
+    const TYPE_ICONS = { bug:'🐛', feature:'✨', question:'❓' };
+    el.innerHTML = tickets.map(t => {
+      const icon = TYPE_ICONS[t.type] || '📌';
+      const status = t.status || 'open';
+      const time = new Date(t.created_at).toLocaleString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false });
+      return '<div class="ticket-item">' +
+        '<div class="ticket-type '+t.type+'">'+icon+'</div>' +
+        '<div class="ticket-body">' +
+          '<div class="ticket-title">'+((t.title||'').replace(/</g,'&lt;'))+'</div>' +
+          '<div class="ticket-desc">'+((t.description||'').substring(0,80).replace(/</g,'&lt;'))+'</div>' +
+          '<div class="ticket-meta">' +
+            '<span class="ticket-status '+status+'">'+({open:'เปิด','in-progress':'กำลังแก้',closed:'ปิดแล้ว'}[status]||status)+'</span>' +
+            '<span class="ticket-time">'+time+'</span>' +
+            (t.issue_url ? '<a href="'+t.issue_url+'" target="_blank" class="ticket-link">GitHub →</a>' : '') +
+          '</div>' +
+        '</div></div>';
+    }).join('');
+  } catch { el.innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ</div>'; }
+}
+
+// AI Settings
+const AI_MODELS = {
+  anthropic: { models: ['claude-haiku-4-5','claude-sonnet-4-6','claude-opus-4-6'], endpoint: 'https://api.anthropic.com/v1' },
+  openai: { models: ['gpt-4o-mini','gpt-4o','gpt-4.1'], endpoint: 'https://api.openai.com/v1' },
+  google: { models: ['gemini-2.0-flash','gemini-2.5-pro'], endpoint: 'https://generativelanguage.googleapis.com/v1beta' },
+};
+
+export function onProviderChange() {
+  const provider = document.getElementById('aiProvider').value;
+  const isCustom = provider === 'custom';
+  const isDefault = provider === 'default';
+  const show = (id, v) => { document.getElementById(id).style.display = v ? '' : 'none'; };
+
+  show('aiModelField', !isDefault && !isCustom);
+  show('aiCustomModelField', isCustom);
+  show('aiKeyField', !isDefault);
+  show('aiEndpointField', !isDefault);
+  show('aiSettingsActions', !isDefault);
+
+  const status = document.getElementById('aiCurrentStatus');
+  if (isDefault) {
+    status.style.background = 'rgba(34,197,94,0.06)';
+    status.style.color = 'var(--success)';
+    status.style.borderColor = 'rgba(34,197,94,0.12)';
+    status.textContent = '🟢 กำลังใช้ AI ของระบบ (ฟรี)';
+  } else {
+    status.style.background = 'rgba(79,110,247,0.06)';
+    status.style.color = 'var(--accent)';
+    status.style.borderColor = 'rgba(79,110,247,0.12)';
+    status.textContent = '🔵 ใช้ API Key ของคุณ — ' + (isCustom ? 'Custom' : provider.charAt(0).toUpperCase() + provider.slice(1));
+  }
+
+  if (!isDefault && !isCustom && AI_MODELS[provider]) {
+    const sel = document.getElementById('aiModel');
+    sel.innerHTML = AI_MODELS[provider].models.map(m => '<option value="'+m+'">'+m+'</option>').join('');
+    document.getElementById('aiEndpoint').value = AI_MODELS[provider].endpoint;
+  }
+}
+
+export async function testAiKey() {
+  const btn = document.getElementById('aiTestBtn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังทดสอบ...';
+  const key = document.getElementById('aiApiKey').value;
+  const provider = document.getElementById('aiProvider').value;
+  if (!key) { aiToast('err','กรุณาใส่ API Key'); btn.disabled=false; btn.textContent='🔍 ทดสอบ'; return; }
+  try {
+    const r = await fetch('/api/ai/test', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify({ provider, api_key:key, model: provider==='custom' ? document.getElementById('aiCustomModel').value : document.getElementById('aiModel').value, endpoint: document.getElementById('aiEndpoint').value }) });
+    const d = await r.json();
+    if (d.ok) { aiToast('ok','API Key ใช้ได้!'); showNotify('ทดสอบ API Key สำเร็จ!'); }
+    else aiToast('err', d.error || 'ทดสอบไม่สำเร็จ');
+  } catch(e) { aiToast('err','เกิดข้อผิดพลาด: '+e.message); }
+  btn.disabled=false; btn.textContent='🔍 ทดสอบ';
+}
+
+export async function saveAiSettings() {
+  const provider = document.getElementById('aiProvider').value;
+  const body = { provider };
+  if (provider !== 'default') {
+    body.api_key = document.getElementById('aiApiKey').value;
+    body.endpoint = document.getElementById('aiEndpoint').value;
+    body.model = provider === 'custom' ? document.getElementById('aiCustomModel').value : document.getElementById('aiModel').value;
+  }
+  try {
+    const r = await fetch('/api/ai-settings', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(body) });
+    const d = await r.json();
+    if (d.ok) { aiToast('ok','บันทึกแล้ว!'); showNotify('บันทึกการตั้งค่า AI สำเร็จ!'); }
+    else aiToast('err','บันทึกไม่สำเร็จ');
+  } catch(e) { aiToast('err','เกิดข้อผิดพลาด'); }
+}
+
+export function aiToast(type,msg) { const el=document.getElementById('aiSettingsStatus'); el.className='toast '+type; el.textContent=msg; setTimeout(()=>{el.className='toast';},5000); }
+
+// Load AI settings on tab open
+export function loadAiSettings() {
+  fetch('/api/ai-settings',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+    if(d.provider && d.provider !== 'default') {
+      document.getElementById('aiProvider').value = d.provider;
+      onProviderChange();
+      if(d.model) {
+        if(d.provider === 'custom') document.getElementById('aiCustomModel').value = d.model;
+        else document.getElementById('aiModel').value = d.model;
+      }
+      if(d.endpoint) document.getElementById('aiEndpoint').value = d.endpoint;
+    }
+  }).catch(()=>{});
+}
+
+export async function loadSchedule() {
+  const list = document.getElementById('scheduleList');
+  try {
+    const pid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/schedule' + (pid ? '?page_id=' + pid : ''), {credentials:'same-origin'});
+    const data = await res.json();
+    if (!data.scheduled || data.scheduled.length === 0) {
+      list.innerHTML = '<div class="empty-state">ยังไม่มีโพสที่ตั้งเวลาไว้</div>';
+      return;
+    }
+    var pageColors = {};
+    var colorPalette = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#84cc16'];
+    var colorIdx = 0;
+    data.scheduled.forEach(function(s) {
+      if (s.page_id && !pageColors[s.page_id]) {
+        pageColors[s.page_id] = colorPalette[colorIdx % colorPalette.length];
+        colorIdx++;
+      }
+    });
+    list.innerHTML = data.scheduled.map(function(s) {
+      var msg = insEsc(s.message || '');
+      var preview = insEsc((s.message || '').slice(0, 60)) + (s.message && s.message.length > 60 ? '...' : '');
+      var dt = new Date(s.scheduled_at).toLocaleString('th-TH',{hour12:false});
+      var isStuck = s.status === 'posting' && (Date.now() - new Date(s.scheduled_at).getTime() > 30 * 60 * 1000);
+      var stColor = s.status === 'pending' ? 'var(--accent)' : s.status === 'posted' ? '#4caf50' : (s.status === 'posting' && !isStuck) ? '#f59e0b' : '#ef4444';
+      var stText = s.status === 'pending' ? 'รอโพส' : s.status === 'posted' ? 'โพสแล้ว' : (s.status === 'posting' && !isStuck) ? 'กำลังโพส...' : s.status === 'posting' ? 'ค้าง — กดลองใหม่หรือลบ' : 'ล้มเหลว';
+      var pgColor = pageColors[s.page_id] || 'var(--text-muted)';
+      var pageBadge = s.page_name ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">' + (s.page_picture ? '<img src="' + insEsc(s.page_picture) + '" style="width:16px;height:16px;border-radius:50%;object-fit:cover">' : '<span style="width:16px;height:16px;border-radius:50%;background:' + pgColor + ';display:inline-block;flex-shrink:0"></span>') + '<span style="font-size:0.72rem;color:' + pgColor + ';font-weight:500">' + insEsc(s.page_name) + '</span></div>' : '';
+      var hasImage = s.image_url && s.image_url.trim() !== '';
+      var typeBadge = hasImage
+        ? '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(59,130,246,0.15);color:#60a5fa;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:500">🖼️ รูปภาพ</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(148,163,184,0.15);color:#94a3b8;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:500">📝 ข้อความ</span>';
+      var thumbnail = hasImage
+        ? '<img src="' + insEsc(s.image_url) + '" style="width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)" onerror="this.style.display=\'none\'">'
+        : '<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-card,rgba(148,163,184,0.1));display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;border:1px solid var(--border)">📝</div>';
+      var actionBtns = '';
+      if (s.status === 'pending') {
+        actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+          '<button onclick="event.stopPropagation();editScheduledPost(' + s.id + ',' + JSON.stringify(s.message||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',' + JSON.stringify(s.image_url||'').replace(/"/g,'&quot;').replace(/'/g,"\\'") + ',\'' + (s.scheduled_at||'').slice(0,10) + '\',\'' + (s.scheduled_at||'').slice(11,16) + '\')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">✏️ แก้ไข</button>' +
+          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ยกเลิก</button>' +
+          '</div>';
+      } else if (s.status === 'failed' || s.status === 'posting') {
+        actionBtns = '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+          '<button onclick="event.stopPropagation();retrySchedule(' + s.id + ')" style="background:none;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">🔄 ลองใหม่</button>' +
+          '<button onclick="event.stopPropagation();cancelSchedule(' + s.id + ')" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;white-space:nowrap">ลบ</button>' +
+          '</div>';
+      }
+      var borderLeft = s.status === 'failed' ? '#ef4444' : s.status === 'posting' ? '#f59e0b' : pgColor;
+      return '<div style="background:var(--bg-input);border-radius:8px;margin-bottom:6px;border:1px solid var(--border);border-left:3px solid ' + borderLeft + '">' +
+        '<div style="display:flex;align-items:center;padding:10px 12px;gap:10px">' +
+          thumbnail +
+          '<div style="flex:1;min-width:0">' +
+            pageBadge +
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">' + typeBadge + '</div>' +
+            '<div style="font-size:0.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">📅 ' + dt + ' · <span style="color:' + stColor + '">' + stText + '</span></div>' +
+            (s.status === 'failed' ? '<div style="font-size:0.68rem;color:#ef4444;margin-top:2px;opacity:0.8">⚠️ ' + insEsc(parseFailReason(s.error_message)) + '</div>' : '') +
+          '</div>' +
+          actionBtns +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+export async function createSchedule() {
+  const msg = document.getElementById('scheduleMsg').value.trim();
+  const date = document.getElementById('scheduleDate').value;
+  const time = document.getElementById('scheduleTime').value;
+  const st = document.getElementById('scheduleStatus');
+  if (!msg) { st.textContent='กรุณาเขียนข้อความ'; st.className='toast err'; return; }
+  if (!date || !time) { st.textContent='กรุณาเลือกวันและเวลา'; st.className='toast err'; return; }
+  const scheduledAt = new Date(date+'T'+time+':00').toISOString();
+  try {
+    const res = await fetch('/api/schedule', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg,scheduled_at:scheduledAt})});
+    const data = await res.json();
+    if (data.ok) { st.textContent='ตั้งเวลาสำเร็จ!'; st.className='toast ok'; document.getElementById('scheduleMsg').value=''; window.loadSchedule(); }
+    else { st.textContent=data.error||'Error'; st.className='toast err'; }
+  } catch(e) { st.textContent='Error: '+e.message; st.className='toast err'; }
+}
+
+export async function cancelSchedule(id) {
+  await fetch('/api/schedule/'+id, {method:'DELETE', credentials:'same-origin'});
+  window.loadSchedule();
+}
+
+export async function retrySchedule(id) {
+  await fetch('/api/schedule/'+id+'/retry', {method:'POST', credentials:'same-origin'});
+  window.loadSchedule();
+}
+
+export function editScheduledPost(id, message, imageUrl, date, time) {
+  state.editingScheduleId = id;
+  // Switch to compose tab
+  window.switchTab('compose', document.querySelector('.sidebar-nav-item'));
+  // Pre-fill message
+  var msgEl = document.getElementById('message');
+  msgEl.value = message || '';
+  msgEl.dispatchEvent(new Event('input'));
+  // Pre-fill image
+  var prevEl = document.getElementById('imagePreview');
+  if (imageUrl) {
+    state.uploadedImageUrl = imageUrl;
+    document.getElementById('postType').value = 'image';
+    prevEl.innerHTML = '<div class="preview-item" style="position:relative;display:inline-block"><img src="' + insEsc(imageUrl) + '" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--border)"><button onclick="removeEditImage()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:0.7rem">✕</button></div>';
+  } else {
+    state.uploadedImageUrl = null;
+    document.getElementById('postType').value = 'text';
+    prevEl.innerHTML = '';
+  }
+  // Show schedule picker with pre-filled date/time
+  var picker = document.getElementById('schedulePicker');
+  picker.style.display = 'block';
+  if (date) document.getElementById('schedDate').value = date;
+  if (time) setSchedTime(time);
+  // Change button to update mode
+  var postBtn = document.getElementById('postBtn');
+  postBtn.style.display = 'none';
+  var schedToggle = document.getElementById('scheduleToggle');
+  schedToggle.style.display = 'none';
+  // Add/update the update button
+  var updateBtn = document.getElementById('schedUpdateBtn');
+  if (!updateBtn) {
+    updateBtn = document.createElement('button');
+    updateBtn.id = 'schedUpdateBtn';
+    updateBtn.className = 'btn btn-accent';
+    updateBtn.style.cssText = 'font-size:1.05rem;padding:16px 32px;box-shadow:0 4px 20px var(--accent-glow)';
+    postBtn.parentElement.insertBefore(updateBtn, postBtn);
+  }
+  updateBtn.style.display = '';
+  updateBtn.innerHTML = '✅ อัพเดตโพส';
+  updateBtn.onclick = async function() {
+    var newMsg = document.getElementById('message').value.trim();
+    if (!newMsg && !state.uploadedImageUrl) { toast('err','กรุณาเขียนข้อความหรือเลือกรูป'); return; }
+    var newDate = document.getElementById('schedDate').value;
+    var newTime = document.getElementById('schedTime').value;
+    var body = { message: newMsg, image_url: state.uploadedImageUrl || null };
+    if (newDate && newTime) body.scheduled_at = newDate + 'T' + newTime + ':00';
+    try {
+      var res = await fetch('/api/schedule/' + state.editingScheduleId, { method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var data = await res.json();
+      if (data.ok) {
+        toast('ok','อัพเดตโพสสำเร็จ!');
+        exitEditMode();
+        window.loadSchedule();
+      } else { toast('err', data.error || 'Error'); }
+    } catch(e) { toast('err','Error: ' + e.message); }
+  };
+  // Add cancel edit button
+  var cancelEditBtn = document.getElementById('schedCancelEditBtn');
+  if (!cancelEditBtn) {
+    cancelEditBtn = document.createElement('button');
+    cancelEditBtn.id = 'schedCancelEditBtn';
+    cancelEditBtn.className = 'btn btn-ghost';
+    cancelEditBtn.style.cssText = 'font-size:0.85rem;padding:12px 18px';
+    cancelEditBtn.innerHTML = '↩️ ยกเลิกแก้ไข';
+    cancelEditBtn.onclick = function() { exitEditMode(); };
+    postBtn.parentElement.appendChild(cancelEditBtn);
+  }
+  cancelEditBtn.style.display = '';
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+export function removeEditImage() {
+  state.uploadedImageUrl = null;
+  document.getElementById('imagePreview').innerHTML = '';
+  document.getElementById('postType').value = 'text';
+}
+
+export function exitEditMode() {
+  state.editingScheduleId = null;
+  document.getElementById('message').value = '';
+  document.getElementById('charCount').textContent = '0';
+  document.getElementById('imagePreview').innerHTML = '';
+  state.uploadedImageUrl = null;
+  document.getElementById('postType').value = 'text';
+  document.getElementById('schedulePicker').style.display = 'none';
+  document.getElementById('postBtn').style.display = '';
+  document.getElementById('scheduleToggle').style.display = '';
+  var updateBtn = document.getElementById('schedUpdateBtn');
+  if (updateBtn) updateBtn.style.display = 'none';
+  var cancelEditBtn = document.getElementById('schedCancelEditBtn');
+  if (cancelEditBtn) cancelEditBtn.style.display = 'none';
+  window.switchTab('schedule', document.querySelector('.sidebar-nav-item'));
+}
+
+// Drafts
+export async function loadDrafts() {
+  const list = document.getElementById('draftList');
+  try {
+    const dpid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/drafts' + (dpid ? '?page_id=' + dpid : ''), {credentials:'same-origin'});
+    const data = await res.json();
+    if (!data.drafts || data.drafts.length === 0) {
+      list.innerHTML = '<div class="empty-state">ยังไม่มีฉบับร่าง</div>';
+      return;
+    }
+    list.innerHTML = data.drafts.map(d => `
       <div style="padding:12px;background:var(--bg-input);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)">
-        <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;max-height:60px;overflow:hidden">${a.message.slice(0,120)}${a.message.length>120?"...":""}</div>
+        <div style="font-size:0.85rem;color:var(--text);white-space:pre-wrap;max-height:60px;overflow:hidden">${d.message.slice(0,120)}${d.message.length>120?'...':''}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-          <span style="font-size:0.7rem;color:var(--text-muted)">${new Date(a.updated_at).toLocaleString("th-TH",{hour12:!1})}</span>
+          <span style="font-size:0.7rem;color:var(--text-muted)">${new Date(d.updated_at).toLocaleString('th-TH',{hour12:false})}</span>
           <div style="display:flex;gap:6px">
-            <button onclick="publishDraft(${a.id})" style="background:var(--accent);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:0.72rem;cursor:pointer">\u0E42\u0E1E\u0E2A\u0E40\u0E25\u0E22</button>
-            <button onclick="editDraft(${a.id})" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">\u0E41\u0E01\u0E49\u0E44\u0E02</button>
-            <button onclick="deleteDraft(${a.id})" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">\u0E25\u0E1A</button>
+            <button onclick="publishDraft(${d.id})" style="background:var(--accent);color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:0.72rem;cursor:pointer">โพสเลย</button>
+            <button onclick="editDraft(${d.id})" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">แก้ไข</button>
+            <button onclick="deleteDraft(${d.id})" style="background:none;border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:4px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer">ลบ</button>
           </div>
         </div>
       </div>
-    `).join("")}catch{e.innerHTML='<div class="empty-state">Error</div>'}}export async function saveDraft(){const e=document.getElementById("message").value.trim();if(!e){f("err","\u0E40\u0E02\u0E35\u0E22\u0E19\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E01\u0E48\u0E2D\u0E19\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01");return}try{const n=await(await fetch("/api/drafts",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:e,image_url:window._uploadedUrl||null})})).json();n.ok?f("ok","\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E09\u0E1A\u0E31\u0E1A\u0E23\u0E48\u0E32\u0E07\u0E41\u0E25\u0E49\u0E27"):f("err",n.error)}catch(t){f("err",t.message)}}export async function publishDraft(e){try{const n=await(await fetch("/api/drafts/"+e+"/publish",{method:"POST",credentials:"same-origin"})).json();n.ok?(f("ok","\u0E42\u0E1E\u0E2A\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!"),loadDrafts()):f("err",n.error)}catch(t){f("err",t.message)}}export async function editDraft(e){try{const t=l.selectedPage?l.selectedPage.id:"",a=(await(await fetch("/api/drafts"+(t?"?page_id="+t:""),{credentials:"same-origin"})).json()).drafts.find(s=>s.id===e);a&&(document.getElementById("message").value=a.message,document.getElementById("charCount").textContent=a.message.length,window.switchTab("compose",document.querySelector(".sidebar-nav-item")),f("ok","\u0E42\u0E2B\u0E25\u0E14\u0E09\u0E1A\u0E31\u0E1A\u0E23\u0E48\u0E32\u0E07\u0E41\u0E25\u0E49\u0E27 \u0E41\u0E01\u0E49\u0E44\u0E02\u0E44\u0E14\u0E49\u0E40\u0E25\u0E22"))}catch(t){f("err",t.message)}}export async function deleteDraft(e){await fetch("/api/drafts/"+e,{method:"DELETE",credentials:"same-origin"}),loadDrafts()}export async function submitTicket(){const e=document.getElementById("ticketType").value,t=document.getElementById("ticketTitle").value.trim(),n=document.getElementById("ticketBody").value.trim(),r=document.getElementById("ticketImage").value.trim(),a=document.getElementById("ticketStatus");if(!t){a.textContent="\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D",a.className="toast err";return}if(!n){a.textContent="\u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E2A\u0E48\u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2D\u0E35\u0E22\u0E14",a.className="toast err";return}try{const o=await(await fetch("/api/tickets",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:e,title:t,body:n,image_url:r||null})})).json();o.ok?(a.textContent="\u0E2A\u0E48\u0E07 ticket \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!",a.className="toast ok",document.getElementById("ticketTitle").value="",document.getElementById("ticketBody").value="",document.getElementById("ticketImage").value="",loadTickets()):(a.textContent=o.error||"Error",a.className="toast err")}catch(s){a.textContent="Error: "+s.message,a.className="toast err"}}var B={};export function showInsSkeleton(){["insImpressions","insEngaged","insFanAdds","insPostsToday"].forEach(function(e){document.getElementById(e).innerHTML='<div class="ins-skel" style="width:50px;height:24px;margin:0 auto"></div>'}),document.getElementById("insTopPosts").innerHTML='<div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div>'}export function insShowError(e){var t=document.getElementById("insError");e?(t.textContent=e,t.style.display=""):t.style.display="none"}export function insShowTimestamp(e){var t=document.getElementById("insTimestamp");e?t.textContent="\u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E15\u0E25\u0E48\u0E32\u0E2A\u0E38\u0E14: "+new Date(e).toLocaleString("th-TH",{hour:"2-digit",minute:"2-digit",day:"numeric",month:"short",hour12:!1}):t.textContent=""}export function insRenderAll(){renderInsStats(),setTimeout(renderInsChart,0),setTimeout(renderInsTopPosts,0),setTimeout(renderInsHeatmap,10)}export async function loadInsights(e){var t=l.selectedPage?l.selectedPage.id:"";if(!t){insShowError("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E1E\u0E08\u0E08\u0E32\u0E01 sidebar \u0E01\u0E48\u0E2D\u0E19");return}insShowError(null);var n="ins:"+t;if(!e)try{var r=sessionStorage.getItem(n);if(r){B=JSON.parse(r),insShowTimestamp(B.ts),insRenderAll();return}}catch{}showInsSkeleton();try{var a=await fetch("/api/insights-bundle/"+t,{credentials:"same-origin"}),s=await a.json();if(s.error){var o=s.error==="token_expired"?"Token \u0E2B\u0E21\u0E14\u0E2D\u0E32\u0E22\u0E38 \u2014 \u0E01\u0E23\u0E38\u0E13\u0E32 login \u0E43\u0E2B\u0E21\u0E48":s.error==="fb_api_error"?"Facebook API error: "+(s.detail||"\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07"):s.error==="Page not found"?"\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E1E\u0E08\u0E19\u0E35\u0E49":s.error;insShowError(o),["insImpressions","insEngaged","insFanAdds","insPostsToday"].forEach(function(i){document.getElementById(i).textContent="\u2014"});return}B=s;try{sessionStorage.setItem(n,JSON.stringify(s))}catch{}insShowTimestamp(s.ts),insRenderAll()}catch{insShowError("\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u2014 \u0E25\u0E2D\u0E07\u0E01\u0E14 \u21BB \u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07"),["insImpressions","insEngaged","insFanAdds","insPostsToday"].forEach(function(c){document.getElementById(c).textContent="\u2014"})}}export async function insRefreshAndLoad(){var e=l.selectedPage?l.selectedPage.id:"";if(e){var t=document.getElementById("insRefreshBtn");t.textContent="\u23F3",t.disabled=!0,insShowError(null);try{await fetch("/api/analytics/refresh",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({page_id:e})})}catch{}try{sessionStorage.removeItem("ins:"+e)}catch{}await loadInsights(!0),t.textContent="\u21BB",t.disabled=!1}}export async function insSyncPosts(){var e=l.selectedPage?l.selectedPage.id:"";if(!e){insShowError("\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E1E\u0E08\u0E01\u0E48\u0E2D\u0E19");return}var t=document.getElementById("insSyncBtn");t.textContent="\u23F3 Syncing...",t.disabled=!0,insShowError(null);try{var n=await fetch("/api/analytics/sync-posts",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({page_id:e})}),r=await n.json();if(r.error)insShowError(r.error);else{try{sessionStorage.removeItem("ins:"+e)}catch{}await loadInsights(!0)}}catch{insShowError("Sync \u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u2014 \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48")}t.textContent="Sync \u0E42\u0E1E\u0E2A",t.disabled=!1}export function insFmtNum(e){return!e&&e!==0?"\u2014":e>=1e6?(e/1e6).toFixed(1)+"M":e>=1e3?(e/1e3).toFixed(1)+"K":String(e)}export function renderInsDelta(e,t,n){var r=document.getElementById(e);if(!(!r||!n)){var a=Math.round((t-n)/n*100);r.textContent=(a>=0?"+":"")+a+"%",r.className="ins-stat-delta "+(a>=0?"up":"down")}}export function insGetMetric(e){for(var t=B.insights||[],n=0;n<t.length;n++)if(t[n].name===e)return t[n];return null}export function insMetricTotal(e){var t=insGetMetric(e);return!t||!t.values?0:t.values.reduce(function(n,r){return n+(r.value||0)},0)}export function renderInsStats(){var e=insMetricTotal("page_views_total"),t=insMetricTotal("page_post_engagements"),n=insMetricTotal("page_daily_follows");document.getElementById("insImpressions").textContent=insFmtNum(e),document.getElementById("insEngaged").textContent=insFmtNum(t),document.getElementById("insFanAdds").textContent=insFmtNum(n);var r=B.stats||{};document.getElementById("insPostsToday").textContent=r.posts||0}export function renderInsChart(){var e=document.getElementById("insChart");if(!e)return;var t=e.getContext("2d"),n=window.devicePixelRatio||1,r=e.clientWidth,a=200;e.width=r*n,e.height=a*n,t.scale(n,n),t.clearRect(0,0,r,a);var s=insGetMetric("page_views_total"),o=insGetMetric("page_post_engagements"),i=s&&s.values?s.values.map(function(E){return E.value||0}):[],c=o&&o.values?o.values.map(function(E){return E.value||0}):[],u=s&&s.values?s.values.map(function(E){return(E.end_time||"").slice(0,10)}):[];if(!i.length&&!c.length){t.fillStyle="#555",t.font="13px Inter",t.textAlign="center",t.fillText("\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",r/2,a/2);return}var d=i.concat(c),g=Math.max(1,Math.max.apply(null,d)),m=45,p=10,h=20,b=30,I=r-m-p,x=a-h-b,y=Math.max(i.length,c.length,2);t.strokeStyle="rgba(255,255,255,0.05)",t.lineWidth=1;var k,S;for(k=0;k<=4;k++)S=h+x-k/4*x,t.beginPath(),t.moveTo(m,S),t.lineTo(r-p,S),t.stroke(),t.fillStyle="#555",t.font="10px Inter",t.textAlign="right",t.fillText(insFmtNum(Math.round(g*k/4)),m-6,S+3);function O(E,N){if(E.length){var _,M,H;for(t.strokeStyle=N,t.lineWidth=2,t.beginPath(),_=0;_<E.length;_++)M=m+_/(y-1)*I,H=h+x-E[_]/g*x,_===0?t.moveTo(M,H):t.lineTo(M,H);for(t.stroke(),t.fillStyle=N,_=0;_<E.length;_++)M=m+_/(y-1)*I,H=h+x-E[_]/g*x,t.beginPath(),t.arc(M,H,3,0,Math.PI*2),t.fill()}}O(i,"#4f6ef7"),O(c,"#22c55e"),t.fillStyle="#555",t.font="10px Inter",t.textAlign="center";var L,z,P;for(L=0;L<y;L++)z=m+L/(y-1)*I,P=u[L]||"",P.length>5&&(P=P.slice(5)),t.fillText(P,z,a-8);t.fillStyle="#4f6ef7",t.fillRect(m,4,10,3),t.fillStyle="#8b8fa3",t.font="10px Inter",t.textAlign="left",t.fillText("Page Views",m+14,9),t.fillStyle="#22c55e",t.fillRect(m+85,4,10,3),t.fillStyle="#8b8fa3",t.fillText("Engagements",m+99,9)}export function renderInsTopPosts(){var e=document.getElementById("insTopPosts"),t=B.performance||{},n=t.top||[];if(!n.length){e.innerHTML='<div class="empty-state">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E42\u0E1E\u0E2A</div>';return}var r=n.slice().sort(function(a,s){return(s.likes||0)+(s.comments||0)+(s.shares||0)-((a.likes||0)+(a.comments||0)+(a.shares||0))}).slice(0,5);e.innerHTML=r.map(function(a,s){var o=v((a.message||"").substring(0,60))||"(\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21)",i=v((a.created_at||"").slice(0,10));return'<div class="ins-post"><div class="ins-post-rank">'+(s+1)+'</div><div class="ins-post-body"><div class="ins-post-msg">'+o+'</div><div class="ins-post-meta">'+(a.likes||0)+" likes \xB7 "+(a.comments||0)+" comments \xB7 "+(a.shares||0)+" shares \u2014 "+i+"</div></div></div>"}).join("")}export function renderInsHeatmap(){var e=document.getElementById("insHeatmap"),t=B.bestTime||{},n=t.heatmap||[],r=["\u0E2D\u0E32","\u0E08","\u0E2D","\u0E1E","\u0E1E\u0E24","\u0E28","\u0E2A"],a=[],s,o,i=1;for(s=0;s<7;s++)for(a[s]=[],o=0;o<24;o++)a[s][o]=0;for(var c=0;c<n.length;c++){var u=n[c],d=parseInt(u.d),g=parseInt(u.h);d>=0&&d<7&&g>=0&&g<24&&a[d]&&(a[d][g]=Number(u.eng)||0,a[d][g]>i&&(i=a[d][g]))}var m='<div class="ins-hm-label"></div>';for(o=0;o<24;o++)m+='<div class="ins-hm-hr">'+(o%3===0?o:"")+"</div>";for(s=0;s<7;s++)for(m+='<div class="ins-hm-label">'+r[s]+"</div>",o=0;o<24;o++){var p=a[s][o],h=p/i,b=h===0?"rgba(255,255,255,0.02)":"rgba(79,110,247,"+(.1+h*.7).toFixed(2)+")";m+='<div class="ins-hm-cell" style="background:'+b+'" title="'+r[s]+" "+o+":00 \u2014 "+Math.round(p)+'"></div>'}t.tip&&(m+='<div style="grid-column:1/-1;text-align:center;font-size:0.72rem;color:var(--accent);margin-top:8px">'+v(t.tip)+"</div>"),e.innerHTML=m}var W={follows:"#4f6ef7",posts:"#22c55e",reels:"#a855f7",engagements:"#f59e0b",views:"#ec4899"},G={follows:["\u0E42\u0E1E\u0E2A\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E04\u0E19\u0E2D\u0E22\u0E32\u0E01 share \u0E43\u0E2B\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E19",'\u0E43\u0E0A\u0E49 CTA \u0E40\u0E0A\u0E48\u0E19 "\u0E01\u0E14 Follow \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E44\u0E21\u0E48\u0E1E\u0E25\u0E32\u0E14"',"\u0E42\u0E1E\u0E2A\u0E2A\u0E21\u0E48\u0E33\u0E40\u0E2A\u0E21\u0E2D \u0E43\u0E2B\u0E49\u0E04\u0E19\u0E40\u0E2B\u0E47\u0E19\u0E1A\u0E48\u0E2D\u0E22"],posts:["\u0E42\u0E1E\u0E2A\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22\u0E27\u0E31\u0E19\u0E25\u0E30 1 \u0E42\u0E1E\u0E2A","\u0E43\u0E0A\u0E49\u0E23\u0E39\u0E1B\u0E08\u0E23\u0E34\u0E07 \u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48 stock \u2014 engagement \u0E2A\u0E39\u0E07\u0E01\u0E27\u0E48\u0E32 3x","\u0E42\u0E1E\u0E2A\u0E0A\u0E48\u0E27\u0E07 18:00-20:00 \u0E44\u0E14\u0E49 reach \u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14"],reels:["Reels \u0E2A\u0E31\u0E49\u0E19 15-30 \u0E27\u0E34 \u0E44\u0E14\u0E49 views \u0E2A\u0E39\u0E07\u0E01\u0E27\u0E48\u0E32","\u0E43\u0E0A\u0E49\u0E40\u0E1E\u0E25\u0E07\u0E17\u0E35\u0E48\u0E01\u0E33\u0E25\u0E31\u0E07 trending","\u0E16\u0E48\u0E32\u0E22\u0E41\u0E19\u0E27\u0E15\u0E31\u0E49\u0E07 9:16 \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19"],engagements:["\u0E15\u0E2D\u0E1A comment \u0E20\u0E32\u0E22\u0E43\u0E19 1 \u0E0A\u0E21.","\u0E16\u0E32\u0E21\u0E04\u0E33\u0E16\u0E32\u0E21\u0E17\u0E49\u0E32\u0E22\u0E42\u0E1E\u0E2A \u0E40\u0E1E\u0E34\u0E48\u0E21 comment","\u0E43\u0E0A\u0E49 poll/quiz \u0E43\u0E19 Stories"],views:["\u0E41\u0E0A\u0E23\u0E4C\u0E42\u0E1E\u0E2A\u0E44\u0E1B Group \u0E17\u0E35\u0E48\u0E40\u0E01\u0E35\u0E48\u0E22\u0E27\u0E02\u0E49\u0E2D\u0E07","\u0E43\u0E0A\u0E49 hashtag \u0E44\u0E17\u0E22\u0E17\u0E35\u0E48\u0E01\u0E33\u0E25\u0E31\u0E07 trending","\u0E42\u0E1E\u0E2A video \u0E2A\u0E31\u0E49\u0E19\u0E46 \u0E44\u0E14\u0E49 views \u0E40\u0E22\u0E2D\u0E30\u0E01\u0E27\u0E48\u0E32\u0E23\u0E39\u0E1B"]};export function toggleChDetail(e){var t=document.querySelectorAll(".ch-card");t[e]&&t[e].classList.toggle("expanded")}var V={follows:"rgba(79,110,247,0.1)",posts:"rgba(34,197,94,0.1)",reels:"rgba(168,85,247,0.1)",engagements:"rgba(245,158,11,0.1)",views:"rgba(236,72,153,0.1)"},$={follows:{tab:null,tip:"\u0E42\u0E1E\u0E2A\u0E40\u0E19\u0E37\u0E49\u0E2D\u0E2B\u0E32\u0E17\u0E35\u0E48\u0E44\u0E14\u0E49 share \u0E40\u0E22\u0E2D\u0E30 \u0E08\u0E30\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E1C\u0E39\u0E49\u0E15\u0E34\u0E14\u0E15\u0E32\u0E21"},posts:{tab:"compose",label:"\u0E40\u0E02\u0E35\u0E22\u0E19\u0E42\u0E1E\u0E2A \u2192",tip:"\u0E42\u0E1E\u0E2A\u0E0A\u0E48\u0E27\u0E07 18:00-20:00 \u0E44\u0E14\u0E49 reach \u0E2A\u0E39\u0E07\u0E2A\u0E38\u0E14"},reels:{tab:"compose",label:"\u0E2A\u0E23\u0E49\u0E32\u0E07 Reels \u2192",tip:"Reels \u0E2A\u0E31\u0E49\u0E19 15-30 \u0E27\u0E34 \u0E44\u0E14\u0E49 views \u0E2A\u0E39\u0E07\u0E01\u0E27\u0E48\u0E32"},engagements:{tab:"history",label:"\u0E14\u0E39 comments \u2192",tip:"\u0E15\u0E2D\u0E1A comment \u0E20\u0E32\u0E22\u0E43\u0E19 1 \u0E0A\u0E21. \u0E40\u0E1E\u0E34\u0E48\u0E21 interaction \u0E40\u0E23\u0E47\u0E27"},views:{tab:"insights",label:"\u0E14\u0E39 Insights \u2192",tip:"\u0E43\u0E0A\u0E49\u0E23\u0E39\u0E1B\u0E08\u0E23\u0E34\u0E07 \u0E44\u0E21\u0E48\u0E43\u0E0A\u0E48 stock \u2014 engagement \u0E2A\u0E39\u0E07\u0E01\u0E27\u0E48\u0E32 3x"}};export async function loadChallenges(e){var t=l.selectedPage?l.selectedPage.id:"";if(!t){document.getElementById("chList").innerHTML='<div class="empty-state">\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E1E\u0E08\u0E08\u0E32\u0E01 sidebar \u0E01\u0E48\u0E2D\u0E19</div>';return}var n=document.getElementById("chList"),r="ch:"+t;if(!e)try{var a=sessionStorage.getItem(r);if(a){var s=JSON.parse(a);renderChCards(s);return}}catch{}n.innerHTML=[1,2,3,4,5].map(function(){return'<div class="ch-card" style="pointer-events:none"><div class="ins-skel" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div class="ch-body"><div class="ins-skel" style="height:12px;width:50%;margin-bottom:6px"></div><div class="ins-skel" style="height:6px;width:100%"></div></div></div>'}).join("");try{var o=await fetch("/api/challenges/"+t,{credentials:"same-origin"});if(!o.ok){n.innerHTML='<div class="empty-state">API error '+o.status+" \u2014 \u0E25\u0E2D\u0E07\u0E01\u0E14 \u21BB</div>";return}var i=await o.json();try{sessionStorage.setItem(r,JSON.stringify(i))}catch{}if(i.error){n.innerHTML='<div class="empty-state">'+v(i.error)+"</div>";return}renderChCards(i)}catch(c){document.getElementById("chList").innerHTML='<div class="empty-state">\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u2014 '+v(c.message||"\u0E25\u0E2D\u0E07\u0E01\u0E14 \u21BB")+"</div>"}}export function renderChCards(e){var t=document.getElementById("chList"),n=e.challenges||[];if(!n.length){t.innerHTML='<div class="empty-state">\u0E44\u0E21\u0E48\u0E21\u0E35 challenge</div>';return}var r=document.getElementById("chPeriod");r&&e.period&&(r.textContent="("+e.period+")"),t.innerHTML=n.map(function(a,s){var o=Math.min(100,a.percent||0),i=o>=100,c=W[a.id]||"var(--accent)",u=V[a.id]||"rgba(79,110,247,0.1)",d=i?"\u2713 \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08":a.current+"/"+a.target,g=i?"color:#22c55e;background:rgba(34,197,94,0.1)":"color:var(--text-secondary);background:var(--bg-input)",m=$[a.id]||{},p=!i&&m.tab?`<button class="ch-action" onclick="event.stopPropagation();window.switchTab('`+m.tab+`')">`+v(m.label)+"</button>":"",h=Math.max(0,a.target-a.current),b=!i&&(a.id==="posts"||a.id==="reels")&&h>0?`<button class="ch-boost" onclick="event.stopPropagation();boostChallenge('`+a.id+"',"+h+',this)">\u{1F916} AI</button>':"",I=!i&&m.tip?'<div class="ch-tip">\u{1F4A1} '+v(m.tip)+"</div>":"",x=G[a.id]||[],y=x.length?'<div class="ch-detail">'+x.map(function(k){return'<div class="ch-detail-item">\u{1F4A1} '+v(k)+"</div>"}).join("")+"</div>":"";return'<div class="ch-card'+(i?" completed":"")+'" onclick="toggleChDetail('+s+')"><div class="ch-icon" style="background:'+u+'">'+v(a.icon||"\u{1F3AF}")+'</div><div class="ch-body"><div class="ch-title">'+v(a.name)+' <span class="ch-expand-icon">\u25BC</span></div><div class="ch-desc">'+a.current+" / "+a.target+" ("+Math.round(o)+'%)</div><div class="ch-bar"><div class="ch-bar-fill" style="width:'+o+"%;background:"+c+'"></div></div>'+I+'<div style="display:flex;gap:4px;flex-wrap:wrap">'+p+b+"</div>"+y+'</div><div class="ch-status" style="'+g+'">'+d+"</div></div>"}).join("")}export async function boostChallenge(e,t,n){var r=l.selectedPage?l.selectedPage.id:"";if(r){if(n.dataset.confirmed!=="yes"){n.textContent="\u26A0\uFE0F \u0E01\u0E14\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19",n.dataset.confirmed="yes",setTimeout(function(){n.textContent="\u{1F916} AI",n.dataset.confirmed=""},3e3);return}n.dataset.confirmed="",n.disabled=!0,n.textContent="\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07...";try{var a=await fetch("/api/challenges/"+r+"/boost",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({challenge_id:e,count:Math.min(t,5),types:["photo","question","link"]})}),s=await a.json();s.ok?(C("\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E42\u0E1E\u0E2A "+(s.generated||t)+" \u0E2D\u0E31\u0E19 + schedule \u0E41\u0E25\u0E49\u0E27!"),loadChallenges(!0)):(n.textContent="\u274C "+v(s.error||"\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08"),setTimeout(function(){n.textContent="\u{1F916} AI \u0E0A\u0E48\u0E27\u0E22\u0E17\u0E33",n.disabled=!1},3e3))}catch{n.textContent="\u274C \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48",setTimeout(function(){n.textContent="\u{1F916} AI \u0E0A\u0E48\u0E27\u0E22\u0E17\u0E33",n.disabled=!1},3e3)}}}export async function saveApiKey(e,t){var n=document.getElementById(t).value.trim();if(!n){f("err","\u0E01\u0E23\u0E38\u0E13\u0E32\u0E01\u0E23\u0E2D\u0E01 API key");return}try{var r={};r[e]=n;var a=await fetch("/api/settings",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(r)}),s=await a.json();s.ok?(C("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 "+e+" \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08!"),document.getElementById(t).value="",loadApiKeyStatus()):f("err",s.error||"\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08")}catch{f("err","\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14")}}export async function loadApiKeyStatus(){try{var e=await fetch("/api/settings",{credentials:"same-origin"}),t=await e.json(),n=[["has_apify_key","apifyStatus","Shopee/Apify"],["has_gemini_key","geminiStatus","Gemini"],["has_fal_key","falStatus","FAL.ai"]];n.forEach(function(r){var a=document.getElementById(r[1]);a&&(t[r[0]]?(a.textContent="\u2705 "+r[2]+" configured",a.style.color="var(--success)"):(a.textContent="\u26A0\uFE0F \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32",a.style.color="var(--text-muted)"))})}catch{}}export function filterTrends(e){document.querySelectorAll(".trend-filter").forEach(t=>{t.style.background="var(--bg-input)",t.style.color="var(--text-secondary)"}),event.target.style.background="var(--accent)",event.target.style.color="#fff",document.querySelectorAll(".trend-card").forEach(t=>{e==="all"||t.dataset.cat===e?t.style.display="":t.style.display="none"})}
+    `).join('');
+  } catch(e) { list.innerHTML = '<div class="empty-state">Error</div>'; }
+}
+
+export async function saveDraft() {
+  const msg = document.getElementById('message').value.trim();
+  if (!msg) { toast('err','เขียนข้อความก่อนบันทึก'); return; }
+  try {
+    const res = await fetch('/api/drafts', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, image_url:window._uploadedUrl||null})});
+    const data = await res.json();
+    if (data.ok) { toast('ok','บันทึกฉบับร่างแล้ว'); } else { toast('err',data.error); }
+  } catch(e) { toast('err',e.message); }
+}
+
+export async function publishDraft(id) {
+  // inline confirm handled by UI
+  try {
+    const res = await fetch('/api/drafts/'+id+'/publish', {method:'POST', credentials:'same-origin'});
+    const data = await res.json();
+    if (data.ok) { toast('ok','โพสสำเร็จ!'); loadDrafts(); } else { toast('err',data.error); }
+  } catch(e) { toast('err',e.message); }
+}
+
+export async function editDraft(id) {
+  try {
+    const dpid = state.selectedPage ? state.selectedPage.id : '';
+    const res = await fetch('/api/drafts' + (dpid ? '?page_id=' + dpid : ''), {credentials:'same-origin'});
+    const data = await res.json();
+    const draft = data.drafts.find(d => d.id === id);
+    if (draft) {
+      document.getElementById('message').value = draft.message;
+      document.getElementById('charCount').textContent = draft.message.length;
+      window.switchTab('compose', document.querySelector('.sidebar-nav-item'));
+      toast('ok','โหลดฉบับร่างแล้ว แก้ไขได้เลย');
+    }
+  } catch(e) { toast('err',e.message); }
+}
+
+export async function deleteDraft(id) {
+  
+  await fetch('/api/drafts/'+id, {method:'DELETE', credentials:'same-origin'});
+  loadDrafts();
+}
+
+// Tickets
+export async function submitTicket() {
+  const type = document.getElementById('ticketType').value;
+  const title = document.getElementById('ticketTitle').value.trim();
+  const body = document.getElementById('ticketBody').value.trim();
+  const image = document.getElementById('ticketImage').value.trim();
+  const st = document.getElementById('ticketStatus');
+  if (!title) { st.textContent = 'กรุณาใส่หัวข้อ'; st.className = 'toast err'; return; }
+  if (!body) { st.textContent = 'กรุณาใส่รายละเอียด'; st.className = 'toast err'; return; }
+  try {
+    const r = await fetch('/api/tickets', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, title, body, image_url: image || null }) });
+    const d = await r.json();
+    if (d.ok) {
+      st.textContent = 'ส่ง ticket สำเร็จ!'; st.className = 'toast ok';
+      document.getElementById('ticketTitle').value = '';
+      document.getElementById('ticketBody').value = '';
+      document.getElementById('ticketImage').value = '';
+      loadTickets();
+    } else { st.textContent = d.error || 'Error'; st.className = 'toast err'; }
+  } catch(e) { st.textContent = 'Error: ' + e.message; st.className = 'toast err'; }
+}
+
+// === Insights Dashboard ===
+var insData = {};
+
+
+
+export function showInsSkeleton() {
+  ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) {
+    document.getElementById(id).innerHTML = '<div class="ins-skel" style="width:50px;height:24px;margin:0 auto"></div>';
+  });
+  document.getElementById('insTopPosts').innerHTML = '<div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div><div class="ins-skel" style="height:40px;margin:4px 0"></div>';
+}
+
+export function insShowError(msg) {
+  var el = document.getElementById('insError');
+  if (msg) { el.textContent = msg; el.style.display = ''; }
+  else { el.style.display = 'none'; }
+}
+export function insShowTimestamp(ts) {
+  var el = document.getElementById('insTimestamp');
+  if (ts) { el.textContent = 'อัพเดตล่าสุด: ' + new Date(ts).toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short', hour12:false }); }
+  else { el.textContent = ''; }
+}
+export function insRenderAll() {
+  renderInsStats();
+  setTimeout(renderInsChart, 0);
+  setTimeout(renderInsTopPosts, 0);
+  setTimeout(renderInsHeatmap, 10);
+}
+
+export async function loadInsights(force) {
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
+  if (!pageId) { insShowError('กรุณาเลือกเพจจาก sidebar ก่อน'); return; }
+  insShowError(null);
+  var cacheKey = 'ins:' + pageId;
+  if (!force) {
+    try {
+      var cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        insData = JSON.parse(cached);
+        insShowTimestamp(insData.ts);
+        insRenderAll();
+        return;
+      }
+    } catch(e) { /* ignore */ }
+  }
+  showInsSkeleton();
+  try {
+    var r = await fetch('/api/insights-bundle/' + pageId, { credentials: 'same-origin' });
+    var d = await r.json();
+    if (d.error) {
+      var msg = d.error === 'token_expired' ? 'Token หมดอายุ — กรุณา login ใหม่' :
+                d.error === 'fb_api_error' ? 'Facebook API error: ' + (d.detail || 'ลองใหม่อีกครั้ง') :
+                d.error === 'Page not found' ? 'ไม่พบเพจนี้' : d.error;
+      insShowError(msg);
+      ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
+      return;
+    }
+    insData = d;
+    try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch(e) { /* ignore */ }
+    insShowTimestamp(d.ts);
+    insRenderAll();
+  } catch(e) {
+    insShowError('โหลดข้อมูลไม่สำเร็จ — ลองกด ↻ อีกครั้ง');
+    ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
+  }
+}
+
+export async function insRefreshAndLoad() {
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
+  if (!pageId) return;
+  var btn = document.getElementById('insRefreshBtn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  insShowError(null);
+  try {
+    await fetch('/api/analytics/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId }) });
+  } catch(e) { /* ignore, still reload */ }
+  try { sessionStorage.removeItem('ins:' + pageId); } catch(e) { /* ignore */ }
+  await loadInsights(true);
+  btn.textContent = '↻';
+  btn.disabled = false;
+}
+
+export async function insSyncPosts() {
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
+  if (!pageId) { insShowError('กรุณาเลือกเพจก่อน'); return; }
+  var btn = document.getElementById('insSyncBtn');
+  btn.textContent = '⏳ Syncing...';
+  btn.disabled = true;
+  insShowError(null);
+  try {
+    var r = await fetch('/api/analytics/sync-posts', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page_id: pageId }) });
+    var d = await r.json();
+    if (d.error) { insShowError(d.error); }
+    else { try { sessionStorage.removeItem('ins:' + pageId); } catch(e) {} await loadInsights(true); }
+  } catch(e) { insShowError('Sync ไม่สำเร็จ — ลองใหม่'); }
+  btn.textContent = 'Sync โพส';
+  btn.disabled = false;
+}
+
+export function insFmtNum(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+export function renderInsDelta(elId, cur, prev) {
+  var el = document.getElementById(elId);
+  if (!el || !prev) return;
+  var pct = Math.round((cur - prev) / prev * 100);
+  el.textContent = (pct >= 0 ? '+' : '') + pct + '%';
+  el.className = 'ins-stat-delta ' + (pct >= 0 ? 'up' : 'down');
+}
+
+export function insGetMetric(name) {
+  var arr = insData.insights || [];
+  for (var i = 0; i < arr.length; i++) { if (arr[i].name === name) return arr[i]; }
+  return null;
+}
+export function insMetricTotal(name) {
+  var m = insGetMetric(name);
+  if (!m || !m.values) return 0;
+  return m.values.reduce(function(a, v) { return a + (v.value || 0); }, 0);
+}
+export function renderInsStats() {
+  var impTotal = insMetricTotal('page_views_total');
+  var engTotal = insMetricTotal('page_post_engagements');
+  var fanTotal = insMetricTotal('page_daily_follows');
+  document.getElementById('insImpressions').textContent = insFmtNum(impTotal);
+  document.getElementById('insEngaged').textContent = insFmtNum(engTotal);
+  document.getElementById('insFanAdds').textContent = insFmtNum(fanTotal);
+  var stats = insData.stats || {};
+  document.getElementById('insPostsToday').textContent = stats.posts || 0;
+}
+
+export function renderInsChart() {
+  var canvas = document.getElementById('insChart');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.clientWidth;
+  var h = 200;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  var impMetric = insGetMetric('page_views_total');
+  var engMetric = insGetMetric('page_post_engagements');
+  var impVals = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return v.value || 0; }) : [];
+  var engVals = (engMetric && engMetric.values) ? engMetric.values.map(function(v) { return v.value || 0; }) : [];
+  var labels = (impMetric && impMetric.values) ? impMetric.values.map(function(v) { return (v.end_time || '').slice(0, 10); }) : [];
+  if (!impVals.length && !engVals.length) {
+    ctx.fillStyle = '#555';
+    ctx.font = '13px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('ไม่มีข้อมูล', w / 2, h / 2);
+    return;
+  }
+  var all = impVals.concat(engVals);
+  var maxVal = Math.max(1, Math.max.apply(null, all));
+  var padL = 45, padR = 10, padT = 20, padB = 30;
+  var chartW = w - padL - padR;
+  var chartH = h - padT - padB;
+  var n = Math.max(impVals.length, engVals.length, 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  var g, gy;
+  for (g = 0; g <= 4; g++) {
+    gy = padT + chartH - (g / 4) * chartH;
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+    ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText(insFmtNum(Math.round(maxVal * g / 4)), padL - 6, gy + 3);
+  }
+  function insDrawLine(vals, color) {
+    if (!vals.length) return;
+    var i, x, y;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (i = 0; i < vals.length; i++) {
+      x = padL + (i / (n - 1)) * chartW;
+      y = padT + chartH - (vals[i] / maxVal) * chartH;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = color;
+    for (i = 0; i < vals.length; i++) {
+      x = padL + (i / (n - 1)) * chartW;
+      y = padT + chartH - (vals[i] / maxVal) * chartH;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  insDrawLine(impVals, '#4f6ef7');
+  insDrawLine(engVals, '#22c55e');
+  ctx.fillStyle = '#555'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+  var i, x, lbl;
+  for (i = 0; i < n; i++) {
+    x = padL + (i / (n - 1)) * chartW;
+    lbl = labels[i] || '';
+    if (lbl.length > 5) lbl = lbl.slice(5);
+    ctx.fillText(lbl, x, h - 8);
+  }
+  ctx.fillStyle = '#4f6ef7'; ctx.fillRect(padL, 4, 10, 3);
+  ctx.fillStyle = '#8b8fa3'; ctx.font = '10px Inter'; ctx.textAlign = 'left';
+  ctx.fillText('Page Views', padL + 14, 9);
+  ctx.fillStyle = '#22c55e'; ctx.fillRect(padL + 85, 4, 10, 3);
+  ctx.fillStyle = '#8b8fa3'; ctx.fillText('Engagements', padL + 99, 9);
+}
+
+export function renderInsTopPosts() {
+  var el = document.getElementById('insTopPosts');
+  var perf = insData.performance || {};
+  var posts = perf.top || [];
+  if (!posts.length) { el.innerHTML = '<div class="empty-state">ไม่มีโพส</div>'; return; }
+  var sorted = posts.slice().sort(function(a, b) {
+    return ((b.likes || 0) + (b.comments || 0) + (b.shares || 0)) - ((a.likes || 0) + (a.comments || 0) + (a.shares || 0));
+  }).slice(0, 5);
+  el.innerHTML = sorted.map(function(p, i) {
+    var msg = insEsc((p.message || '').substring(0, 60)) || '(ไม่มีข้อความ)';
+    var date = insEsc((p.created_at || '').slice(0, 10));
+    return '<div class="ins-post"><div class="ins-post-rank">' + (i + 1) + '</div><div class="ins-post-body"><div class="ins-post-msg">' + msg + '</div><div class="ins-post-meta">' + (p.likes || 0) + ' likes · ' + (p.comments || 0) + ' comments · ' + (p.shares || 0) + ' shares — ' + date + '</div></div></div>';
+  }).join('');
+}
+
+export function renderInsHeatmap() {
+  var el = document.getElementById('insHeatmap');
+  var bt = insData.bestTime || {};
+  var raw = bt.heatmap || [];
+  var days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+  // Build 7x24 grid from [{d,h,eng}] array
+  var grid = [];
+  var d, h, maxHeat = 1;
+  for (d = 0; d < 7; d++) { grid[d] = []; for (h = 0; h < 24; h++) grid[d][h] = 0; }
+  for (var i = 0; i < raw.length; i++) {
+    var r = raw[i];
+    var rd = parseInt(r.d), rh = parseInt(r.h);
+    if (rd >= 0 && rd < 7 && rh >= 0 && rh < 24 && grid[rd]) {
+      grid[rd][rh] = Number(r.eng) || 0;
+      if (grid[rd][rh] > maxHeat) maxHeat = grid[rd][rh];
+    }
+  }
+  var html = '<div class="ins-hm-label"></div>';
+  for (h = 0; h < 24; h++) {
+    html += '<div class="ins-hm-hr">' + (h % 3 === 0 ? h : '') + '</div>';
+  }
+  for (d = 0; d < 7; d++) {
+    html += '<div class="ins-hm-label">' + days[d] + '</div>';
+    for (h = 0; h < 24; h++) {
+      var v = grid[d][h];
+      var intensity = v / maxHeat;
+      var bg = intensity === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(79,110,247,' + (0.1 + intensity * 0.7).toFixed(2) + ')';
+      html += '<div class="ins-hm-cell" style="background:' + bg + '" title="' + days[d] + ' ' + h + ':00 — ' + Math.round(v) + '"></div>';
+    }
+  }
+  if (bt.tip) html += '<div style="grid-column:1/-1;text-align:center;font-size:0.72rem;color:var(--accent);margin-top:8px">' + insEsc(bt.tip) + '</div>';
+  el.innerHTML = html;
+}
+
+// Trend category filter
+// === Challenge Dashboard ===
+var CH_COLORS = {follows:'#4f6ef7',posts:'#22c55e',reels:'#a855f7',engagements:'#f59e0b',views:'#ec4899'};
+var CH_DETAILS = {
+  follows:['โพสเนื้อหาที่คนอยาก share ให้เพื่อน','ใช้ CTA เช่น "กด Follow เพื่อไม่พลาด"','โพสสม่ำเสมอ ให้คนเห็นบ่อย'],
+  posts:['โพสอย่างน้อยวันละ 1 โพส','ใช้รูปจริง ไม่ใช่ stock — engagement สูงกว่า 3x','โพสช่วง 18:00-20:00 ได้ reach สูงสุด'],
+  reels:['Reels สั้น 15-30 วิ ได้ views สูงกว่า','ใช้เพลงที่กำลัง trending','ถ่ายแนวตั้ง 9:16 เท่านั้น'],
+  engagements:['ตอบ comment ภายใน 1 ชม.','ถามคำถามท้ายโพส เพิ่ม comment','ใช้ poll/quiz ใน Stories'],
+  views:['แชร์โพสไป Group ที่เกี่ยวข้อง','ใช้ hashtag ไทยที่กำลัง trending','โพส video สั้นๆ ได้ views เยอะกว่ารูป']
+};
+export function toggleChDetail(idx){var cards=document.querySelectorAll('.ch-card');if(cards[idx])cards[idx].classList.toggle('expanded');}
+var CH_BG = {follows:'rgba(79,110,247,0.1)',posts:'rgba(34,197,94,0.1)',reels:'rgba(168,85,247,0.1)',engagements:'rgba(245,158,11,0.1)',views:'rgba(236,72,153,0.1)'};
+var CH_ACTIONS = {
+  follows:{tab:null,tip:'โพสเนื้อหาที่ได้ share เยอะ จะเพิ่มผู้ติดตาม'},
+  posts:{tab:'compose',label:'เขียนโพส →',tip:'โพสช่วง 18:00-20:00 ได้ reach สูงสุด'},
+  reels:{tab:'compose',label:'สร้าง Reels →',tip:'Reels สั้น 15-30 วิ ได้ views สูงกว่า'},
+  engagements:{tab:'history',label:'ดู comments →',tip:'ตอบ comment ภายใน 1 ชม. เพิ่ม interaction เร็ว'},
+  views:{tab:'insights',label:'ดู Insights →',tip:'ใช้รูปจริง ไม่ใช่ stock — engagement สูงกว่า 3x'}
+};
+
+export async function loadChallenges(force) {
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
+  if (!pageId) { document.getElementById('chList').innerHTML = '<div class="empty-state">เลือกเพจจาก sidebar ก่อน</div>'; return; }
+  var el = document.getElementById('chList');
+  var cacheKey = 'ch:' + pageId;
+  if (!force) {
+    try { var cached = sessionStorage.getItem(cacheKey); if (cached) { var cd = JSON.parse(cached); renderChCards(cd); return; } } catch(e) {}
+  }
+  el.innerHTML = [1,2,3,4,5].map(function(){return '<div class="ch-card" style="pointer-events:none"><div class="ins-skel" style="width:36px;height:36px;border-radius:10px;flex-shrink:0"></div><div class="ch-body"><div class="ins-skel" style="height:12px;width:50%;margin-bottom:6px"></div><div class="ins-skel" style="height:6px;width:100%"></div></div></div>';}).join('');
+  try {
+    var r = await fetch('/api/challenges/' + pageId, { credentials: 'same-origin' });
+    if (!r.ok) { el.innerHTML = '<div class="empty-state">API error ' + r.status + ' — ลองกด ↻</div>'; return; }
+    var d = await r.json();
+    try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch(e) {}
+    if (d.error) { el.innerHTML = '<div class="empty-state">' + insEsc(d.error) + '</div>'; return; }
+    renderChCards(d);
+  } catch(e) { document.getElementById('chList').innerHTML = '<div class="empty-state">โหลดไม่สำเร็จ — ' + insEsc(e.message || 'ลองกด ↻') + '</div>'; }
+}
+
+export function renderChCards(d) {
+  var el = document.getElementById('chList');
+  var challenges = d.challenges || [];
+  if (!challenges.length) { el.innerHTML = '<div class="empty-state">ไม่มี challenge</div>'; return; }
+  var periodEl = document.getElementById('chPeriod');
+  if (periodEl && d.period) periodEl.textContent = '(' + d.period + ')';
+  el.innerHTML = challenges.map(function(c, idx) {
+    var pct = Math.min(100, c.percent || 0);
+    var done = pct >= 100;
+    var color = CH_COLORS[c.id] || 'var(--accent)';
+    var bg = CH_BG[c.id] || 'rgba(79,110,247,0.1)';
+    var statusText = done ? '✓ สำเร็จ' : c.current + '/' + c.target;
+    var statusStyle = done ? 'color:#22c55e;background:rgba(34,197,94,0.1)' : 'color:var(--text-secondary);background:var(--bg-input)';
+    var act = CH_ACTIONS[c.id] || {};
+    var actionBtn = (!done && act.tab) ? '<button class="ch-action" onclick="event.stopPropagation();window.switchTab(\'' + act.tab + '\')">' + insEsc(act.label) + '</button>' : '';
+    var remaining = Math.max(0, c.target - c.current);
+    var boostBtn = (!done && (c.id === 'posts' || c.id === 'reels') && remaining > 0) ? '<button class="ch-boost" onclick="event.stopPropagation();boostChallenge(\'' + c.id + '\',' + remaining + ',this)">🤖 AI</button>' : '';
+    var tipHtml = !done && act.tip ? '<div class="ch-tip">💡 ' + insEsc(act.tip) + '</div>' : '';
+    var details = CH_DETAILS[c.id] || [];
+    var detailHtml = details.length ? '<div class="ch-detail">' + details.map(function(t){return '<div class="ch-detail-item">💡 ' + insEsc(t) + '</div>';}).join('') + '</div>' : '';
+    return '<div class="ch-card' + (done ? ' completed' : '') + '" onclick="toggleChDetail(' + idx + ')">' +
+      '<div class="ch-icon" style="background:' + bg + '">' + insEsc(c.icon || '🎯') + '</div>' +
+      '<div class="ch-body">' +
+        '<div class="ch-title">' + insEsc(c.name) + ' <span class="ch-expand-icon">▼</span></div>' +
+        '<div class="ch-desc">' + c.current + ' / ' + c.target + ' (' + Math.round(pct) + '%)</div>' +
+        '<div class="ch-bar"><div class="ch-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+        tipHtml + '<div style="display:flex;gap:4px;flex-wrap:wrap">' + actionBtn + boostBtn + '</div>' +
+        detailHtml +
+      '</div>' +
+      '<div class="ch-status" style="' + statusStyle + '">' + statusText + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+
+export async function boostChallenge(challengeId, count, btn) {
+  var pageId = state.selectedPage ? state.selectedPage.id : '';
+  if (!pageId) return;
+  if (btn.dataset.confirmed !== 'yes') {
+    btn.textContent = '⚠️ กดอีกครั้งเพื่อยืนยัน';
+    btn.dataset.confirmed = 'yes';
+    setTimeout(function() { btn.textContent = '🤖 AI'; btn.dataset.confirmed = ''; }, 3000);
+    return;
+  }
+  btn.dataset.confirmed = '';
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังสร้าง...';
+  try {
+    var r = await fetch('/api/challenges/' + pageId + '/boost', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ challenge_id: challengeId, count: Math.min(count, 5), types: ['photo', 'question', 'link'] }) });
+    var d = await r.json();
+    if (d.ok) {
+      showNotify('สร้างโพส ' + (d.generated || count) + ' อัน + schedule แล้ว!');
+      loadChallenges(true);
+    } else {
+      btn.textContent = '❌ ' + insEsc(d.error || 'ไม่สำเร็จ');
+      setTimeout(function() { btn.textContent = '🤖 AI ช่วยทำ'; btn.disabled = false; }, 3000);
+    }
+  } catch(e) {
+    btn.textContent = '❌ ลองใหม่';
+    setTimeout(function() { btn.textContent = '🤖 AI ช่วยทำ'; btn.disabled = false; }, 3000);
+  }
+}
+
+// === API Keys Settings ===
+export async function saveApiKey(keyName, inputId) {
+  var val = document.getElementById(inputId).value.trim();
+  if (!val) { toast('err', 'กรุณากรอก API key'); return; }
+  try {
+    var body = {};
+    body[keyName] = val;
+    var r = await fetch('/api/settings', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var d = await r.json();
+    if (d.ok) { showNotify('บันทึก ' + keyName + ' สำเร็จ!'); document.getElementById(inputId).value = ''; loadApiKeyStatus(); }
+    else { toast('err', d.error || 'บันทึกไม่สำเร็จ'); }
+  } catch(e) { toast('err', 'เกิดข้อผิดพลาด'); }
+}
+
+export async function loadApiKeyStatus() {
+  try {
+    var r = await fetch('/api/settings', { credentials: 'same-origin' });
+    var d = await r.json();
+    var keys = [['has_apify_key','apifyStatus','Shopee/Apify'],['has_gemini_key','geminiStatus','Gemini'],['has_fal_key','falStatus','FAL.ai']];
+    keys.forEach(function(k) {
+      var el = document.getElementById(k[1]);
+      if (!el) return;
+      if (d[k[0]]) { el.textContent = '✅ ' + k[2] + ' configured'; el.style.color = 'var(--success)'; }
+      else { el.textContent = '⚠️ ยังไม่ได้ตั้งค่า'; el.style.color = 'var(--text-muted)'; }
+    });
+  } catch(e) { /* ignore */ }
+}
+
+export function filterTrends(cat) {
+  document.querySelectorAll('.trend-filter').forEach(b=>{b.style.background='var(--bg-input)';b.style.color='var(--text-secondary)';});
+  event.target.style.background='var(--accent)';event.target.style.color='#fff';
+  document.querySelectorAll('.trend-card').forEach(el=>{
+    if(cat==='all'||el.dataset.cat===cat) el.style.display='';
+    else el.style.display='none';
+  });
+}
+

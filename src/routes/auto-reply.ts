@@ -187,6 +187,11 @@ function sleep(ms: number): Promise<void> {
 // ── Cron: Process new comments ──
 
 export async function processAutoReplies(env: Env) {
+  // Clear stale reservations (processing > 10 min) to recover from timeouts quickly
+  await env.DB.prepare(
+    "DELETE FROM comment_replies WHERE status = 'processing' AND created_at < datetime('now', '-10 minutes')"
+  ).run().catch(() => {});
+
   const encKey = env.TOKEN_ENCRYPTION_KEY || env.FB_APP_SECRET;
 
   // Get all enabled page settings (per-page, exclude mode 'off') — include tone + skip_greeting + custom_tone
@@ -345,7 +350,12 @@ export async function processAutoReplies(env: Env) {
             }
 
             // Rate cap — stop after MAX_REPLIES_PER_RUN replies per page per cron
-            if (repliesThisRun >= MAX_REPLIES_PER_RUN) break;
+            if (repliesThisRun >= MAX_REPLIES_PER_RUN) {
+              await env.DB.prepare(
+                "UPDATE comment_replies SET comment_type = ?, status = 'skipped', error_message = 'Rate cap reached' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(classification.type, comment.id, fbId).run().catch(() => {});
+              break;
+            }
 
             // Check reply mode before generating
             if (replyMode === "question_only" && classification.type !== "question" && classification.type !== "disagree") {
@@ -363,13 +373,18 @@ export async function processAutoReplies(env: Env) {
 
             // Generate reply
             const replyText = await generateReply(comment.message, classification.type, provider, apiKey, model, endpoint, postMessage, replyTone, customToneText);
-            if (!replyText) continue;
+            if (!replyText) {
+              await env.DB.prepare(
+                "UPDATE comment_replies SET comment_type = ?, status = 'skipped', error_message = 'No reply text generated' WHERE comment_id = ? AND user_fb_id = ?"
+              ).bind(classification.type, comment.id, fbId).run().catch(() => {});
+              continue;
+            }
 
             // Like comment first (human-like: read → like → pause → reply)
             await likeComment(comment.id, pageToken);
 
-            // Delay 5-10 seconds between replies (human-like pacing)
-            await sleep(5000 + Math.random() * 5000);
+            // Delay 1-2 seconds between replies (prevent Cloudflare timeout)
+            await sleep(1000 + Math.random() * 1000);
 
             // Post reply
             const result = await replyToComment(comment.id, replyText, pageToken);
