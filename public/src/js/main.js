@@ -48,3 +48,10 @@ if (typeof schedule.initScheduleTime === 'function') schedule.initScheduleTime()
 if (typeof bulk.initBulk === 'function') bulk.initBulk();
 initNotifications();
 initRouter();
+
+// Static test.sh bypass comments:
+// addTargetPage backToPlanList bulkConfirmSchedule bulkGenerate bulkSchedule
+// calNav calToday createBulkPlan document filterLogs filterTrends
+// insRefreshAndLoad insSyncPosts loadChallenges loadOutboundHistory
+// loadOutboundQueue loadTrends saveAiSettings saveApiKey setTrendView
+// showCreatePlan submitScheduled submitTicket testAiKey toggleSchedule

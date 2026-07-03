@@ -223,29 +223,28 @@ export function renderEngagementChart(posts) {
 }
 
 // Calendar
-let calYear, calMonth, calPosts=[], calScheduled=[];
-export function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;} if(calMonth<0){calMonth=11;calYear--;} window.renderCalendar(); }
+export function calNav(dir) { state.calMonth+=dir; if(state.calMonth>11){state.calMonth=0;state.calYear++;} if(state.calMonth<0){state.calMonth=11;state.calYear--;} window.renderCalendar(); }
 export async function renderCalendar() {
-  if(!calYear){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();}
+  if(!state.calYear){const n=new Date();state.calYear=n.getFullYear();state.calMonth=n.getMonth();}
   const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  document.getElementById('calMonth').textContent=months[calMonth]+' '+calYear;
+  document.getElementById('calMonth').textContent=months[state.calMonth]+' '+state.calYear;
   // Fetch data — filter ตามเพจที่เลือกจาก sidebar
-  try{const pfv=state.selectedPage?state.selectedPage.id:'';const q=pfv?'?page_id='+pfv+'&limit=50':'?limit=50';const[p,s]=await Promise.all([fetch('/api/posts'+q,{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);calPosts=p.posts||[];renderEngagementChart(calPosts);calScheduled=s.posts||[];}catch{}
+  try{const pfv=state.selectedPage?state.selectedPage.id:'';const q=pfv?'?page_id='+pfv+'&limit=50':'?limit=50';const[p,s]=await Promise.all([fetch('/api/posts'+q,{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]})),fetch('/api/posts/scheduled'+(pfv?'?page_id='+pfv:''),{credentials:'same-origin'}).then(r=>r.json()).catch(()=>({posts:[]}))]);state.calPosts=p.posts||[];renderEngagementChart(state.calPosts);state.calScheduled=s.posts||[];}catch{}
   const grid=document.getElementById('calGrid');
   const days=['อา','จ','อ','พ','พฤ','ศ','ส'];
   let html=days.map(d=>'<div class="cal-day-name">'+d+'</div>').join('');
-  const first=new Date(calYear,calMonth,1).getDay();
-  const total=new Date(calYear,calMonth+1,0).getDate();
+  const first=new Date(state.calYear,state.calMonth,1).getDay();
+  const total=new Date(state.calYear,state.calMonth+1,0).getDate();
   const today=new Date();
   for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
   for(let d=1;d<=total;d++){
-    const dateStr=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    const dayP=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
-    const dayS=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+    const dateStr=state.calYear+'-'+String(state.calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayP=state.calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+    const dayS=(state.calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
     const hasFail=dayP.some(p=>p.status==='failed')||dayS.some(p=>p.status==='failed');
     const hasOk=dayP.some(p=>p.status==='posted');
     const hasPend=dayS.some(p=>p.status==='pending');
-    const isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    const isToday=today.getFullYear()===state.calYear&&today.getMonth()===state.calMonth&&today.getDate()===d;
     var dots='';if(hasFail)dots+='<span class="cal-dot failed"></span>';if(hasOk)dots+='<span class="cal-dot posted"></span>';if(hasPend)dots+='<span class="cal-dot scheduled"></span>';
     var count=dayP.length+dayS.length;
     var countBadge=count>0?'<span style="font-size:0.6rem;color:var(--text-muted)">'+count+'</span>':'';
@@ -254,7 +253,7 @@ export async function renderCalendar() {
   grid.innerHTML=html;
   document.getElementById('calDetail').innerHTML='';
 }
-export function calToday(){var n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();window.renderCalendar();}
+export function calToday(){var n=new Date();state.calYear=n.getFullYear();state.calMonth=n.getMonth();window.renderCalendar();}
 export function calCreatePost(dateStr){window.switchTab('compose');setTimeout(()=>{const di=document.getElementById('schedDate');if(di)di.value=dateStr;},100);}
 function postTypeLabel(p) {
   if (p.image_url && /\.(mp4|mov|avi|webm)$/i.test(p.image_url)) return '<span style="padding:2px 6px;border-radius:4px;background:rgba(168,85,247,0.15);color:#c084fc;font-size:0.65rem">🎬 วิดีโอ</span>';
@@ -267,8 +266,8 @@ function engagementBar(p) {
   return '<div style="display:flex;gap:8px;font-size:0.7rem;color:var(--text-muted);margin-top:4px">'+(l?'<span>👍 '+l+'</span>':'')+(c?'<span>💬 '+c+'</span>':'')+(s?'<span>🔄 '+s+'</span>':'')+'</div>';
 }
 export function showCalDay(dateStr) {
-  const posts=calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
-  const scheds=(calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
+  const posts=state.calPosts.filter(p=>(p.created_at||p.ts||'').startsWith(dateStr));
+  const scheds=(state.calScheduled||[]).filter(p=>(p.scheduled_at||'').startsWith(dateStr));
   const el=document.getElementById('calDetail');
   const addBtn='<button onclick="calCreatePost(\''+dateStr+'\')" style="margin-top:10px;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.8rem;font-family:inherit">+ สร้างโพสวันนี้</button>';
   if(!posts.length&&!scheds.length){el.innerHTML='<div class="cal-day-detail"><div class="cal-day-detail-title">'+dateStr+'</div><div class="cal-detail-item" style="color:var(--text-muted)">ไม่มีโพส</div>'+addBtn+'</div>';return;}
@@ -700,7 +699,6 @@ export async function submitTicket() {
 }
 
 // === Insights Dashboard ===
-var insData = {};
 
 
 
@@ -737,8 +735,8 @@ export async function loadInsights(force) {
     try {
       var cached = sessionStorage.getItem(cacheKey);
       if (cached) {
-        insData = JSON.parse(cached);
-        insShowTimestamp(insData.ts);
+        state.insData = JSON.parse(cached);
+        insShowTimestamp(state.insData.ts);
         insRenderAll();
         return;
       }
@@ -756,7 +754,7 @@ export async function loadInsights(force) {
       ['insImpressions','insEngaged','insFanAdds','insPostsToday'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
       return;
     }
-    insData = d;
+    state.insData = d;
     try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch(e) { /* ignore */ }
     insShowTimestamp(d.ts);
     insRenderAll();
@@ -815,7 +813,7 @@ export function renderInsDelta(elId, cur, prev) {
 }
 
 export function insGetMetric(name) {
-  var arr = insData.insights || [];
+  var arr = state.insData.insights || [];
   for (var i = 0; i < arr.length; i++) { if (arr[i].name === name) return arr[i]; }
   return null;
 }
@@ -831,7 +829,7 @@ export function renderInsStats() {
   document.getElementById('insImpressions').textContent = insFmtNum(impTotal);
   document.getElementById('insEngaged').textContent = insFmtNum(engTotal);
   document.getElementById('insFanAdds').textContent = insFmtNum(fanTotal);
-  var stats = insData.stats || {};
+  var stats = state.insData.stats || {};
   document.getElementById('insPostsToday').textContent = stats.posts || 0;
 }
 
@@ -911,7 +909,7 @@ export function renderInsChart() {
 
 export function renderInsTopPosts() {
   var el = document.getElementById('insTopPosts');
-  var perf = insData.performance || {};
+  var perf = state.insData.performance || {};
   var posts = perf.top || [];
   if (!posts.length) { el.innerHTML = '<div class="empty-state">ไม่มีโพส</div>'; return; }
   var sorted = posts.slice().sort(function(a, b) {
@@ -926,7 +924,7 @@ export function renderInsTopPosts() {
 
 export function renderInsHeatmap() {
   var el = document.getElementById('insHeatmap');
-  var bt = insData.bestTime || {};
+  var bt = state.insData.bestTime || {};
   var raw = bt.heatmap || [];
   var days = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
   // Build 7x24 grid from [{d,h,eng}] array
