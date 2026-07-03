@@ -15,6 +15,37 @@
           </div>
         </div>
 
+        <!-- Auto-Reply Analytics Card -->
+        <div class="card" style="margin-top:12px;display:none" id="arReportsCard">
+          <div class="card-title" style="margin-bottom:12px"><span class="card-title-icon">📊</span> รายงานบอทตอบคอมเมนต์ (7 วันล่าสุด)</div>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:24px;">
+            <!-- Chart 1: Daily Status stacked column -->
+            <div>
+              <div style="font-size:0.75rem;font-weight:600;margin-bottom:16px;color:var(--sec);display:flex;justify-content:space-between">
+                <span>ปริมาณการประมวลผลรายวัน</span>
+                <span id="arTotalProcessed" style="color:var(--accent)">—</span>
+              </div>
+              <div class="chart-bar-wrap" id="arDailyChart" style="height:120px;padding:20px 0 10px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.05)">
+                <!-- Daily bars go here -->
+              </div>
+              <div class="chart-legend" style="margin-top:12px;display:flex;justify-content:center;gap:12px;font-size:0.65rem">
+                <div style="display:flex;align-items:center;gap:4px"><span class="chart-legend-dot" style="background:#22c55e;margin:0"></span>ตอบกลับ (Replied)</div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="chart-legend-dot" style="background:#eab308;margin:0"></span>ข้ามการตอบ (Skipped)</div>
+                <div style="display:flex;align-items:center;gap:4px"><span class="chart-legend-dot" style="background:#ef4444;margin:0"></span>ล้มเหลว (Failed)</div>
+              </div>
+            </div>
+            
+            <!-- Chart 2: Comment Type Distribution -->
+            <div>
+              <div style="font-size:0.75rem;font-weight:600;margin-bottom:16px;color:var(--sec)">สัดส่วนประเภทคำถาม/คอมเมนต์</div>
+              <div id="arTypesList" style="display:flex;flex-direction:column;gap:10px;max-height:160px;overflow-y:auto;padding-right:4px">
+                <div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ไม่มีข้อมูลประเภทคอมเมนต์</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Reply History -->
         <div class="card" style="margin-top:12px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">

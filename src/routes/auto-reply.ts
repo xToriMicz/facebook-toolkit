@@ -510,4 +510,38 @@ autoReply.get("/auto-reply/history", async (c) => {
   return c.json({ replies: results, total: results.length });
 });
 
+// GET /api/auto-reply/stats?page_id=...
+autoReply.get("/auto-reply/stats", async (c) => {
+  const session = await getSessionFromReq(c);
+  if (!session) return c.json({ error: "Not authenticated" }, 401);
+
+  const pageId = c.req.query("page_id");
+  if (!pageId) return c.json({ error: "page_id required" }, 400);
+
+  // 1. Fetch daily status breakdown (last 7 days)
+  const dailyQuery = `
+    SELECT date(created_at) as date, status, COUNT(*) as count
+    FROM comment_replies
+    WHERE user_fb_id = ? AND page_id = ? AND created_at >= datetime('now', '-7 days')
+    GROUP BY date(created_at), status
+    ORDER BY date ASC;
+  `;
+  const { results: dailyRaw } = await c.env.DB.prepare(dailyQuery).bind(session.fb_id, pageId).all();
+
+  // 2. Fetch comment type breakdown (last 7 days)
+  const typeQuery = `
+    SELECT comment_type, COUNT(*) as count
+    FROM comment_replies
+    WHERE user_fb_id = ? AND page_id = ? AND created_at >= datetime('now', '-7 days') AND status = 'replied'
+    GROUP BY comment_type
+    ORDER BY count DESC;
+  `;
+  const { results: typeRaw } = await c.env.DB.prepare(typeQuery).bind(session.fb_id, pageId).all();
+
+  return c.json({
+    daily: dailyRaw,
+    types: typeRaw
+  });
+});
+
 export default autoReply;

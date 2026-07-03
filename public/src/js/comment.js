@@ -13,6 +13,37 @@ var k = {
     casual:
       "\u{1F60A} \u0E40\u0E1B\u0E47\u0E19\u0E01\u0E31\u0E19\u0E40\u0E2D\u0E07",
     custom: "\u270F\uFE0F \u0E01\u0E33\u0E2B\u0E19\u0E14\u0E40\u0E2D\u0E07",
+  },
+  S = {
+    question: "\u2753",
+    praise: "\u{1F44D}",
+    experience: "\u{1F4AC}",
+    disagree: "\u{1F914}",
+    tag_friend: "\u{1F465}",
+    emoji: "\u{1F60A}",
+    spam: "\u{1F6AB}",
+    unclear: "\u2754",
+    complaint: "\u{1F4E2}",
+    greeting: "\u{1F44B}",
+    other: "\u{1F4AC}",
+    unknown: "\u{1F4AC}",
+  },
+  F = {
+    question: "\u0E16\u0E32\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",
+    praise: "\u0E0A\u0E21",
+    experience:
+      "\u0E41\u0E0A\u0E23\u0E4C\u0E1B\u0E23\u0E30\u0E2A\u0E1A\u0E01\u0E32\u0E23\u0E13\u0E4C",
+    disagree:
+      "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E14\u0E49\u0E27\u0E22",
+    tag_friend:
+      "\u0E41\u0E17\u0E47\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E19",
+    emoji: "emoji",
+    spam: "spam",
+    unclear: "\u0E44\u0E21\u0E48\u0E0A\u0E31\u0E14\u0E40\u0E08\u0E19",
+    complaint: "\u0E23\u0E49\u0E2D\u0E07\u0E40\u0E23\u0E35\u0E22\u0E19",
+    greeting: "\u0E17\u0E31\u0E01\u0E17\u0E32\u0E22",
+    other: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
+    unknown: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
   };
 export async function loadAutoReplySettings() {
   var t = document.getElementById("autoReplyPageList");
@@ -204,6 +235,7 @@ export async function toggleSkipGreeting(t, e) {
   } catch {}
 }
 export async function loadAutoReplyHistory() {
+  loadAutoReplyStats();
   var t = document.getElementById("autoReplyHistoryList");
   if (!p.selectedPage) {
     t.innerHTML =
@@ -244,38 +276,7 @@ export async function loadAutoReplyHistory() {
         '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34</div>';
       return;
     }
-    var S = {
-        question: "\u2753",
-        praise: "\u{1F44D}",
-        experience: "\u{1F4AC}",
-        disagree: "\u{1F914}",
-        tag_friend: "\u{1F465}",
-        emoji: "\u{1F60A}",
-        spam: "\u{1F6AB}",
-        unclear: "\u2754",
-        complaint: "\u{1F4E2}",
-        greeting: "\u{1F44B}",
-        other: "\u{1F4AC}",
-        unknown: "\u{1F4AC}",
-      },
-      F = {
-        question: "\u0E16\u0E32\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25",
-        praise: "\u0E0A\u0E21",
-        experience:
-          "\u0E41\u0E0A\u0E23\u0E4C\u0E1B\u0E23\u0E30\u0E2A\u0E1A\u0E01\u0E32\u0E23\u0E13\u0E4C",
-        disagree:
-          "\u0E44\u0E21\u0E48\u0E40\u0E2B\u0E47\u0E19\u0E14\u0E49\u0E27\u0E22",
-        tag_friend:
-          "\u0E41\u0E17\u0E47\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E19",
-        emoji: "emoji",
-        spam: "spam",
-        unclear: "\u0E44\u0E21\u0E48\u0E0A\u0E31\u0E14\u0E40\u0E08\u0E19",
-        complaint: "\u0E23\u0E49\u0E2D\u0E07\u0E40\u0E23\u0E35\u0E22\u0E19",
-        greeting: "\u0E17\u0E31\u0E01\u0E17\u0E32\u0E22",
-        other: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
-        unknown: "\u0E2D\u0E37\u0E48\u0E19\u0E46",
-      },
-      w = {},
+    var w = {},
       B = [];
     o.forEach(function (u) {
       var g = (u.created_at || "").slice(0, 10);
@@ -403,5 +404,115 @@ export async function loadAutoReplyHistory() {
   } catch {
     t.innerHTML =
       '<div style="color:var(--danger);font-size:0.72rem">\u0E42\u0E2B\u0E25\u0E14\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08</div>';
+  }
+}
+
+export async function loadAutoReplyStats() {
+  var card = document.getElementById("arReportsCard");
+  if (!p.selectedPage) {
+    if (card) card.style.display = "none";
+    return;
+  }
+  try {
+    var res = await fetch("/api/auto-reply/stats?page_id=" + p.selectedPage.id, { credentials: "same-origin" });
+    if (!res.ok) {
+      if (card) card.style.display = "none";
+      return;
+    }
+    var data = await res.json();
+    if (card) card.style.display = "block";
+
+    // 1. Process Daily Stacked Column Chart
+    var dailyChart = document.getElementById("arDailyChart");
+    var totalProcessedEl = document.getElementById("arTotalProcessed");
+    if (dailyChart) {
+      var days = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
+      }
+
+      var maxTotal = 0;
+      var dailyData = days.map(function (date) {
+        var replied = 0, skipped = 0, failed = 0;
+        (data.daily || []).forEach(function (row) {
+          if (row.date === date) {
+            if (row.status === "replied") replied = row.count;
+            else if (row.status === "skipped") skipped = row.count;
+            else if (row.status === "failed") failed = row.count;
+          }
+        });
+        var total = replied + skipped + failed;
+        if (total > maxTotal) maxTotal = total;
+        return { date: date, replied: replied, skipped: skipped, failed: failed, total: total };
+      });
+
+      var grandTotal = dailyData.reduce(function (acc, val) { return acc + val.total; }, 0);
+      if (totalProcessedEl) {
+        totalProcessedEl.textContent = "ประมวลผล " + grandTotal + " รายการ";
+      }
+
+      var dailyHtml = dailyData.map(function (d) {
+        var formattedDate = d.date.slice(8, 10) + "/" + d.date.slice(5, 7); // e.g. 02/07
+        var height = maxTotal > 0 ? (d.total / maxTotal) * 80 : 0; // scale up to 80px max
+
+        var pReplied = d.total > 0 ? (d.replied / d.total) * 100 : 0;
+        var pSkipped = d.total > 0 ? (d.skipped / d.total) * 100 : 0;
+        var pFailed = d.total > 0 ? (d.failed / d.total) * 100 : 0;
+
+        var barStyle = "height:" + height + "px;width:24px;background:rgba(255,255,255,0.03);border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column-reverse;margin-bottom:4px;";
+
+        var segments = "";
+        if (d.replied > 0) segments += '<div style="height:' + pReplied + '%;background:#22c55e;" title="ตอบกลับ: ' + d.replied + '"></div>';
+        if (d.skipped > 0) segments += '<div style="height:' + pSkipped + '%;background:#eab308;" title="ข้าม: ' + d.skipped + '"></div>';
+        if (d.failed > 0) segments += '<div style="height:' + pFailed + '%;background:#ef4444;" title="ล้มเหลว: ' + d.failed + '"></div>';
+
+        return (
+          '<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;position:relative;">' +
+          '<div class="chart-bar-val" style="font-size:0.6rem;font-weight:700">' + (d.total > 0 ? d.total : "") + "</div>" +
+          '<div style="' + barStyle + '">' + segments + "</div>" +
+          '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:2px;">' + formattedDate + "</div>" +
+          "</div>"
+        );
+      }).join("");
+
+      dailyChart.innerHTML = dailyHtml;
+    }
+
+    // 2. Process Comment Type Distribution List
+    var typesList = document.getElementById("arTypesList");
+    if (typesList) {
+      var types = data.types || [];
+      var maxTypeCount = types.length > 0 ? types[0].count : 0;
+      var totalTypeCount = types.reduce(function (acc, val) { return acc + val.count; }, 0);
+
+      var typesHtml = "";
+      if (types.length === 0) {
+        typesHtml = '<div style="text-align:center;font-size:0.72rem;color:var(--text-muted);padding:16px">ไม่มีข้อมูลประเภทคอมเมนต์</div>';
+      } else {
+        typesHtml = types.map(function (t) {
+          var pct = totalTypeCount > 0 ? ((t.count / totalTypeCount) * 100).toFixed(0) : 0;
+          var barWidth = maxTypeCount > 0 ? (t.count / maxTypeCount) * 100 : 0;
+          var icon = S[t.comment_type] || "💬";
+          var name = F[t.comment_type] || t.comment_type;
+
+          return (
+            '<div style="display:flex;flex-direction:column;gap:3px;font-size:0.7rem;">' +
+            '<div style="display:flex;justify-content:space-between;color:var(--text-secondary);font-weight:600">' +
+            "<span>" + icon + " " + name + "</span>" +
+            "<span>" + t.count + " ครั้ง (" + pct + "%)</span>" +
+            "</div>" +
+            '<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden">' +
+            '<div style="height:100%;width:' + barWidth + '%;background:var(--accent);border-radius:3px"></div>' +
+            "</div>" +
+            "</div>"
+          );
+        }).join("");
+      }
+      typesList.innerHTML = typesHtml;
+    }
+  } catch (err) {
+    if (card) card.style.display = "none";
   }
 }
