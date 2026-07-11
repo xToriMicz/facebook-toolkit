@@ -479,11 +479,22 @@ autoReply.post("/auto-reply/settings", async (c) => {
   ).bind(session.fb_id, page_id).first();
   if (!page) return c.json({ error: "Page not found" }, 400);
 
+  // Fetch existing settings to merge partial updates
+  const existing = await c.env.DB.prepare(
+    "SELECT enabled, reply_mode, reply_tone, skip_greeting, custom_tone FROM auto_reply_settings WHERE user_fb_id = ? AND page_id = ?"
+  ).bind(session.fb_id, page_id).first<{ enabled: number; reply_mode: string; reply_tone: string; skip_greeting: number; custom_tone: string }>();
+
+  const finalEnabled = enabled !== undefined ? (enabled ? 1 : 0) : (existing ? existing.enabled : 0);
+  const finalMode = reply_mode !== undefined && validModes.includes(reply_mode) ? reply_mode : (existing ? existing.reply_mode : "all");
+  const finalTone = reply_tone !== undefined && validTones.includes(reply_tone) ? reply_tone : (existing ? existing.reply_tone : "formal");
+  const finalSkipGreeting = skip_greeting !== undefined ? (skip_greeting ? 1 : 0) : (existing ? existing.skip_greeting : 0);
+  const finalCustomToneText = custom_tone !== undefined ? custom_tone.slice(0, 200) : (existing ? existing.custom_tone : "");
+
   await c.env.DB.prepare(
     "INSERT INTO auto_reply_settings (user_fb_id, page_id, enabled, reply_mode, reply_tone, skip_greeting, custom_tone) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_fb_id, page_id) DO UPDATE SET enabled = excluded.enabled, reply_mode = excluded.reply_mode, reply_tone = excluded.reply_tone, skip_greeting = excluded.skip_greeting, custom_tone = excluded.custom_tone"
-  ).bind(session.fb_id, page_id, enabled ? 1 : 0, mode, tone, skip_greeting ? 1 : 0, customToneText).run();
+  ).bind(session.fb_id, page_id, finalEnabled, finalMode, finalTone, finalSkipGreeting, finalCustomToneText).run();
 
-  return c.json({ ok: true, page_id, enabled, reply_mode: mode, reply_tone: tone, skip_greeting: !!skip_greeting, custom_tone: customToneText });
+  return c.json({ ok: true, page_id, enabled: finalEnabled === 1, reply_mode: finalMode, reply_tone: finalTone, skip_greeting: finalSkipGreeting === 1, custom_tone: finalCustomToneText });
 });
 
 // GET /api/auto-reply/history?date=YYYY-MM-DD

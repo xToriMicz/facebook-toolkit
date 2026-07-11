@@ -82,7 +82,7 @@ export async function loadAutoReplySettings() {
           (l ? "checked" : "") +
           ` onchange="toggleAutoReplyPage('` +
           o +
-          `',this.checked)" style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:` +
+          `',this.checked)" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0;padding:0"><span style="position:absolute;inset:0;background:` +
           (l ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.1)") +
           ';border-radius:24px;transition:all 0.3s;border:1px solid var(--border)"></span><span style="position:absolute;top:2px;left:' +
           (l ? "22px" : "2px") +
@@ -138,7 +138,7 @@ export async function loadAutoReplySettings() {
               (d ? "checked" : "") +
               ` onchange="toggleSkipGreeting('` +
               o +
-              `',this.checked)" style="opacity:0;width:0;height:0"><span style="position:absolute;inset:0;background:` +
+              `',this.checked)" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0;padding:0"><span style="position:absolute;inset:0;background:` +
               (d ? "rgba(245,158,11,0.3)" : "rgba(255,255,255,0.1)") +
               ';border-radius:20px;transition:all 0.3s;border:1px solid var(--border)"></span><span style="position:absolute;top:2px;left:' +
               (d ? "18px" : "2px") +
@@ -201,9 +201,10 @@ export async function changeAutoReplyTone(t, e) {
       body: JSON.stringify({ page_id: t, reply_tone: e }),
     }),
       h(
-        "\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19 tone \u0E40\u0E1B\u0E47\u0E19 " +
+        "\u0E40\u0E25\u0E35\u0E48\u0E22\u0E19 tone \u0E40\u0E1B\u0E47\u0E19 " +
           z[e],
-      ));
+      ),
+      loadAutoReplySettings());
   } catch {}
 }
 export async function saveCustomTone(t) {
@@ -218,7 +219,8 @@ export async function saveCustomTone(t) {
       }),
         h(
           "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01 custom tone \u0E41\u0E25\u0E49\u0E27",
-        ));
+        ),
+        loadAutoReplySettings());
     } catch {}
 }
 export async function toggleSkipGreeting(t, e) {
@@ -233,7 +235,8 @@ export async function toggleSkipGreeting(t, e) {
         e
           ? "\u0E1B\u0E34\u0E14\u0E15\u0E2D\u0E1A greeting \u0E41\u0E25\u0E49\u0E27"
           : "\u0E40\u0E1B\u0E34\u0E14\u0E15\u0E2D\u0E1A greeting \u0E41\u0E25\u0E49\u0E27",
-      ));
+      ),
+      loadAutoReplySettings());
   } catch {}
 }
 export async function loadAutoReplyHistory() {
